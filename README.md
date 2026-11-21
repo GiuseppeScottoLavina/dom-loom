@@ -45,6 +45,11 @@ There is nothing else to learn for the controls themselves: DomLoom recognises t
 | `[removable]` (a tag, a chip, a list item) | Gets a remove button (also Delete or Backspace on it). Removing crumbles it and the rest flies into the gap; `loom-remove` fires first (cancelable). A removable element that is added assembles block by block |
 | `[dropzone]` holding an `<input type="file">` | Files dragged over it pull the panel into a vortex at the pointer; dropped, they go to the input (its `change` fires) and the vortex collapses |
 | `[rating]` around a radio group | Stars: pointing previews, choosing lights them up one after another |
+| `[toasts]` (a list or a box) | Each child is a toast: it assembles, counts down (`data-timeout`, 5 s by default) with a bar of light, holds while pointed at or focused, and crumbles when the time is up or it is dismissed. `data-tone="good|warn|bad"`. The region is made a polite live region |
+| `role="alert"` | When an alert appears or its text changes, it lands with a shock and its text tears for a moment |
+| `[badge]` | When its number changes, it pings (up and down sound and light differently) |
+| `aria-busy="true"` | The placeholder content is drawn as blocks and a scan passes over it while busy; when it is no longer busy the real content assembles block by block |
+| `<progress ring>`, `<meter ring>` | A ring instead of a bar, with the same damage trail, gain preview, segments and sweep |
 | `aria-current` in a list | The current page of a `<nav>` list, the place in a `nav[aria-label=breadcrumb]`, or the step of an `<ol>` with `aria-current="step"`: the marker stretches over when it moves, and a stepper's beam runs up to the current step |
 
 ### Transitions
@@ -121,6 +126,10 @@ Draw hooks receive `(scene, state, ctx)`; `ctx` holds `colors` (from `tokens`), 
 | `drop` | `rect`, `point`, `pull` (0..1 while files hover), `dropped` (ms since the drop), `files` |
 | `interval` | `rect`, `low`, `high`, `drag` (two values), `slosh` |
 | `option` (listbox) | `rect`, `alpha`, `motion` |
+| `toast` | `rect`, `left` (time left, 0..1), `paused`, `tone` |
+| `alert`, `badge` | `rect`, `t`, and `tone` or `up` |
+| `busy` | `rect`, `now` |
+| `gauge` with `ring` | as `gauge`, with `ring: true` |
 
 Every state also has `el`, the element. A skin's stylesheet styles the controls at rest; scope its rules to `loom-stage[skin="mine"]`, and load it next to `domloom/base.css`, which holds what every skin relies on. `domloom/style.css` is base plus holo.
 

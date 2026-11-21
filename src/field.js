@@ -30,6 +30,7 @@ export const DIAMOND = 14; // r: cx, cy, size; p: glow, alpha, core; q: rgb
 export const LIQUID = 15; // r: rect; p: fillWidth, amp, phase, alpha; q: rgb
 export const STAR = 17; // r: cx, cy, radius, inner ratio; p: glow, alpha, fill, _; q: rgb
 export const MATERIALIZE = 18; // r: rect; p: gone (1 = not there yet, 0 = whole). Live content assembles block by block
+export const ARC = 19; // h.y: indeterminate; h.z: trail tone (0 damage, 1 gain); r: cx, cy, radius, thickness; p: fill, trail, phase, alpha; q: rgb, segments
 export const GAUGE = 16; // h.y: indeterminate; h.z: trail tone (0 damage, 1 gain); r: rect; p: fill, trail, phase, alpha; q: rgb, segments
 
 // Blend modes of PILL and SWEEP.

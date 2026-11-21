@@ -210,3 +210,66 @@ reqForm.elements.intel.addEventListener('change', (event) => {
 
 req.toggleAttribute('sound', stage.hasAttribute('sound'));
 soundButton.addEventListener('click', () => req.toggleAttribute('sound', stage.hasAttribute('sound')));
+
+/* ----------------------------------------------------------- comms panel */
+const comms = document.querySelector('#comms');
+const toastList = comms.querySelector('[toasts]');
+const unread = document.querySelector('#unread');
+const alarm = document.querySelector('#alarm');
+const signal = document.querySelector('#signal');
+const signalOut = document.querySelector('#signal-out');
+const ring = document.querySelector('#decrypt-ring');
+const decryptOut = document.querySelector('#decrypt-out');
+const intercept = document.querySelector('#intercept');
+const decryptButton = document.querySelector('#decrypt');
+
+function toast(text, tone) {
+  const li = document.createElement('li');
+  li.textContent = text;
+  if (tone) li.dataset.tone = tone;
+  toastList.append(li);
+}
+
+const replies = ['Nightjar: copy that.', 'Kestrel: on the roof, two minutes.', 'Moth: medkits stocked.', 'Grackle: dish is aligned.'];
+let replyIndex = 0;
+document.querySelector('#ping').addEventListener('click', () => {
+  toast('Ping sent to Squad 04');
+  setTimeout(() => {
+    toast(replies[replyIndex++ % replies.length]);
+    unread.textContent = String(Number(unread.textContent) + 1);
+  }, 900);
+});
+
+const breaches = ['Hull breach on deck 2. Seal the bulkheads.', 'Drone swarm over the relay. Take cover.', 'Comms jammed on channel 4. Switch to 7.'];
+let breachIndex = 0;
+document.querySelector('#breach').addEventListener('click', () => {
+  alarm.textContent = breaches[breachIndex++ % breaches.length];
+  alarm.hidden = false;
+  signal.value = Math.max(0, signal.value - 1);
+  signalOut.value = `${signal.value} / 5`;
+  if (signal.value === 0) setTimeout(() => {
+    signal.value = 4;
+    signalOut.value = '4 / 5';
+    toast('Signal restored', 'good');
+  }, 2500);
+});
+
+decryptButton.addEventListener('click', () => {
+  decryptButton.disabled = true;
+  ring.removeAttribute('value');
+  decryptOut.value = 'Working';
+  intercept.setAttribute('aria-busy', 'true');
+  setTimeout(() => {
+    intercept.innerHTML = `<h3>Intercept 0412</h3>
+      <p>"Courier moved to the freight lift. Two guards, no drones."</p>
+      <p>Rail yard · 04:12 · confidence 92 %</p>`;
+    intercept.setAttribute('aria-busy', 'false');
+    ring.value = 100;
+    decryptOut.value = 'Done';
+    decryptButton.disabled = false;
+    toast('Intercept 0412 decrypted', 'good');
+  }, 1600);
+});
+
+comms.toggleAttribute('sound', stage.hasAttribute('sound'));
+soundButton.addEventListener('click', () => comms.toggleAttribute('sound', stage.hasAttribute('sound')));

@@ -94,6 +94,17 @@ export const sounds = {
     for (let i = 0; i < n; i++) tone({ type: 'triangle', from: 660 * 2 ** (i / 6), duration: 0.1, gain: 0.05, delay: i * 0.055 });
   },
   pull: () => noise({ duration: 0.5, gain: 0.07, from: 160, to: 900, q: 2 }),
+  ping: () => {
+    tone({ type: 'sine', from: 1760, duration: 0.09, gain: 0.06 });
+    tone({ type: 'sine', from: 2640, duration: 0.12, gain: 0.04, delay: 0.05 });
+  },
+  alarm: (tone_ = 'bad') => {
+    const base = tone_ === 'bad' ? 220 : tone_ === 'warn' ? 330 : 520;
+    for (let i = 0; i < 2; i++) {
+      tone({ type: 'square', from: base, to: base * 1.5, duration: 0.11, gain: 0.05, delay: i * 0.14 });
+    }
+    noise({ duration: 0.18, gain: 0.08, filter: 'lowpass', from: 2400, to: 300, q: 0.7 });
+  },
   tick: () => tone({ type: 'triangle', from: 1900, to: 1700, duration: 0.025, gain: 0.025 }),
   complete: () => {
     tone({ type: 'triangle', from: 880, duration: 0.1, gain: 0.07 });

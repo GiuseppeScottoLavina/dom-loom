@@ -596,6 +596,93 @@
 }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(.loom-listbox [role=option][aria-selected=true]) { color: var(--loom-ink); }
 
+/* Ring gauges: <progress ring>, <meter ring>. The track is a circle; the arc is light. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress[ring], meter[ring]) {
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, transparent calc(100% - 15px), var(--loom-line) calc(100% - 15px) calc(100% - 4px), transparent calc(100% - 4px));
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress[ring])::-webkit-progress-value,
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter[ring])::-webkit-meter-optimum-value,
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter[ring])::-webkit-meter-suboptimum-value,
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter[ring])::-webkit-meter-even-less-good-value { background: transparent; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress[ring])::-moz-progress-bar, :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter[ring])::-moz-meter-bar { background: transparent; }
+
+/* Toasts: a stack in the corner of the stage. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts]) {
+  position: absolute;
+  z-index: 5;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  max-width: min(320px, calc(100% - 36px));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts] > *) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 11px 8px 12px 14px;
+  border: 1px solid var(--loom-line);
+  border-left: 3px solid var(--loom-holo);
+  background: color-mix(in srgb, var(--loom-void) 85%, var(--loom-panel));
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
+  color: var(--loom-ink);
+  font: 500 14px/1.3 var(--loom-font);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts] > [data-tone=warn]) { border-left-color: var(--loom-warn); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts] > [data-tone=bad]) { border-left-color: var(--loom-signal); }
+
+/* Alerts and callouts */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=alert], [role=note], [role=status]:not([toasts])) {
+  margin: 0;
+  padding: 12px 14px 12px 16px;
+  border-left: 3px solid var(--loom-holo);
+  background: color-mix(in srgb, var(--loom-holo) 7%, transparent);
+  color: var(--loom-ink);
+  font: 500 14px/1.4 var(--loom-font);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=alert], [data-tone=bad]:is([role=note], [role=status])) {
+  border-left-color: var(--loom-signal);
+  background: color-mix(in srgb, var(--loom-signal) 10%, transparent);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=alert][data-tone=warn], [data-tone=warn]:is([role=note], [role=status])) {
+  border-left-color: var(--loom-warn);
+  background: color-mix(in srgb, var(--loom-warn) 9%, transparent);
+}
+
+/* Badges */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([badge]) {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  border-radius: 11px;
+  background: var(--loom-signal);
+  color: var(--loom-ink);
+  font: 700 11px/1 var(--loom-mono);
+  font-variant-numeric: tabular-nums;
+  vertical-align: 2px;
+}
+
+/* Busy regions: the placeholder is drawn as blocks of the line colour. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([aria-busy=true]) :where(h1, h2, h3, h4, p, li, dt, dd, a, strong, em, output, img, button) {
+  color: transparent !important;
+  background: color-mix(in srgb, var(--loom-line) 75%, transparent) !important;
+  border-color: transparent !important;
+}
+
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :focus-visible {
   outline: 2px solid var(--loom-holo);
   outline-offset: 3px;
@@ -650,6 +737,12 @@
 :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where([rating] label:has(~ label > :checked), [rating] label:has(> :checked)) { background: var(--loom-warn); }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :where([rating] label:has(> :focus-visible)) { outline: 2px solid var(--loom-holo); }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(.loom-listbox [role=option][aria-selected=true]) { background: color-mix(in srgb, var(--loom-holo) 14%, transparent); }
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(progress[ring], meter[ring]) {
+  background:
+    radial-gradient(closest-side, var(--loom-panel) calc(100% - 15px), transparent calc(100% - 15px) calc(100% - 4px), var(--loom-panel) calc(100% - 4px)),
+    conic-gradient(var(--loom-holo) calc(var(--loom-value, 0) * 360deg), var(--loom-line) 0);
+}
 
 @media (prefers-reduced-motion: no-preference) {
   :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(label:has(> input[type=radio]), input[type=checkbox], button) {

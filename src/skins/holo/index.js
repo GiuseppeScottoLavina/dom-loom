@@ -1,7 +1,7 @@
 // Holo: the holo-kinetic skin. Light is projected (it adds, with scan lines), the
 // selection is a slanted cut in signal red, focus is a lock-on reticle, hits shake.
 import {
-  ADD, BEHIND, BRACKETS, DENT, DIAMOND, GAUGE, GLITCH, JITTER, LENS, LIQUID, OVER, PILL, RING, SHIFT, STAR, SWEEP, VORTEX,
+  ADD, ARC, BEHIND, BRACKETS, DENT, DIAMOND, GAUGE, GLITCH, JITTER, LENS, LIQUID, OVER, PILL, RING, SHIFT, STAR, SWEEP, VORTEX,
 } from '../../field.js';
 import { defineSkin } from '../../skin.js';
 import { clamp01, easeInOutCubic, easeOutBack, easeOutCubic } from '../../spring.js';
@@ -125,8 +125,14 @@ const draw = {
     const inner = [r[0] + 2, r[1] + 2, r[2] - 4, r[3] - 4];
     const segments = s.segments ?? (s.kind === 'meter' ? Math.max(4, Math.round(inner[2] / 14)) : 0);
     const color = [colors.holo, colors.warn, colors.signal][s.tone];
-    scene.push(GAUGE, inner, [s.fill, Math.max(s.trail, s.fill), (now / 1300) % 1, 1], [...color, segments],
-      s.indeterminate ? 1 : 0, s.gaining ? 1 : 0);
+    if (s.ring) {
+      const radius = Math.min(r[2], r[3]) / 2 - 4;
+      scene.push(ARC, [r[0] + r[2] / 2, r[1] + r[3] / 2, radius, Math.max(3, radius * 0.16)],
+        [s.fill, Math.max(s.trail, s.fill), (now / 1100) % 1, 1], [...color, s.segments ?? 0], s.indeterminate ? 1 : 0, s.gaining ? 1 : 0);
+    } else {
+      scene.push(GAUGE, inner, [s.fill, Math.max(s.trail, s.fill), (now / 1300) % 1, 1], [...color, segments],
+        s.indeterminate ? 1 : 0, s.gaining ? 1 : 0);
+    }
     if (s.hit && !reduced) {
       const { amount, t, from, to } = s.hit;
       const jolt = t / 360;
@@ -250,6 +256,43 @@ const draw = {
 
   unfold(scene, { rect, line, k }, { colors }) {
     scene.push(PILL, [rect[0], line - 1, rect[2], 2], [0, 0, 8, 0.4 + 0.6 * (1 - k)], colors.holo, ADD);
+  },
+
+  toast(scene, { rect, left, paused, tone }, { colors }) {
+    // The time left, as a bar of light along the bottom edge.
+    const color = { good: colors.holo, warn: colors.warn, bad: colors.signal }[tone] ?? colors.holo;
+    scene.push(PILL, [rect[0] + 1, rect[1] + rect[3] - 3, (rect[2] - 2) * left, 2], [0, 0, 6, paused ? 0.45 : 0.9], color, ADD);
+  },
+
+  alert(scene, { rect, t, tone }, { colors, now, durations, reduced }) {
+    const color = { good: colors.holo, warn: colors.warn, bad: colors.signal }[tone] ?? colors.signal;
+    const k = clamp01(t / durations.burst);
+    const cx = rect[0] + 10;
+    const cy = rect[1] + rect[3] / 2;
+    if (!reduced) {
+      // The alert lands: a shock from its edge, its text tears for a moment.
+      scene.push(DENT, pad(rect, 24), [cx, cy, 80, 0], [easeOutCubic(k) * rect[2] * 1.1, (1 - k) ** 2 * 6, 16]);
+      const g = clamp01(t / 380);
+      if (g < 1) scene.push(GLITCH, pad(rect, 6, 2), [7 * (1 - g) ** 1.4, 2 + ((now / 50) % 3), Math.floor(now / 40) % 4093]);
+    }
+    scene.push(SWEEP, rect, [easeOutCubic(k) * 1.1, 1, 0.8 * (1 - k)], color);
+    scene.push(PILL, rect, [1, 0, 14, (1 - k) ** 2 * 0.35], color, ADD);
+  },
+
+  badge(scene, { rect, t, up }, { colors, now, durations, reduced }) {
+    const k = clamp01(t / durations.ring);
+    const color = up ? colors.signal : colors.holo;
+    const [cx, cy] = center(rect);
+    if (!reduced && k < 0.6) scene.push(GLITCH, pad(rect, 4, 2), [4 * (1 - k / 0.6), 2, Math.floor(now / 40) % 4093]);
+    scene.push(RING, [cx, cy, Math.max(rect[2], rect[3]) * (0.6 + 1.4 * easeOutCubic(k)), 1 + 3 * k], [(1 - k) ** 2 * 0.9], color);
+    scene.push(PILL, rect, [rect[3] / 2, 0, 10, (1 - k) ** 2 * 0.5], color, ADD);
+  },
+
+  busy(scene, { rect, now }, { colors, reduced }) {
+    if (reduced) return;
+    // A scan passes over the placeholder again and again.
+    const phase = (now % 1400) / 1400;
+    scene.push(SWEEP, rect, [phase * 1.3 - 0.1, 1, 0.55], colors.holo);
   },
 
   reveal(scene, { column: [cx, cw], line, shown, k, opening }, { colors }) {

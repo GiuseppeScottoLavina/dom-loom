@@ -278,6 +278,7 @@ async function run(path, browser, url) {
   await opsChecks(path, page);
   await rosterChecks(path, page);
   await inputChecks(path, page);
+  await feedbackChecks(path, page);
 
   await check(`${path}: no errors`, async () => {
     assert.deepEqual(session.errors, []);
@@ -665,6 +666,69 @@ async function inputChecks(path, page) {
     await page.mouse.move(2, 2);
     await page.waitForTimeout(1400);
     assert.equal(await framesDuring(page, 600, '#req canvas'), 0);
+  });
+}
+
+/** The fifth stage: toasts, an alert, a badge, a busy region, ring gauges. */
+async function feedbackChecks(path, page) {
+  await page.locator('#comms').scrollIntoViewIfNeeded();
+  await page.mouse.move(2, 2);
+  await page.waitForTimeout(700);
+  const frames = (ms) => framesDuring(page, ms, '#comms canvas');
+  const addToast = (text, timeout) => page.evaluate(({ text, timeout }) => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    li.dataset.timeout = timeout;
+    document.querySelector('#comms [toasts]').append(li);
+  }, { text, timeout });
+  const toasts = () => page.evaluate(() => [...document.querySelectorAll('#comms [toasts] > li')].map((li) => li.firstChild.textContent));
+
+  await check(`${path}: the comms stage renders no frame at rest`, async () => {
+    assert.equal(await frames(800), 0);
+  });
+
+  await check(`${path}: a toast counts down and goes; pointing at one holds it`, async () => {
+    await addToast('Short', '600ms');
+    await page.waitForTimeout(1400);
+    assert.deepEqual(await toasts(), [], 'the toast is gone');
+    await addToast('Held', '600ms');
+    await page.waitForTimeout(150);
+    const box = await page.locator('#comms [toasts] > li').boundingBox();
+    await page.mouse.move(box.x + 20, box.y + box.height / 2);
+    await page.waitForTimeout(1200);
+    assert.deepEqual(await toasts(), ['Held'], 'a toast under the pointer stays');
+    assert.equal(await page.locator('#comms [toasts] button.loom-remove').getAttribute('aria-label'), 'Dismiss');
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(1500);
+    assert.deepEqual(await toasts(), []);
+    assert.equal(await page.locator('#comms [toasts]').getAttribute('aria-live'), 'polite');
+  });
+
+  await check(`${path}: an alert and a badge are noticed when they change, then the stage rests`, async () => {
+    await page.waitForTimeout(400);
+    assert.equal(await frames(300), 0);
+    await page.evaluate(() => {
+      const alert = document.querySelector('#alarm');
+      alert.textContent = 'Test alarm';
+      alert.hidden = false;
+    });
+    assert.ok(await frames(300) > 5, 'the alert lands');
+    await page.waitForTimeout(900);
+    assert.equal(await frames(300), 0);
+    await page.evaluate(() => (document.querySelector('#unread').textContent = '9'));
+    assert.ok(await frames(300) > 5, 'the badge pings');
+    await page.waitForTimeout(700);
+    assert.equal(await frames(300), 0);
+  });
+
+  await check(`${path}: a busy region shimmers until it is not busy, then rests`, async () => {
+    const intercept = page.locator('#intercept');
+    await intercept.evaluate((el) => el.setAttribute('aria-busy', 'true'));
+    await page.waitForTimeout(200);
+    assert.ok(await frames(400) > 10, 'it shimmers');
+    await intercept.evaluate((el) => el.setAttribute('aria-busy', 'false'));
+    await page.waitForTimeout(1200);
+    assert.equal(await frames(500), 0);
   });
 }
 

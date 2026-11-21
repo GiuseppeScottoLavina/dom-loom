@@ -619,6 +619,8 @@ export class Gauges {
     const seen = new Set(stage.source.querySelectorAll('progress, meter'));
     for (const el of seen) {
       const { f, tone } = this.read(el);
+      // Without the compositor, CSS draws ring gauges from this.
+      if (!stage.gpu) el.style.setProperty('--loom-value', String(f ?? 0));
       let s = this.states.get(el);
       if (!s) {
         s = {
@@ -708,6 +710,7 @@ export class Gauges {
         gaining: s.mode === GAIN,
         tone: s.tone,
         segments: attr === null ? null : Math.max(0, parseInt(attr, 10) || 0),
+        ring: el.hasAttribute('ring'),
         indeterminate: s.f === null,
         hit: now - s.hitAt < hit ? { amount: s.hit, t: now - s.hitAt, from: s.hitSpan?.[0] ?? 0, to: s.hitSpan?.[1] ?? 0 } : null,
         complete: now - s.completeAt < complete ? now - s.completeAt : null,
@@ -1297,7 +1300,7 @@ export class Chips {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'loom-remove';
-      button.setAttribute('aria-label', `Remove ${chip.textContent.trim()}`);
+      button.setAttribute('aria-label', chip.closest('[toasts]') ? 'Dismiss' : `Remove ${chip.textContent.trim()}`);
       chip.append(button);
     }
   }
@@ -1485,5 +1488,151 @@ export class Combos {
     const m = this.marker;
     if (m.alpha.x < 0.003 || !this.stage.visible(m.el)) return;
     this.stage.draw('option', scene, { el: m.el, rect: m.rect.rect, alpha: m.alpha.x, motion: m.rect });
+  }
+}
+
+/* ------------------------------------------------------------------ toasts */
+
+/**
+ * The children of an element with the `toasts` attribute are toasts: they assemble
+ * when they arrive, count down (`data-timeout`, ms or s, on the toast or the region;
+ * 5 s by default), pause while pointed at or focused, and crumble when the time is up
+ * or when dismissed. The region is a polite live region.
+ */
+export class Toasts {
+  constructor(stage) {
+    this.stage = stage;
+    this.items = new Map();
+    const pause = (e, on) => {
+      const toast = e.target.closest?.('[toasts] > *');
+      const item = toast && this.items.get(toast);
+      if (item && !(e.type === 'pointerout' && toast.contains(e.relatedTarget))) item.paused = on;
+    };
+    stage.listen('pointerover', (e) => pause(e, true));
+    stage.listen('pointerout', (e) => pause(e, false));
+    stage.listen('focusin', (e) => pause(e, true));
+    stage.listen('focusout', (e) => pause(e, false));
+    this.sync();
+  }
+  sync() {
+    for (const region of this.stage.source.querySelectorAll('[toasts]')) {
+      if (!region.hasAttribute('aria-live')) region.setAttribute('aria-live', 'polite');
+      for (const toast of region.children) {
+        if (this.items.has(toast)) continue;
+        if (!toast.hasAttribute('removable')) toast.setAttribute('removable', '');
+        const ms = parseMs(toast.dataset.timeout ?? region.dataset.timeout, 5000);
+        this.items.set(toast, { ms, elapsed: 0, paused: false, leaving: false });
+      }
+    }
+    for (const toast of this.items.keys()) if (!toast.isConnected) this.items.delete(toast);
+    this.stage.wake();
+  }
+  step(now, dt) {
+    for (const [toast, item] of this.items) {
+      if (!toast.isConnected) {
+        this.items.delete(toast);
+        continue;
+      }
+      if (item.paused || item.leaving) continue;
+      item.elapsed += dt * 1000;
+      if (item.elapsed >= item.ms) {
+        item.leaving = true;
+        // Outside the frame callback: removing starts a transition that measures the page.
+        setTimeout(() => this.stage.remove(toast));
+      }
+    }
+    // A toast counts down on screen: it needs frames while it is there.
+    return this.items.size > 0;
+  }
+  emit(scene) {
+    for (const [toast, item] of this.items) {
+      if (!this.stage.visible(toast)) continue;
+      this.stage.draw('toast', scene, {
+        el: toast, rect: this.stage.rectOf(toast), left: clamp01(1 - item.elapsed / item.ms), paused: item.paused, tone: toast.dataset.tone ?? null,
+      });
+    }
+  }
+}
+
+/* --------------------------------------- alerts, badges, busy regions */
+
+/** Which tone an element asks for: data-tone, or the role of an alert. */
+const toneOf = (el) => el.dataset.tone ?? (el.matches('[role=alert]') ? 'bad' : null);
+
+/**
+ * Things that change on their own and should be noticed:
+ * - [role=alert]: when one appears or its text changes, an impact runs through it;
+ * - [badge]: when its number changes, it pings;
+ * - [aria-busy="true"]: a shimmer runs over the placeholder while it is busy, and the
+ *   content assembles when it is no longer busy.
+ */
+export class Notices {
+  constructor(stage) {
+    this.stage = stage;
+    this.impacts = [];
+    this.pings = [];
+    this.badges = new Map();
+    this.busy = new Set();
+    this.sync();
+  }
+  sync() {
+    for (const badge of this.stage.source.querySelectorAll('[badge]')) {
+      if (!this.badges.has(badge)) this.badges.set(badge, badge.textContent.trim());
+    }
+    const busy = new Set(this.stage.source.querySelectorAll('[aria-busy=true]'));
+    for (const region of this.busy) if (!busy.has(region) && region.isConnected) this.stage.reveal(region);
+    this.busy = busy;
+    this.stage.wake();
+  }
+  /** @internal The stage hands over the mutations of its content. */
+  mutated(records) {
+    const touched = new Set();
+    for (const record of records) {
+      const node = record.target.nodeType === 1 ? record.target : record.target.parentElement;
+      if (!node) continue;
+      const alert = node.closest('[role=alert]');
+      if (alert) touched.add(alert);
+      for (const added of record.addedNodes) {
+        if (added.nodeType === 1 && added.matches('[role=alert]')) touched.add(added);
+      }
+      const badge = node.closest('[badge]');
+      if (badge) {
+        const before = this.badges.get(badge);
+        const now = badge.textContent.trim();
+        if (before !== undefined && before !== now) {
+          const up = parseFloat(now) > parseFloat(before);
+          this.pings.push({ el: badge, start: NaN, up: Number.isNaN(parseFloat(now)) ? true : up });
+          this.stage.play(up ? 'ping' : 'tick');
+        }
+        this.badges.set(badge, now);
+      }
+    }
+    for (const alert of touched) {
+      if (!this.stage.visible(alert) || !alert.textContent.trim()) continue;
+      this.impacts.push({ el: alert, start: NaN });
+      this.stage.play('alarm', toneOf(alert));
+      this.stage.buzz(40);
+    }
+    this.stage.wake();
+  }
+  step(now) {
+    const { burst, ring } = this.stage.skin.durations;
+    for (const list of [this.impacts, this.pings]) for (const x of list) if (Number.isNaN(x.start)) x.start = now;
+    this.impacts = this.impacts.filter((x) => now - x.start < burst && x.el.isConnected);
+    this.pings = this.pings.filter((x) => now - x.start < ring && x.el.isConnected);
+    // A busy region shimmers: it needs frames while it is shown.
+    const shimmering = [...this.busy].some((r) => this.stage.visible(r));
+    return this.impacts.length > 0 || this.pings.length > 0 || shimmering;
+  }
+  emit(scene, now) {
+    for (const x of this.impacts) {
+      if (this.stage.visible(x.el)) this.stage.draw('alert', scene, { el: x.el, rect: this.stage.rectOf(x.el), t: now - x.start, tone: toneOf(x.el) });
+    }
+    for (const x of this.pings) {
+      if (this.stage.visible(x.el)) this.stage.draw('badge', scene, { el: x.el, rect: this.stage.rectOf(x.el), t: now - x.start, up: x.up });
+    }
+    for (const region of this.busy) {
+      if (this.stage.visible(region)) this.stage.draw('busy', scene, { el: region, rect: this.stage.rectOf(region), now });
+    }
   }
 }

@@ -1,5 +1,6 @@
 import {
-  Chips, Combos, Currents, Disclosures, Drops, Fields, Gauges, Numbers, Presses, Ranges, Ratings, Reticle, Tables, Tabs, Toggles,
+  Chips, Combos, Currents, Disclosures, Drops, Fields, Gauges, Notices, Numbers, Presses, Ranges, Ratings, Reticle, Tables, Tabs,
+  Toasts, Toggles,
 } from './behaviors.js';
 import { createCompositor } from './compositor.js';
 import { GHOST, MATERIALIZE, MORPH, ROLL, SHIFT, Scene, U, UNIFORM_FLOATS } from './field.js';
@@ -153,10 +154,13 @@ export class LoomStage extends ElementBase {
     this.drops = new Drops(this);
     this.chips = new Chips(this);
     this.combos = new Combos(this);
+    this.toasts = new Toasts(this);
+    this.notices = new Notices(this);
     // Emission order is paint order: fills first, the reticle last.
     this.#behaviors = [
       this.toggles, this.ranges, this.gauges, this.tabs, this.currents, this.tables, this.ratings, this.drops,
-      this.combos, this.numbers, this.chips, this.fields, this.presses, this.disclosures, this.reticle,
+      this.combos, this.numbers, this.chips, this.notices, this.toasts, this.fields, this.presses, this.disclosures,
+      this.reticle,
     ];
 
     for (const button of this.#source.querySelectorAll('button[hold]')) this.#describeHold(button);
@@ -487,11 +491,12 @@ export class LoomStage extends ElementBase {
       // Chips (and anything marked removable) that arrive assemble block by block.
       for (const record of records) {
         for (const node of record.addedNodes) {
-          if (node.nodeType === 1 && node.matches('[removable]') && this.#source.contains(node)) {
+          if (node.nodeType === 1 && node.matches('[removable], [toasts] > *') && this.#source.contains(node)) {
             requestAnimationFrame(() => this.reveal(node));
           }
         }
       }
+      for (const behavior of this.#behaviors) behavior.mutated?.(records);
       if (this.#syncQueued) return;
       this.#syncQueued = true;
       requestAnimationFrame(() => {
@@ -500,8 +505,8 @@ export class LoomStage extends ElementBase {
       });
     });
     content.observe(this.#source, {
-      childList: true, subtree: true, attributes: true,
-      attributeFilter: ['hidden', 'class', 'hold', 'open', 'value', 'max', 'min', 'low', 'high', 'optimum', 'aria-selected', 'aria-current', 'segments', 'sortable', 'removable', 'list'],
+      childList: true, subtree: true, attributes: true, characterData: true,
+      attributeFilter: ['hidden', 'class', 'hold', 'open', 'value', 'max', 'min', 'low', 'high', 'optimum', 'aria-selected', 'aria-current', 'segments', 'sortable', 'removable', 'list', 'aria-busy', 'ring'],
     });
     this.#observers.push(adopt, content);
   }
@@ -518,6 +523,8 @@ export class LoomStage extends ElementBase {
     this.ratings?.sync();
     this.chips?.sync();
     this.combos?.sync();
+    this.toasts?.sync();
+    this.notices?.sync();
     this.wake();
   }
 
@@ -608,7 +615,8 @@ export class LoomStage extends ElementBase {
     const u = this.#uniforms;
     scene.reset();
     u.fill(0);
-    this.#sourceRect = this.#source.getBoundingClientRect();
+    const sourceRect = this.#source.getBoundingClientRect();
+    this.#sourceRect = sourceRect;
     this.#flights = [];
     let active = false;
     for (const behavior of this.#behaviors) active = behavior.step(now, dt) || active;
@@ -622,7 +630,7 @@ export class LoomStage extends ElementBase {
     u.set(role('void', role('bg', [0, 0, 0])), U.void);
     u.set([skin.shader.scanlines, skin.shader.chroma, skin.shader.crumble, skin.shader.hatch], U.style);
     u[U.wipeDir] = 1;
-    const whole = [0, 0, this.#sourceRect.width, this.#sourceRect.height];
+    const whole = [0, 0, sourceRect.width, sourceRect.height];
     this.#ctx = { colors, now, reduced: this.reduced, whole, durations: skin.durations, stage: this };
 
     if (this.#boot) {
@@ -631,7 +639,7 @@ export class LoomStage extends ElementBase {
       if (k >= 1) this.#boot = null;
       else {
         u[U.bootActive] = 1;
-        u[U.bootLine] = easeInOutCubic(clamp01(k)) * (this.#sourceRect.height + 6) - 2;
+        u[U.bootLine] = easeInOutCubic(clamp01(k)) * (sourceRect.height + 6) - 2;
         active = true;
       }
     }
