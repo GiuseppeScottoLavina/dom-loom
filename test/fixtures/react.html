@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>React</title>
+  <link rel="stylesheet" href="/src/loom.css">
+  <style>body { margin: 0; background: #0a0e24; }</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    import { createElement as h, useRef, useState } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { LoomStage, useLoomEvent, useLoomDiscard, useLoomTransition } from '/src/react/index.js';
+    import '/src/components/table.js';
+    import '/src/components/removable.js';
+
+    window.__errors = [];
+    const start = [['Nightjar', 14], ['Kestrel', 11], ['Moth', 9], ['Grackle', 12]];
+
+    function App() {
+      const stage = useRef(null);
+      const [rows, setRows] = useState(start);
+      const [tags, setTags] = useState(['Night op', 'Low profile', 'Drones']);
+      const [sort, setSort] = useState(null);
+      const transition = useLoomTransition(stage);
+      const discard = useLoomDiscard(stage);
+      // React owns the rows and the tags: DomLoom asks, React changes its state.
+      useLoomEvent(stage, 'loom-sort', (event) => {
+        event.preventDefault();
+        const { column, direction } = event.detail;
+        const sign = direction === 'ascending' ? 1 : -1;
+        const trs = [...stage.current.querySelectorAll('tbody tr')];
+        transition(() => {
+          setSort({ column, direction });
+          setRows((r) => [...r].sort((a, b) => sign * (column ? a[1] - b[1] : a[0].localeCompare(b[0]))));
+        }, { morph: trs, cut: false });
+      });
+      useLoomEvent(stage, 'loom-remove', (event) => {
+        event.preventDefault();
+        const text = event.target.firstChild.textContent;
+        discard(event.target, () => setTags((t) => t.filter((x) => x !== text)));
+      });
+      window.__app = { rows, tags, addTag: (t) => setTags((x) => [...x, t]) };
+      return h(LoomStage, { ref: stage, id: 'stage', style: { width: '480px', display: 'block' } },
+        h('table', { sortable: '' },
+          h('thead', null, h('tr', null,
+            h('th', { 'aria-sort': sort?.column === 0 ? sort.direction : undefined }, 'Callsign'),
+            h('th', { 'aria-sort': sort?.column === 1 ? sort.direction : undefined }, 'Level'))),
+          h('tbody', null, rows.map(([name, level]) => h('tr', { key: name }, h('td', null, name), h('td', null, String(level)))))),
+        h('ul', { id: 'tags' }, tags.map((t) => h('li', { key: t, removable: '' }, t))));
+    }
+    const root = createRoot(document.querySelector('#root'), { onUncaughtError: (e) => window.__errors.push(String(e)), onCaughtError: (e) => window.__errors.push(String(e)) });
+    root.render(h(App));
+  </script>
+</body>
+</html>

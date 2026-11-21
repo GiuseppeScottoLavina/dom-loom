@@ -46,7 +46,10 @@ export class Toasts {
       if (item.elapsed >= item.ms) {
         item.leaving = true;
         // Outside the frame callback: removing starts a transition that measures the page.
-        setTimeout(() => this.stage.remove(toast));
+        // `loom-remove` first: a framework that owns the toast removes it itself.
+        setTimeout(() => {
+          if (toast.dispatchEvent(new CustomEvent('loom-remove', { bubbles: true, cancelable: true }))) this.stage.discard(toast);
+        });
       }
     }
     // A toast counts down on screen: it needs frames while it is there.

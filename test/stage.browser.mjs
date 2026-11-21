@@ -288,6 +288,44 @@ async function run(path, browser, url) {
 
   if (path !== 'native') return;
 
+  session = await open(browser, `${url}test/fixtures/react.html`);
+  await check('react: sorting and removing through React state, with motion and no DOM fights', async () => {
+    const p = session.page;
+    assert.equal(session.renderer, 'webgpu');
+    const names = () => p.evaluate(() => [...document.querySelectorAll('#stage tbody td:first-child')].map((td) => td.textContent));
+    await p.click('#stage th:nth-child(2) button.loom-sort');
+    await p.waitForTimeout(1200);
+    assert.deepEqual(await names(), ['Moth', 'Kestrel', 'Grackle', 'Nightjar'], 'sorted by level, rendered by React');
+    assert.deepEqual(await p.evaluate(() => window.__app.rows.map((r) => r[0])), ['Moth', 'Kestrel', 'Grackle', 'Nightjar']);
+    assert.equal(await p.locator('#stage th:nth-child(2)').getAttribute('aria-sort'), 'ascending');
+    await p.click('#tags li:nth-child(2) button.loom-remove');
+    await p.waitForTimeout(1200);
+    assert.deepEqual(await p.evaluate(() => window.__app.tags), ['Night op', 'Drones']);
+    await p.evaluate(() => window.__app.addTag('Rain'));
+    await p.waitForTimeout(800);
+    const dom = await p.evaluate(() => [...document.querySelectorAll('#tags li')].map((li) => li.firstChild.textContent));
+    assert.deepEqual(dom, ['Night op', 'Drones', 'Rain'], 'React and the DOM agree after a re-render');
+    assert.equal(await p.locator('#stage thead button.loom-sort').count(), 2, 'the sort buttons survive React renders');
+    assert.deepEqual(await p.evaluate(() => window.__errors), []);
+    assert.deepEqual(session.errors, []);
+  });
+  await session.context.close();
+
+  session = await open(browser, `${url}test/fixtures/vue.html`);
+  await check('vue: a transition and a removal through Vue state', async () => {
+    const p = session.page;
+    assert.equal(session.renderer, 'webgpu');
+    await p.click('#tags li:first-child button.loom-remove');
+    await p.waitForTimeout(1200);
+    assert.deepEqual(await p.evaluate(() => window.__app.tags.value), ['Low profile', 'Drones']);
+    await p.evaluate(() => window.__app.flip());
+    assert.equal(await p.locator('#done').count(), 1);
+    await p.waitForTimeout(400);
+    assert.deepEqual(await p.evaluate(() => window.__errors), []);
+    assert.deepEqual(session.errors, []);
+  });
+  await session.context.close();
+
   session = await open(browser, `${url}test/fixtures/lazy.html`);
   await check('lazy: a component imported after the stage started joins it, shader included', async () => {
     const p = session.page;

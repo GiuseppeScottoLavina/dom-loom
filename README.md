@@ -104,11 +104,49 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | `stage.ready` | Resolves with `'webgpu'` or `'dom'` |
 | `stage.transition(update, {scope, direction, morph, cut})` | See above; resolves when the transition has ended |
 | `skin` | The skin that draws the stage (default `holo`) |
-| `stage.remove(el)` | Removes an element with motion: it crumbles, and what follows it flies into the space it leaves |
+| `stage.discard(el, update?)` | Removes an element with motion: it crumbles, and what follows it flies into the space it leaves. A framework passes `update`, which removes it from its state |
 | `stage.reveal(el)` | Has an element that was just added assemble block by block |
 | `stage.mapPoint({x, y})` | The point of the live content shown at a visible point of the stage (CSS px), `null` where no element is shown |
 | `data-renderer`, `data-mode` | `webgpu` / `loading` / `dom`, and `native` / `polyfill` |
 | `loom-fallback` event | The compositor failed and the stage went back to plain DOM; `detail.error` says why |
+
+## Frameworks
+
+`<loom-stage>` is a custom element and works in any framework. Two things need care. A transition keeps a picture of the page before your update, so the update must be in the DOM when it returns. And DomLoom changes the DOM of a sorted table or a removed chip only when nobody else owns it: in a framework, cancel `loom-sort` and `loom-remove` and change your state instead, inside a transition or a discard.
+
+**React** (`domloom/react`):
+
+```jsx
+import { LoomStage, useLoomDiscard, useLoomEvent, useLoomTransition } from 'domloom/react';
+import 'domloom/table';
+
+function Roster() {
+  const stage = useRef(null);
+  const transition = useLoomTransition(stage); // flushes your update inside the cut
+  const discard = useLoomDiscard(stage);
+  useLoomEvent(stage, 'loom-sort', (e) => {
+    e.preventDefault();
+    const rows = [...stage.current.querySelectorAll('tbody tr')];
+    transition(() => setSort(e.detail), { morph: rows, cut: false });
+  });
+  return <LoomStage ref={stage} sound><table sortable="">…</table></LoomStage>;
+}
+```
+
+Write DomLoom's attributes as strings in JSX (`sortable=""`, `hold="900ms"`); the types in `domloom/react` declare them.
+
+**Vue** (`domloom/vue`):
+
+```js
+import { DomLoom, isCustomElement, useLoomStage } from 'domloom/vue';
+app.use(DomLoom);                                  // runtime templates
+vue({ template: { compilerOptions: { isCustomElement } } }); // single-file components (vite.config)
+
+const stage = ref(null);
+const { transition, discard } = useLoomStage(stage); // waits for nextTick inside the cut
+```
+
+Svelte, Solid, Angular (with `CUSTOM_ELEMENTS_SCHEMA`) and plain HTML use the element directly. TypeScript types ship with the package.
 
 ## Skins
 
@@ -201,6 +239,7 @@ npm install
 npm run dev              # the demo at http://127.0.0.1:5173
 npm test                 # unit tests of the mapper twins
 npm run test:browser     # Chrome with WebGPU, native path and polyfill path
+npm run test:types       # the public TypeScript types
 npm run build            # the demo site in dist/
 ```
 

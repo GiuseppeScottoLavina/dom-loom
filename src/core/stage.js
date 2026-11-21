@@ -320,13 +320,15 @@ export class LoomStage extends ElementBase {
   }
 
   /**
-   * Removes an element with motion: it crumbles where it was, and what comes after
-   * it flies into the space it leaves. Resolves once it is gone.
+   * Removes an element with motion (named discard, not remove: an element's own
+   * remove() takes the stage itself out): it crumbles where it was, and what comes
+   * after it flies into the space it leaves. Resolves once it is gone. A framework that
+   * owns the element passes its own `update` (which removes it from its state).
    */
-  async remove(el) {
+  async discard(el, update = () => el.remove()) {
     if (!el?.isConnected) return;
     if (!this.#compositor || this.reduced || !this.visible(el)) {
-      el.remove();
+      await update();
       return;
     }
     // What can move: its siblings, and what follows each of its ancestors.
@@ -334,7 +336,7 @@ export class LoomStage extends ElementBase {
     for (let node = el.parentElement; node && node !== this.#source; node = node.parentElement) {
       for (let next = node.nextElementSibling; next; next = next.nextElementSibling) movers.push(next);
     }
-    await this.transition(() => el.remove(), { morph: movers.slice(0, MAX_MOVERS - 1).concat(el), cut: false, sound: 'remove' });
+    await this.transition(update, { morph: movers.slice(0, MAX_MOVERS - 1).concat(el), cut: false, sound: 'remove' });
   }
 
   /** Has an element (just added) assemble block by block. */

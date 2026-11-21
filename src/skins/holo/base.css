@@ -348,41 +348,29 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th:has(> button.loom-sort)) { padding: 0; }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(td) {
   padding: 11px 12px;
   border-bottom: 1px solid color-mix(in srgb, var(--loom-line) 55%, transparent);
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button.loom-sort) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 12px;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-}
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button.loom-sort)::after {
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th:has(> button.loom-sort))::after {
   content: '';
+  display: inline-block;
   width: 0;
   height: 0;
-  margin-top: 4px;
+  margin-left: 8px;
+  vertical-align: -3px;
   border: 4px solid transparent;
   border-top-color: currentColor;
   opacity: 0.35;
 }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort]) { color: var(--loom-ink); }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort=ascending] > button.loom-sort)::after {
-  margin-top: -4px;
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort=ascending]:has(> button.loom-sort))::after {
+  vertical-align: 1px;
   border-top-color: transparent;
   border-bottom-color: var(--loom-holo);
   opacity: 1;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort=descending] > button.loom-sort)::after { border-top-color: var(--loom-holo); opacity: 1; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort=descending]:has(> button.loom-sort))::after { border-top-color: var(--loom-holo); opacity: 1; }
 
 /* Breadcrumb: nav[aria-label=breadcrumb], as Pico CSS and others name it. */
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav[aria-label="breadcrumb" i] :is(ol, ul)) {

@@ -17,7 +17,7 @@ export class Chips {
       const i = peers.indexOf(chip);
       const next = peers[i + 1] ?? peers[i - 1];
       if (chip.contains(document.activeElement)) next?.querySelector('button.loom-remove')?.focus({ preventScroll: true });
-      stage.remove(chip);
+      stage.discard(chip);
     };
     stage.listen('click', (e) => {
       const button = e.target.closest?.('button.loom-remove');

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Vue</title>
+  <link rel="stylesheet" href="/src/loom.css">
+  <style>body { margin: 0; background: #0a0e24; }</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import { createApp, h, ref } from 'vue';
+    import { DomLoom, useLoomStage } from '/src/vue/index.js';
+    import '/src/components/removable.js';
+
+    window.__errors = [];
+    const App = {
+      setup() {
+        const stage = ref(null);
+        const tags = ref(['Night op', 'Low profile', 'Drones']);
+        const view = ref('list');
+        const { transition, discard } = useLoomStage(stage);
+        const onRemove = (event) => {
+          event.preventDefault();
+          const text = event.target.firstChild.textContent;
+          discard(event.target, () => { tags.value = tags.value.filter((t) => t !== text); });
+        };
+        window.__app = {
+          tags,
+          view,
+          flip: () => transition(() => { view.value = view.value === 'list' ? 'done' : 'list'; }),
+        };
+        return () => h('loom-stage', { ref: stage, id: 'stage', style: 'display:block;width:480px', 'onLoom-remove': onRemove },
+          view.value === 'list'
+            ? h('ul', { id: 'tags' }, tags.value.map((t) => h('li', { key: t, removable: '' }, t)))
+            : h('p', { id: 'done' }, 'Done.'));
+      },
+    };
+    const app = createApp(App);
+    app.config.errorHandler = (e) => window.__errors.push(String(e));
+    app.config.warnHandler = (m) => window.__errors.push('warn: ' + m);
+    app.use(DomLoom).mount('#app');
+  </script>
+</body>
+</html>

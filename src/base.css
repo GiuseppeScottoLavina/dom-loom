@@ -20,6 +20,20 @@ loom-stage .loom-source {
 /* Tab panels are shown and hidden by DomLoom; a page's display rule must not undo it. */
 loom-stage [role=tabpanel][hidden] { display: none !important; }
 
+/* A sortable header: its button lies over it; the header keeps its own content. */
+loom-stage :where(th:has(> button.loom-sort)) { position: relative; }
+loom-stage :where(button.loom-sort) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
 /* An interval: two ranges on one track; only their thumbs take the pointer. */
 loom-stage :where([interval]) { display: grid; }
 loom-stage :where([interval] > input[type=range]) { grid-area: 1 / 1; pointer-events: none; }

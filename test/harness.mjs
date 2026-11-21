@@ -21,5 +21,7 @@ export async function launch({ polyfill = false, headless = true } = {}) {
   ].find((path) => path && existsSync(path));
   const args = ['--enable-unsafe-webgpu', '--ignore-gpu-blocklist'];
   if (polyfill) args.push('--disable-features=CanvasDrawElement');
+  // Extra flags, for example a software WebGPU in CI.
+  if (process.env.CHROME_ARGS) args.push(...process.env.CHROME_ARGS.split(/\s+/).filter(Boolean));
   return chromium.launch({ executablePath, headless, args });
 }

@@ -7,7 +7,9 @@ const asNumber = (text) => (/^[^\p{L}]*\d[^\p{L}]*$/u.test(text) ? parseFloat(te
  * <table sortable>: each header of the first <thead> row sorts the rows of the first
  * <tbody> (by the cells' data-value, or their text; numbers as numbers). The rows fly
  * to their new places. `loom-sort` (cancelable) fires first: cancel it to sort
- * yourself; `loom-sorted` fires once the rows are in their new order.
+ * yourself (a framework that owns the rows sorts its state, inside
+ * stage.transition(update, { morph: rows, cut: false })); `loom-sorted` fires once
+ * the rows are in their new order.
  */
 export class Tables {
   constructor(stage) {
@@ -24,13 +26,18 @@ export class Tables {
       const row = table.tHead?.rows[0];
       if (!row) continue;
       for (const th of row.cells) {
-        if (th.hasAttribute('nosort') || th.querySelector(':scope > button.loom-sort')) continue;
-        // Sortable headers are buttons: focusable, announced, activated by keyboard.
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'loom-sort';
-        button.append(...th.childNodes);
-        th.append(button);
+        if (th.hasAttribute('nosort')) continue;
+        // Sortable headers get a button laid over them: focusable, announced, activated
+        // by keyboard. The header's own content stays where it is (a framework owns it).
+        let button = th.querySelector(':scope > button.loom-sort');
+        if (!button) {
+          button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'loom-sort';
+          th.append(button);
+        }
+        const label = `Sort by ${th.textContent.trim()}`;
+        if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
       }
     }
   }

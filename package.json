@@ -5,25 +5,45 @@
   "type": "module",
   "description": "Plain HTML controls drawn through a WebGPU compositor with game-grade motion and light, built on HTML-in-Canvas.",
   "exports": {
-    ".": "./src/index.js",
-    "./core": "./src/core/index.js",
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./core": {
+      "types": "./types/index.d.ts",
+      "default": "./src/core/index.js"
+    },
+    "./react": {
+      "types": "./types/react.d.ts",
+      "default": "./src/react/index.js"
+    },
+    "./vue": {
+      "types": "./types/vue.d.ts",
+      "default": "./src/vue/index.js"
+    },
     "./style.css": "./src/loom.css",
     "./base.css": "./src/base.css",
     "./skins/holo.css": "./src/skins/holo/holo.css",
     "./skins/holo/*.css": "./src/skins/holo/*.css",
     "./primitives/*": "./src/primitives/*.js",
     "./package.json": "./package.json",
-    "./*": "./src/components/*.js"
+    "./*": {
+      "types": "./types/component.d.ts",
+      "default": "./src/components/*.js"
+    }
   },
   "files": [
-    "src"
+    "src",
+    "types"
   ],
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test test/*.test.mjs",
-    "test:browser": "node test/stage.browser.mjs"
+    "test:browser": "node test/stage.browser.mjs",
+    "test:types": "tsc -p test/types",
+    "test:visual": "node test/visual.mjs"
   },
   "dependencies": {
     "@giuseppe-scotto-lavina/html-in-canvas-polyfill": "1.0.2"
@@ -32,8 +52,14 @@
     "@fontsource-variable/big-shoulders-display": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource/chakra-petch": "^5.3.0",
+    "@types/react": "19.1.8",
+    "@types/react-dom": "19.1.6",
     "playwright-core": "1.62.1",
-    "vite": "7.3.7"
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "typescript": "5.8.3",
+    "vite": "7.3.7",
+    "vue": "3.5.45"
   },
   "sideEffects": [
     "*.css",
@@ -41,6 +67,25 @@
     "./src/core/index.js",
     "./src/components/*.js",
     "./src/skins/**/*.js",
-    "./src/primitives/*.js"
-  ]
+    "./src/primitives/*.js",
+    "./src/react/index.js",
+    "./src/vue/index.js"
+  ],
+  "types": "./types/index.d.ts",
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18",
+    "vue": ">=3.3"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  }
 }

@@ -29,6 +29,7 @@ jobs:
       # The unit tests of the mapper twins. The browser suite needs a GPU and Chrome
       # with WebGPU, so it runs locally (npm run test:browser).
       - run: npm test
+      - run: npm run test:types
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
