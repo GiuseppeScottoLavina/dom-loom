@@ -263,13 +263,8 @@ async function run(path, browser, url) {
     assert.ok(clicked, 'no point of the flight was mapped into the button');
     await page.waitForTimeout(200);
     const clicks = await page.evaluate(() => window.__clicks);
-    const buttons = clicks.filter((c) => c !== 'form');
-    assert.deepEqual(buttons, ['Deploy'], `the click reached ${JSON.stringify(clicks)}`);
-    if (clicks.length > 1) {
-      // Known polyfill issue (1.0.2): its interposer sends the mapped click to the button
-      // but lets the trusted native click reach the element under the unmapped point.
-      console.log(`       note: extra native click on ${JSON.stringify(clicks.slice(1))} (polyfill interposer)`);
-    }
+    // One click, on the element drawn there (polyfill 1.0.3 swallows the browser's own).
+    assert.deepEqual(clicks, ['Deploy'], `the click reached ${JSON.stringify(clicks)}`);
     assert.equal(await formActive(page), true, 'a plain click on a hold button does not submit');
     assert.ok(sawNoTarget, 'some sampled point of the old page mapped to no target');
     await page.evaluate(() => window.__flight);
@@ -507,9 +502,7 @@ async function opsChecks(path, page) {
     await page.waitForTimeout(900);
     const open = await page.evaluate(() => [...document.querySelectorAll('#panel-objectives details')].map((d) => d.open));
     assert.deepEqual(open, [true, true, true], `details open: ${open}`);
-    const summaries = clicks.filter((c) => c !== 'p');
-    assert.deepEqual(summaries, ['Extract the', 'Wipe the'], `clicks: ${JSON.stringify(clicks)}`);
-    if (summaries.length < clicks.length) console.log(`       note: extra native click on ${JSON.stringify(clicks.filter((c) => c === 'p'))} (polyfill interposer)`);
+    assert.deepEqual(clicks, ['Extract the', 'Wipe the'], `clicks: ${JSON.stringify(clicks)}`);
   });
 
   await check(`${path}: closing a details shuts it and the stage rests`, async () => {
@@ -546,7 +539,7 @@ async function rosterChecks(path, page) {
     assert.deepEqual(state.levels, [...state.levels].sort((a, b) => a - b));
   });
 
-  await check(`${path}: a press on a row in flight is mapped to that row`, async () => {
+  await check(`${path}: a press on a row in flight reaches the row shown, and only it`, async () => {
     // At the trusted pointerdown, the mapper (frozen on the presented frame) must send
     // the point to the row that is shown there, not to the row the layout has there.
     // Rows are compared in source coordinates (immune to any hit-test geometry shift).
@@ -579,7 +572,7 @@ async function rosterChecks(path, page) {
     });
     const seen = [];
     // Sorting by hit rate and back by level keeps most rows of the page and moves them.
-    for (let attempt = 0; attempt < 8 && seen.length < 2; attempt++) {
+    for (let attempt = 0; attempt < 10 && seen.filter((x) => x.clicks.length).length < 2; attempt++) {
       const before = await page.evaluate(() => [...document.querySelectorAll('#roster-table tbody tr')]
         .filter((r) => !r.hidden)
         .map((r) => {
@@ -605,15 +598,17 @@ async function rosterChecks(path, page) {
       if (aim?.shown && aim.shown !== aim.layout) seen.push({ ...aim, clicks: await page.evaluate(() => window.__rowClicks) });
     }
     assert.ok(seen.length >= 1, 'no press landed on a row in flight');
-    const reached = seen.filter((s) => s.clicks.includes(s.shown)).length;
-    if (reached < seen.length) {
-      // Known polyfill issue (1.0.2): a press on a moving picture is not re-targeted for
-      // plain elements (polyfill path: the click goes to the layout's element; native
-      // path: it is often swallowed). Buttons inside the rows are re-targeted on the
-      // polyfill path.
-      console.log(`       note: the click reached the row shown in ${reached}/${seen.length} presses ` +
-        `(${JSON.stringify(seen.map((s) => [s.shown, s.clicks]))}) (polyfill interposer)`);
+    // A press reaches the row shown and nothing else (polyfill 1.0.3 re-targets any
+    // element). The host maps a gesture with the frame it captured at the press, which
+    // can be one frame from the one this check reads: there, the point may already be on
+    // a row that is crumbling away, and the press then reaches nothing, which is right.
+    for (const s of seen) {
+      assert.ok(s.clicks.every((c) => c === s.shown), `a click reached another row: shown ${s.shown}, clicks ${JSON.stringify(s.clicks)}`);
+      assert.ok(s.clicks.length <= 1, `more than one click: ${JSON.stringify(s.clicks)}`);
     }
+    const reached = seen.filter((s) => s.clicks.length === 1).length;
+    assert.ok(reached >= 1, `no press reached the row shown: ${JSON.stringify(seen)}`);
+    console.log(`       ${reached}/${seen.length} presses on rows in flight reached the row shown, none another`);
   });
 
   await check(`${path}: pages and steps move their aria-current marker`, async () => {

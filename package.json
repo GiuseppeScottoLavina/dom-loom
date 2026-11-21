@@ -46,7 +46,7 @@
     "test:visual": "node test/visual.mjs"
   },
   "dependencies": {
-    "@giuseppe-scotto-lavina/html-in-canvas-polyfill": "1.0.2"
+    "@giuseppe-scotto-lavina/html-in-canvas-polyfill": "1.0.3"
   },
   "devDependencies": {
     "@fontsource-variable/big-shoulders-display": "^5.3.0",

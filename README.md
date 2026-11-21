@@ -217,14 +217,14 @@ The holo material is themed with custom properties on the stage: `--loom-void`, 
 
 ## Limits
 
-- The polyfill's canvas is opaque, so a stage is a rectangle and the cut corners are painted in `--loom-void`. Put stages on a background of that colour.
-- Each stage creates its own GPU device. Use a few stages per page (one per panel), not one per control.
+- Stages are opaque rectangles: the cut corners are painted in `--loom-void`, so put stages on a background of that colour. (Polyfill 1.0.3 can make a canvas transparent; DomLoom does not use it yet.)
+- All stages of a page share one GPU device. Still, use a few stages per page (one per panel), not one per control: each has its own canvas and capture.
 - Top-layer content (an open modal `<dialog>`, an open popover) is not drawn into a canvas. A dialog needs its own stage inside it.
 - Select popups, date pickers and other native pickers open with the browser's own look.
 - Opening or closing a `<details>` changes the height of the stage at once (the canvas must have the size of its content); the content inside slides. In a multi-column layout only the column of the `<details>` slides.
-- On the polyfill path (1.0.2) a border 1.5 px wide on a rotated pseudo-element is not drawn (2 px is). The material uses gradients there.
-- When the picture moves under a still pointer (rows flying after a sort), the press is mapped to the row that is shown, but the polyfill (1.0.2) re-targets the click only for controls: on the polyfill path a click on a plain cell reaches the row of the layout (a button inside the row is re-targeted), and on Chrome's native path it is often swallowed. The browser test reports this as a note.
-- On the polyfill path, when a click is remapped to a different element, the native click also reaches the element under the unmapped point (polyfill 1.0.2; Chrome's native path does not do this).
+- A press in the first moments of a flight (rows sorting) can reach nothing on Chrome's own HTML-in-Canvas: the press is mapped with the frame the browser captured for it, which may still show the row leaving. It never reaches another row.
+
+On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 190 KB of JavaScript for the whole demo, 60 KB gzip).
 
 ## Publish the demo
 

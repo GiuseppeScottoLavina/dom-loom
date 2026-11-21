@@ -6,7 +6,7 @@ import { MORPH } from '../primitives/morph.js';
 import { ROLL } from '../primitives/roll.js';
 import { SHIFT } from '../primitives/shift.js';
 import { Scene, U, UNIFORM_FLOATS } from './scene.js';
-import { loadRuntime } from './runtime.js';
+import { loadRuntime, sharedDevice } from './runtime.js';
 import { audio } from './audio.js';
 import { getSkin } from './skin.js';
 import { clamp01, easeInOutCubic, easeOutBack, easeOutCubic } from './spring.js';
@@ -799,7 +799,7 @@ export class LoomStage extends ElementBase {
 
       // The polyfill finds new drawable canvases from a MutationObserver.
       await Promise.resolve();
-      const host = await runtime.api.createHost(canvas, source, { maxDpr: 2, interposer: true });
+      const host = await runtime.api.createHost(canvas, source, { maxDpr: 2, interposer: true, device: sharedDevice });
       if (generation !== this.#generation) {
         host.destroy();
         return 'dom';
