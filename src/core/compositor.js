@@ -1,5 +1,13 @@
-import { BLIT_WGSL, COMPOSITOR_WGSL } from './shader.js';
-import { ITEM_FLOATS, MAX_ITEMS, U, UNIFORM_FLOATS, mapThrough } from './field.js';
+import { mapThrough } from './mapper.js';
+import { primitives } from './primitives.js';
+import { ITEM_FLOATS, MAX_ITEMS, U, UNIFORM_FLOATS } from './scene.js';
+import { BLIT_WGSL, buildShader } from './shader.js';
+// The core's own primitives: transitions, ghosts, rolls, slides, arrivals.
+import '../primitives/ghost.js';
+import '../primitives/materialize.js';
+import '../primitives/morph.js';
+import '../primitives/roll.js';
+import '../primitives/shift.js';
 
 /**
  * One effect plugin per stage: the whole stage is drawn in one pass. The stage owns
@@ -16,16 +24,23 @@ export function createCompositor(runtime, stage) {
       const { device, format } = context;
       const GPUUsage = globalThis.GPUBufferUsage;
       const TexUsage = globalThis.GPUTextureUsage;
-      const module = device.createShaderModule({ label: 'domloom', code: COMPOSITOR_WGSL });
-      const blitModule = device.createShaderModule({ label: 'domloom-ghost', code: BLIT_WGSL });
-      const [pipeline, blit] = await Promise.all([
-        device.createRenderPipelineAsync({
+      // The shader holds the primitives the page has imported; a primitive imported
+      // later (a lazy component) rebuilds it, and the old one draws meanwhile.
+      const compile = (defs) => {
+        const module = device.createShaderModule({ label: 'domloom', code: buildShader(defs) });
+        return device.createRenderPipelineAsync({
           label: 'domloom',
           layout: 'auto',
           vertex: { module, entryPoint: 'vs' },
           fragment: { module, entryPoint: 'fs', targets: [{ format }] },
           primitive: { topology: 'triangle-list' },
-        }),
+        });
+      };
+      let builtVersion = primitives.version;
+      let rebuilding = false;
+      const blitModule = device.createShaderModule({ label: 'domloom-ghost', code: BLIT_WGSL });
+      let [pipeline, blit] = await Promise.all([
+        compile(primitives.all()),
         device.createRenderPipelineAsync({
           label: 'domloom-ghost',
           layout: 'auto',
@@ -46,7 +61,23 @@ export function createCompositor(runtime, stage) {
       let sourceVersion = -1;
       let versionWaiters = [];
       let presented = { uniforms: new Float32Array(UNIFORM_FLOATS), items: new Float32Array(0), count: 0 };
-      const groups = new WeakMap();
+      let groups = new WeakMap();
+      const rebuild = () => {
+        if (rebuilding || builtVersion === primitives.version) return;
+        rebuilding = true;
+        const version = primitives.version;
+        compile(primitives.all()).then((next) => {
+          pipeline = next;
+          groups = new WeakMap();
+          builtVersion = version;
+          rebuilding = false;
+          context.requestRender();
+        }, (error) => {
+          rebuilding = false;
+          builtVersion = version;
+          console.error('DomLoom: the compositor could not be rebuilt', error);
+        });
+      };
 
       function bindGroupFor(sourceView) {
         const ghostView = ghost ? ghost.view : blank.createView();
@@ -161,6 +192,8 @@ export function createCompositor(runtime, stage) {
           uniforms[U.time] = frame.now / 1000;
           uniforms[U.dpr] = frame.dpr;
           uniforms.set(scene.uniforms.subarray(8), 8);
+          uniforms[U.present] = scene.mask;
+          rebuild();
           if (ghost) {
             uniforms[U.ghostCss] = ghost.cssW;
             uniforms[U.ghostCss + 1] = ghost.cssH;

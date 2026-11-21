@@ -1,9 +1,11 @@
-import {
-  Chips, Combos, Currents, Disclosures, Drops, Fields, Gauges, Notices, Numbers, Presses, Ranges, Ratings, Reticle, Tables, Tabs,
-  Carousels, Splits, Tilts, Toasts, Toggles,
-} from './behaviors.js';
+import { behaviorList } from './behaviors.js';
 import { createCompositor } from './compositor.js';
-import { GHOST, MATERIALIZE, MORPH, ROLL, SHIFT, Scene, U, UNIFORM_FLOATS } from './field.js';
+import { GHOST } from '../primitives/ghost.js';
+import { MATERIALIZE } from '../primitives/materialize.js';
+import { MORPH } from '../primitives/morph.js';
+import { ROLL } from '../primitives/roll.js';
+import { SHIFT } from '../primitives/shift.js';
+import { Scene, U, UNIFORM_FLOATS } from './scene.js';
 import { loadRuntime } from './runtime.js';
 import { audio } from './audio.js';
 import { getSkin } from './skin.js';
@@ -65,6 +67,7 @@ export class LoomStage extends ElementBase {
   #host = null;
   #compositor = null;
   #behaviors = [];
+  #instances = new Map();
   #listeners = null;
   #scene = new Scene();
   #uniforms = new Float32Array(UNIFORM_FLOATS);
@@ -139,32 +142,13 @@ export class LoomStage extends ElementBase {
     this.listen('click', (e) => this.#guardHold(e), { capture: true });
     this.listen('reset', () => setTimeout(() => this.#sync()), { capture: true });
 
-    this.reticle = new Reticle(this);
-    this.presses = new Presses(this);
-    this.toggles = new Toggles(this);
-    this.ranges = new Ranges(this);
-    this.fields = new Fields(this);
-    this.gauges = new Gauges(this);
-    this.tabs = new Tabs(this);
-    this.disclosures = new Disclosures(this);
-    this.tables = new Tables(this);
-    this.currents = new Currents(this);
-    this.numbers = new Numbers(this);
-    this.ratings = new Ratings(this);
-    this.drops = new Drops(this);
-    this.chips = new Chips(this);
-    this.combos = new Combos(this);
-    this.toasts = new Toasts(this);
-    this.notices = new Notices(this);
-    this.tilts = new Tilts(this);
-    this.carousels = new Carousels(this);
-    this.splits = new Splits(this);
-    // Emission order is paint order: fills first, the reticle last.
-    this.#behaviors = [
-      this.tilts, this.carousels, this.splits, this.toggles, this.ranges, this.gauges, this.tabs, this.currents, this.tables, this.ratings, this.drops,
-      this.combos, this.numbers, this.chips, this.notices, this.toasts, this.fields, this.presses, this.disclosures,
-      this.reticle,
-    ];
+    this.#instances = new Map();
+    this.#adoptBehaviors();
+    // A component imported later (a lazy chunk) joins the stages already running.
+    document.addEventListener('loom-behaviors', () => {
+      this.#adoptBehaviors();
+      this.#sync();
+    }, { signal: this.#listeners.signal });
 
     for (const button of this.#source.querySelectorAll('button[hold]')) this.#describeHold(button);
     this.#observe();
@@ -460,7 +444,8 @@ export class LoomStage extends ElementBase {
     if (button === this.#allowed) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (!this.presses.holding(button)) this.presses.nudge(button, event.timeStamp);
+    const presses = this.#instances.get('presses');
+    if (presses && !presses.holding(button)) presses.nudge(button, event.timeStamp);
   }
 
   #unlockAudio() {
@@ -525,19 +510,21 @@ export class LoomStage extends ElementBase {
   #sync() {
     if (!this.#source) return;
     for (const button of this.#source.querySelectorAll('button[hold]')) this.#describeHold(button);
-    this.toggles?.sync();
-    this.ranges?.sync();
-    this.gauges?.sync();
-    this.tabs?.sync();
-    this.tables?.sync();
-    this.currents?.sync();
-    this.ratings?.sync();
-    this.chips?.sync();
-    this.combos?.sync();
-    this.toasts?.sync();
-    this.notices?.sync();
-    this.splits?.sync();
+    for (const behavior of this.#behaviors) behavior.sync?.();
     this.wake();
+  }
+
+  /** Creates the registered behaviours this stage does not have yet, in paint order. */
+  #adoptBehaviors() {
+    for (const [name, { Class }] of behaviorList()) {
+      if (!this.#instances.has(name)) this.#instances.set(name, new Class(this));
+    }
+    this.#behaviors = behaviorList().map(([name]) => this.#instances.get(name));
+  }
+
+  /** The instance of a registered behaviour (for tests and tools). */
+  behavior(name) {
+    return this.#instances.get(name) ?? null;
   }
 
   #rectsOf(elements) {
@@ -770,7 +757,7 @@ export class LoomStage extends ElementBase {
     for (const behavior of this.#behaviors) behavior.emit(scene, now);
     this.#sourceRect = null;
     this.#animating = active;
-    return { data: scene.data, count: scene.count, uniforms: u };
+    return { data: scene.data, count: scene.count, mask: scene.mask, uniforms: u };
   }
 
   /** @internal */

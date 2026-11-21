@@ -1,0 +1,27 @@
+/* DomLoom skin "holo": dropzone (see base.css for the scope and the rules). */
+/* Dropzones */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([dropzone]) {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  min-height: 116px;
+  padding: 18px;
+  border: 1px dashed color-mix(in srgb, var(--loom-holo) 45%, var(--loom-line));
+  background: color-mix(in srgb, var(--loom-holo) 3%, transparent);
+  color: var(--loom-dim);
+  font: 500 14px/1.4 var(--loom-font);
+  text-align: center;
+  cursor: pointer;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([dropzone] strong) { color: var(--loom-ink); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([dropzone] input[type=file]) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([dropzone][data-over]) { border-color: var(--loom-holo); color: var(--loom-ink); }

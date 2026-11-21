@@ -1,5 +1,5 @@
 // Holo's sounds: short synthetic blips, a charging whine, a deep burst.
-import { audio, noise, output, tone } from '../../audio.js';
+import { audio, noise, output, tone } from '../../core/audio.js';
 
 let charge = null;
 
@@ -10,10 +10,6 @@ export const sounds = {
     noise({ duration: 0.04, gain: 0.08, from: 4000, q: 0.7 });
   },
   release: () => tone({ type: 'triangle', from: 900, to: 1400, duration: 0.06, gain: 0.05 }),
-  toggle: (on) => {
-    tone({ type: 'square', from: on ? 660 : 990, duration: 0.05, gain: 0.04 });
-    tone({ type: 'square', from: on ? 990 : 660, duration: 0.07, gain: 0.04, delay: 0.045 });
-  },
   select: () => {
     noise({ duration: 0.09, gain: 0.12, filter: 'highpass', from: 1800, to: 6000, q: 0.5 });
     tone({ type: 'triangle', from: 520, to: 780, duration: 0.08, gain: 0.06 });
@@ -68,15 +64,6 @@ export const sounds = {
     noise({ duration: 0.16, gain: 0.07, from: 3200, to: 500, q: 3 });
     tone({ type: 'triangle', from: 540, to: 300, duration: 0.08, gain: 0.045 });
   },
-  hit: (amount = 1) => {
-    tone({ type: 'sine', from: 130, to: 42, duration: 0.24, gain: 0.25 + 0.2 * amount });
-    noise({ duration: 0.14, gain: 0.12 + 0.12 * amount, filter: 'lowpass', from: 3500, to: 350, q: 0.6 });
-    tone({ type: 'square', from: 240, to: 180, duration: 0.05, gain: 0.04 });
-  },
-  heal: () => {
-    tone({ type: 'triangle', from: 660, to: 880, duration: 0.12, gain: 0.06 });
-    tone({ type: 'triangle', from: 990, to: 1320, duration: 0.16, gain: 0.05, delay: 0.07 });
-  },
   shuffle: () => {
     for (let i = 0; i < 6; i++) {
       noise({ duration: 0.035, gain: 0.07, filter: 'highpass', from: 2500 + i * 300, q: 0.8, delay: 0.03 + i * 0.045 });
@@ -90,25 +77,5 @@ export const sounds = {
     noise({ duration: 0.25, gain: 0.05, filter: 'highpass', from: 2000, to: 8000, q: 0.6 });
     tone({ type: 'triangle', from: 880, to: 1320, duration: 0.14, gain: 0.04, delay: 0.05 });
   },
-  rate: (n = 1) => {
-    for (let i = 0; i < n; i++) tone({ type: 'triangle', from: 660 * 2 ** (i / 6), duration: 0.1, gain: 0.05, delay: i * 0.055 });
-  },
-  pull: () => noise({ duration: 0.5, gain: 0.07, from: 160, to: 900, q: 2 }),
-  ping: () => {
-    tone({ type: 'sine', from: 1760, duration: 0.09, gain: 0.06 });
-    tone({ type: 'sine', from: 2640, duration: 0.12, gain: 0.04, delay: 0.05 });
-  },
-  alarm: (tone_ = 'bad') => {
-    const base = tone_ === 'bad' ? 220 : tone_ === 'warn' ? 330 : 520;
-    for (let i = 0; i < 2; i++) {
-      tone({ type: 'square', from: base, to: base * 1.5, duration: 0.11, gain: 0.05, delay: i * 0.14 });
-    }
-    noise({ duration: 0.18, gain: 0.08, filter: 'lowpass', from: 2400, to: 300, q: 0.7 });
-  },
   tick: () => tone({ type: 'triangle', from: 1900, to: 1700, duration: 0.025, gain: 0.025 }),
-  complete: () => {
-    tone({ type: 'triangle', from: 880, duration: 0.1, gain: 0.07 });
-    tone({ type: 'triangle', from: 1320, duration: 0.22, gain: 0.07, delay: 0.08 });
-    noise({ duration: 0.3, gain: 0.06, filter: 'highpass', from: 3000, to: 9000, q: 0.5, delay: 0.08 });
-  },
 };

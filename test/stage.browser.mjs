@@ -288,6 +288,26 @@ async function run(path, browser, url) {
 
   if (path !== 'native') return;
 
+  session = await open(browser, `${url}test/fixtures/lazy.html`);
+  await check('lazy: a component imported after the stage started joins it, shader included', async () => {
+    const p = session.page;
+    assert.equal(session.renderer, 'webgpu');
+    assert.equal(await p.evaluate(() => document.querySelector('#lazy').behavior('tabs')), null);
+    await p.evaluate(() => window.loadTabs());
+    await p.waitForTimeout(400);
+    const state = await p.evaluate(() => ({
+      has: Boolean(document.querySelector('#lazy').behavior('tabs')),
+      second: document.querySelector('#p2').hidden,
+    }));
+    assert.deepEqual(state, { has: true, second: true }, 'the tabs behaviour runs on the stage that was already there');
+    await p.focus('#t1');
+    await p.keyboard.press('ArrowRight');
+    await p.waitForTimeout(800);
+    assert.equal(await p.evaluate(() => document.querySelector('#p1').hidden), true);
+    assert.deepEqual(session.errors, []);
+  });
+  await session.context.close();
+
   session = await open(browser, url, { noGpu: true });
   await check('dom: tabs and details work without WebGPU', async () => {
     const p = session.page;

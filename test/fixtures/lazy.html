@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Lazy component</title>
+  <link rel="stylesheet" href="/src/loom.css">
+  <script type="module">
+    // Only the core at first; the tabs come later, as a lazy chunk would.
+    import '/src/core/index.js';
+    window.loadTabs = () => import('/src/components/tabs.js');
+  </script>
+  <style>body { margin: 0; background: #0a0e24; }</style>
+</head>
+<body>
+  <loom-stage id="lazy" style="width: 480px">
+    <div role="tablist" aria-label="Views">
+      <button type="button" role="tab" id="t1" aria-controls="p1" aria-selected="true">One</button>
+      <button type="button" role="tab" id="t2" aria-controls="p2">Two</button>
+    </div>
+    <section role="tabpanel" id="p1" aria-labelledby="t1"><p>First panel.</p></section>
+    <section role="tabpanel" id="p2" aria-labelledby="t2"><p>Second panel.</p></section>
+  </loom-stage>
+</body>
+</html>

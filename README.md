@@ -24,6 +24,32 @@ DomLoom is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and
 
 There is nothing else to learn for the controls themselves: DomLoom recognises the standard elements inside a stage.
 
+### Only what you use
+
+`import 'domloom'` brings every component. To pay only for some, import the core and the components you use; each brings its behaviour, its drawing in the default skin and the compositor primitives it needs, and the shader is built from those primitives only.
+
+```js
+import 'domloom/core';     // <loom-stage>, transitions, buttons and hold, the focus reticle
+import 'domloom/forms';    // choices, ranges, text fields, numbers
+import 'domloom/table';
+import 'domloom/tabs';
+```
+
+```css
+@import 'domloom/base.css';
+@import 'domloom/skins/holo/base.css';      /* standard HTML */
+@import 'domloom/skins/holo/toast.css';     /* and the attribute components you use */
+```
+
+| Entry (minified, gzip) | |
+| --- | --- |
+| `domloom/core` | 22 KB |
+| `domloom/core` + `domloom/tabs` | 24 KB |
+| `domloom/forms` | 27 KB |
+| `domloom` (all) | 41 KB |
+
+Components: `choice`, `range`, `field`, `number`, `forms` (the four), `gauge`, `tabs`, `details`, `table`, `current`, `rating`, `dropzone`, `removable`, `combobox`, `toast`, `alert`, `badge`, `busy`, `tilt`, `carousel`, `split`. A component imported later (a lazy chunk) joins the stages already running. The polyfill and the effects host are loaded by the first stage that starts, in their own chunks.
+
 | You write | What happens |
 | --- | --- |
 | `<button>`, `<summary>`, a link, a label of a radio or checkbox | Pressing dents it around the contact point; releasing sends a ring through it |
@@ -145,7 +171,8 @@ The holo material is themed with custom properties on the stage: `--loom-void`, 
 
 - **One stage, one canvas, one pass.** `<loom-stage>` moves its content into a `<canvas content="drawable">` and creates one effects host with one compositor plugin. Each control's behaviour describes its state every frame as a few items in a buffer: spatial items (dent, jitter, glitch, morph) move the picture, and light items (brackets, fills, rings, scan lines, liquid) are SDF shapes painted over it. There is no canvas per component.
 - **The DOM holds still.** Hover, press, drag and focus never change CSS. They change shader uniforms, so they show in the next frame and cost no re-capture of the HTML. The DOM changes only when the control's state does (`checked`, `value`), and the GPU animates the change. `loom.css` contains no transition on the GPU path.
-- **The input mapper is the shader.** A fragment shader maps backwards, from the pixel shown to the source point it shows, and that is exactly the question the host's input mapper answers for a pointer. `src/field.js` is the JavaScript twin of every function in `src/shader.js` that moves pixels. Each presented frame freezes its own numbers for the mapper, and the browser test checks the twins against real GPU pixels.
+- **The shader is built from what the page uses.** Each primitive (`src/primitives/*`: a dent, a lens, a tilted card, an arc…) is one module with its WGSL and the JavaScript twin of what it does to the picture. The compositor compiles the primitives the page has imported, and every frame tells the shader which kinds are in the scene, so a pass for an effect that is not on screen costs nothing.
+- **The input mapper is the shader.** A fragment shader maps backwards, from the pixel shown to the source point it shows, and that is exactly the question the host's input mapper answers for a pointer. Each primitive's JavaScript twin sits next to its WGSL. Each presented frame freezes its own numbers for the mapper, and the browser test checks the twins against real GPU pixels.
 - **Why it needs the GPU.** CSS can move, scale and clip whole boxes. It cannot bend the lines of text a shock front crosses, refract a label under a moving piece of glass, break a picture of the old page into blocks, smear a flying element along its path, or keep the new page clickable while the old one is still on screen. Those are per-pixel operations on a picture of live HTML, which is what HTML-in-Canvas provides; the mapper keeps every one of them clickable where it is seen.
 - **Zero work at rest.** The plugin is `continuous` only while a spring moves. A page at rest renders no frame.
 - **Fallbacks.** Without WebGPU, in forced colours, or after a GPU failure, the same markup is styled in plain CSS and the behaviours (hold, validation, transitions as an instant swap) keep working. With reduced motion, springs snap, transitions swap at once and nothing shakes.

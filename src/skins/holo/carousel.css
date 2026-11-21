@@ -1,0 +1,3 @@
+/* DomLoom skin "holo": carousel (see base.css for the scope and the rules). */
+/* Carousels */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([carousel]) { gap: 12px; grid-auto-columns: minmax(200px, 46%); }

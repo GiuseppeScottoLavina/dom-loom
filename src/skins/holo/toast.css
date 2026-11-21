@@ -1,0 +1,32 @@
+/* DomLoom skin "holo": toast (see base.css for the scope and the rules). */
+/* Toasts: a stack in the corner of the stage. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts]) {
+  position: absolute;
+  z-index: 5;
+  right: 18px;
+  bottom: 18px;
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  max-width: min(320px, calc(100% - 36px));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts] > *) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 11px 8px 12px 14px;
+  border: 1px solid var(--loom-line);
+  border-left: 3px solid var(--loom-holo);
+  background: color-mix(in srgb, var(--loom-void) 85%, var(--loom-panel));
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.4);
+  color: var(--loom-ink);
+  font: 500 14px/1.3 var(--loom-font);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts] > [data-tone=warn]) { border-left-color: var(--loom-warn); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts] > [data-tone=bad]) { border-left-color: var(--loom-signal); }

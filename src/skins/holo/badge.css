@@ -1,0 +1,16 @@
+/* DomLoom skin "holo": badge (see base.css for the scope and the rules). */
+/* Badges */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([badge]) {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  border-radius: 11px;
+  background: var(--loom-signal);
+  color: var(--loom-ink);
+  font: 700 11px/1 var(--loom-mono);
+  font-variant-numeric: tabular-nums;
+  vertical-align: 2px;
+}

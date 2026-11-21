@@ -1,0 +1,593 @@
+/* DomLoom skin "holo": the holo-kinetic material for standard HTML.
+ *
+ * The controls AT REST. On the WebGPU path the skin's draw hooks (index.js) paint
+ * everything that moves, so nothing here transitions: a CSS transition inside the
+ * canvas would rebuild its picture every frame. Without WebGPU, [data-renderer="dom"]
+ * draws the same states in plain CSS.
+ *
+ * Every rule is scoped to stages with skin="holo" or no skin attribute (the default),
+ * and wrapped in :where() so that a page's own CSS wins without a fight.
+ */
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) {
+  --loom-void: #0a0e24;
+  --loom-panel: #111735;
+  --loom-line: #2b3766;
+  --loom-ink: #e8f4ff;
+  --loom-dim: #8d99c7;
+  --loom-holo: #7ff0ff;
+  --loom-signal: #ff3d6e;
+  --loom-warn: #ffc857;
+  --loom-cut: 18px;
+  --loom-font: 'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
+  --loom-display: 'Big Shoulders Display Variable', 'Big Shoulders Display', 'Chakra Petch', sans-serif;
+  --loom-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+  background: var(--loom-void);
+  color: var(--loom-ink);
+  font-family: var(--loom-font);
+}
+
+/* The panel. The canvas is opaque, so the cut corners are painted in the void colour. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) .loom-source {
+  padding: clamp(20px, 4vw, 34px);
+  background:
+    linear-gradient(135deg, var(--loom-void) 0 var(--loom-cut), transparent var(--loom-cut)) top left / 50% 50% no-repeat,
+    linear-gradient(315deg, var(--loom-void) 0 var(--loom-cut), transparent var(--loom-cut)) bottom right / 50% 50% no-repeat,
+    var(--loom-panel);
+  color: var(--loom-ink);
+  font: 400 15px/1.45 var(--loom-font);
+}
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) .loom-source::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--loom-line);
+  clip-path: polygon(var(--loom-cut) 0, 100% 0, 100% calc(100% - var(--loom-cut)), calc(100% - var(--loom-cut)) 100%, 0 100%, 0 var(--loom-cut));
+  pointer-events: none;
+}
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) .loom-source::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, transparent calc(var(--loom-cut) * 0.7071 - 0.6px), var(--loom-line) calc(var(--loom-cut) * 0.7071 - 0.6px) calc(var(--loom-cut) * 0.7071 + 0.6px), transparent calc(var(--loom-cut) * 0.7071 + 0.6px)) top left / calc(var(--loom-cut) + 1px) calc(var(--loom-cut) + 1px) no-repeat,
+    linear-gradient(315deg, transparent calc(var(--loom-cut) * 0.7071 - 0.6px), var(--loom-line) calc(var(--loom-cut) * 0.7071 - 0.6px) calc(var(--loom-cut) * 0.7071 + 0.6px), transparent calc(var(--loom-cut) * 0.7071 + 0.6px)) bottom right / calc(var(--loom-cut) + 1px) calc(var(--loom-cut) + 1px) no-repeat;
+  pointer-events: none;
+}
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) .loom-source > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Type */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(h1, h2, h3) {
+  margin: 0;
+  font-family: var(--loom-display);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(h1) { font-size: clamp(40px, 7vw, 64px); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(h2) { font-size: clamp(32px, 5.5vw, 48px); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(h3) { font-size: 24px; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(p) { margin: 0; color: var(--loom-dim); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(output, kbd, code) { font-family: var(--loom-mono); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(output) { color: var(--loom-holo); font-size: 14px; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) ::selection { background: var(--loom-signal); color: var(--loom-ink); }
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(fieldset) {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(legend) {
+  padding: 0;
+  margin-bottom: 8px;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(legend, .loom-caption) {
+  color: var(--loom-dim);
+  font: 600 11px/1 var(--loom-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* Text fields */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input:not([type=checkbox], [type=radio], [type=range], [type=button], [type=submit], [type=reset], [type=color], [type=file]), textarea, select) {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--loom-line);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--loom-holo) 4%, transparent);
+  color: var(--loom-ink);
+  caret-color: var(--loom-holo);
+  font: 500 18px/1.2 var(--loom-font);
+  letter-spacing: 0.04em;
+  outline: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input, textarea)::placeholder { color: color-mix(in srgb, var(--loom-dim) 60%, transparent); }
+
+/* Choices: radios are segments, the selected one is cut out in signal red. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(label:has(> input[type=radio])) {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 16px;
+  border: 1px solid var(--loom-line);
+  font: 600 13px/1 var(--loom-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=radio]) {
+  appearance: none;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0;
+  border: 1px solid currentColor;
+  rotate: 45deg;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=radio]:checked) { background: var(--loom-ink); }
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(label:has(> input[type=checkbox])) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=checkbox]) {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border: 1px solid var(--loom-dim);
+  background: transparent;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=checkbox]:not([role=switch]):checked)::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 2px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--loom-ink);
+  border-width: 0 2px 2px 0;
+  rotate: 45deg;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=checkbox][role=switch]) {
+  width: 46px;
+  height: 24px;
+  border-color: var(--loom-line);
+  border-radius: 12px;
+}
+
+/* Range: a bracketed track with ticks; the fill and the thumb are light. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=range]) {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  background: transparent;
+  cursor: ew-resize;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=range])::-webkit-slider-runnable-track {
+  height: 8px;
+  border: 1px solid var(--loom-line);
+  background:
+    repeating-linear-gradient(90deg, var(--loom-line) 0 1px, transparent 1px 10%) center / calc(100% - 18px) 4px no-repeat,
+    linear-gradient(90deg, var(--loom-holo) var(--loom-fill, 0%), transparent var(--loom-fill, 0%));
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=range])::-moz-range-track {
+  height: 6px;
+  border: 1px solid var(--loom-line);
+  background: repeating-linear-gradient(90deg, var(--loom-line) 0 1px, transparent 1px 10%) center / calc(100% - 18px) 4px no-repeat;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=range])::-moz-range-progress { height: 6px; background: var(--loom-holo); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=range])::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border: 0;
+  background: var(--loom-holo);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=range])::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 0;
+  background: var(--loom-holo);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+/* Buttons */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button, input[type=button], input[type=submit], input[type=reset]) {
+  position: relative;
+  padding: 14px 22px;
+  border: 1px solid var(--loom-line);
+  border-radius: 0;
+  background: linear-gradient(135deg, var(--loom-dim) 0 5px, transparent 5px) no-repeat;
+  color: var(--loom-ink);
+  font: 700 13px/1 var(--loom-font);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button[type=submit], button.loom-primary) {
+  border-color: var(--loom-signal);
+  background:
+    linear-gradient(135deg, var(--loom-signal) 0 7px, transparent 7px) no-repeat,
+    color-mix(in srgb, var(--loom-signal) 9%, transparent);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button:disabled) { opacity: 0.45; cursor: not-allowed; }
+
+/* Gauges: a bracketed slot; the fill is light. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress, meter) {
+  appearance: none;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--loom-line);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--loom-void) 70%, transparent);
+  color: var(--loom-holo);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress)::-webkit-progress-bar { background: transparent; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress)::-webkit-progress-value { background: var(--loom-holo); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress)::-moz-progress-bar { background: var(--loom-holo); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter)::-webkit-meter-bar { height: 100%; border: 0; border-radius: 0; background: transparent; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter)::-webkit-meter-optimum-value { background: var(--loom-holo); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter)::-webkit-meter-suboptimum-value { background: var(--loom-warn); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter)::-webkit-meter-even-less-good-value { background: var(--loom-signal); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter):-moz-meter-optimum::-moz-meter-bar { background: var(--loom-holo); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter):-moz-meter-sub-optimum::-moz-meter-bar { background: var(--loom-warn); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter):-moz-meter-sub-sub-optimum::-moz-meter-bar { background: var(--loom-signal); }
+
+/* Disclosures */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(details) {
+  border-top: 1px solid var(--loom-line);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(details:not(:has(+ details))) {
+  border-bottom: 1px solid var(--loom-line);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(summary) {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 4px;
+  list-style: none;
+  color: var(--loom-ink);
+  font: 600 14px/1.15 var(--loom-font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(summary)::-webkit-details-marker { display: none; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(summary)::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: -3px;
+  /* Two strokes as gradients: a border on this pseudo-element is not drawn by the polyfill. */
+  background:
+    linear-gradient(var(--loom-holo), var(--loom-holo)) right / 1.5px 100% no-repeat,
+    linear-gradient(var(--loom-holo), var(--loom-holo)) bottom / 100% 1.5px no-repeat;
+  transform: rotate(-45deg);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(details[open] > summary)::before { margin-top: -5px; transform: rotate(45deg); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(details > :not(summary)) {
+  margin: 0;
+  padding: 0 4px 18px 25px;
+}
+
+/* Tabs: the ARIA pattern. The selected tab is marked in light. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=tablist]) {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--loom-line);
+  scrollbar-width: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=tab]) {
+  flex: none;
+  padding: 13px 18px 14px;
+  border: 0;
+  background: none;
+  color: var(--loom-dim);
+  font: 600 12px/1 var(--loom-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=tab][aria-selected=true]) { color: var(--loom-ink); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=tabpanel]) { padding-top: 22px; }
+
+/* Tables. Sortable headers are buttons that DomLoom puts in the <th>. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font: 500 14px/1.3 var(--loom-font);
+  font-variant-numeric: tabular-nums;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(caption) {
+  padding-bottom: 12px;
+  color: var(--loom-dim);
+  font: 600 11px/1 var(--loom-mono);
+  letter-spacing: 0.16em;
+  text-align: left;
+  text-transform: uppercase;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th) {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--loom-line);
+  color: var(--loom-dim);
+  font: 600 11px/1 var(--loom-mono);
+  letter-spacing: 0.14em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th:has(> button.loom-sort)) { padding: 0; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(td) {
+  padding: 11px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--loom-line) 55%, transparent);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button.loom-sort) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button.loom-sort)::after {
+  content: '';
+  width: 0;
+  height: 0;
+  margin-top: 4px;
+  border: 4px solid transparent;
+  border-top-color: currentColor;
+  opacity: 0.35;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort]) { color: var(--loom-ink); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort=ascending] > button.loom-sort)::after {
+  margin-top: -4px;
+  border-top-color: transparent;
+  border-bottom-color: var(--loom-holo);
+  opacity: 1;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort=descending] > button.loom-sort)::after { border-top-color: var(--loom-holo); opacity: 1; }
+
+/* Breadcrumb: nav[aria-label=breadcrumb], as Pico CSS and others name it. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav[aria-label="breadcrumb" i] :is(ol, ul)) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 600 11px/1 var(--loom-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav[aria-label="breadcrumb" i] li:not(:last-child))::after { content: '/'; margin-left: 10px; color: var(--loom-line); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav[aria-label="breadcrumb" i] a) { color: var(--loom-dim); text-decoration: none; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav[aria-label="breadcrumb" i] [aria-current]:not([aria-current=false])) { color: var(--loom-ink); }
+
+/* Other nav lists: a row of pages. The current one is marked in light. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav:not([aria-label="breadcrumb" i]) > :is(ol, ul)) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav:not([aria-label="breadcrumb" i]) > :is(ol, ul) > li > :is(a, button)) {
+  display: inline-grid;
+  place-items: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--loom-line);
+  background: none;
+  color: var(--loom-dim);
+  font: 600 12px/1 var(--loom-mono);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  cursor: pointer;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav:not([aria-label="breadcrumb" i]) [aria-current]:not([aria-current=false])) { color: var(--loom-ink); }
+
+/* Steppers: an ordered list with a step marked aria-current="step". */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(ol:has(> li[aria-current=step])) {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(ol:has(> li[aria-current=step]) > li) {
+  position: relative;
+  padding: 26px 8px 0 0;
+  color: var(--loom-dim);
+  font: 600 11px/1.25 var(--loom-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(ol:has(> li[aria-current=step]) > li)::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 2px;
+  left: 2px;
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--loom-line);
+  background: var(--loom-panel);
+  transform: rotate(45deg);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(ol:has(> li[aria-current=step]) > li:not(:last-child))::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 14px;
+  right: 2px;
+  height: 2px;
+  background: var(--loom-line);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(ol > li[aria-current=step]) { color: var(--loom-ink); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(ol > li:has(~ li[aria-current=step])) { color: color-mix(in srgb, var(--loom-holo) 75%, var(--loom-dim)); }
+
+/* Numbers: tabular digits, no spinners; step with buttons that have data-step. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=number]) {
+  appearance: textfield;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=number])::-webkit-inner-spin-button,
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=number])::-webkit-outer-spin-button { appearance: none; margin: 0; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button[data-step]) {
+  flex: none;
+  width: 44px;
+  padding: 0;
+  font: 500 20px/1 var(--loom-mono);
+  letter-spacing: 0;
+}
+
+/* Intervals: the second track is drawn by the first. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([interval] > input[type=range]:last-child)::-webkit-slider-runnable-track { border-color: transparent; background: none; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([interval] > input[type=range]:last-child)::-moz-range-track { border-color: transparent; background: none; }
+
+/* Ring gauges: <progress ring>, <meter ring>. The track is a circle; the arc is light. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress[ring], meter[ring]) {
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, transparent calc(100% - 15px), var(--loom-line) calc(100% - 15px) calc(100% - 4px), transparent calc(100% - 4px));
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress[ring])::-webkit-progress-value,
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter[ring])::-webkit-meter-optimum-value,
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter[ring])::-webkit-meter-suboptimum-value,
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter[ring])::-webkit-meter-even-less-good-value { background: transparent; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress[ring])::-moz-progress-bar, :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(meter[ring])::-moz-meter-bar { background: transparent; }
+
+/* Alerts and callouts */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=alert], [role=note], [role=status]:not([toasts])) {
+  margin: 0;
+  padding: 12px 14px 12px 16px;
+  border-left: 3px solid var(--loom-holo);
+  background: color-mix(in srgb, var(--loom-holo) 7%, transparent);
+  color: var(--loom-ink);
+  font: 500 14px/1.4 var(--loom-font);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=alert], [data-tone=bad]:is([role=note], [role=status])) {
+  border-left-color: var(--loom-signal);
+  background: color-mix(in srgb, var(--loom-signal) 10%, transparent);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=alert][data-tone=warn], [data-tone=warn]:is([role=note], [role=status])) {
+  border-left-color: var(--loom-warn);
+  background: color-mix(in srgb, var(--loom-warn) 9%, transparent);
+}
+
+/* ---------------------------------------------------------------- DOM path */
+/* Without the compositor (no WebGPU, a GPU failure, forced colours) CSS draws the states. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :focus-visible {
+  outline: 2px solid var(--loom-holo);
+  outline-offset: 3px;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(label:has(> input[type=radio]:checked)) {
+  border-color: var(--loom-signal);
+  background: var(--loom-signal);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(input[type=checkbox]:not([role=switch]):checked) {
+  border-color: var(--loom-holo);
+  background: color-mix(in srgb, var(--loom-holo) 45%, transparent);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :where(input[type=checkbox][role=switch])::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--loom-line);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(input[type=checkbox][role=switch]:checked) {
+  border-color: var(--loom-holo);
+  background: var(--loom-holo);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(input[type=checkbox][role=switch]:checked)::before {
+  left: 25px;
+  background: var(--loom-panel);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(button[hold]) {
+  background:
+    linear-gradient(90deg, var(--loom-signal) calc(var(--loom-charge, 0) * 100%), transparent 0) no-repeat,
+    linear-gradient(135deg, var(--loom-signal) 0 7px, transparent 7px) no-repeat,
+    color-mix(in srgb, var(--loom-signal) 9%, transparent);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(:user-invalid) { border-bottom-color: var(--loom-signal); }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :where([role=tab][aria-selected=true]) {
+  box-shadow: inset 0 -3px var(--loom-holo);
+  background: color-mix(in srgb, var(--loom-holo) 10%, transparent);
+}
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(nav:not([aria-label="breadcrumb" i]) [aria-current]:not([aria-current=false])) {
+  border-color: var(--loom-holo);
+  box-shadow: inset 0 -3px var(--loom-holo);
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(ol > li[aria-current=step], ol > li:has(~ li[aria-current=step]))::before {
+  border-color: var(--loom-holo);
+  background: var(--loom-holo);
+}
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(progress[ring], meter[ring]) {
+  background:
+    radial-gradient(closest-side, var(--loom-panel) calc(100% - 15px), transparent calc(100% - 15px) calc(100% - 4px), var(--loom-panel) calc(100% - 4px)),
+    conic-gradient(var(--loom-holo) calc(var(--loom-value, 0) * 360deg), var(--loom-line) 0);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(label:has(> input[type=radio]), input[type=checkbox], button) {
+    transition: background-color 160ms, border-color 160ms;
+  }
+  :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(input[type=checkbox][role=switch])::before {
+    transition: left 220ms cubic-bezier(0.3, 1.4, 0.5, 1), background-color 160ms;
+  }
+}
+
+@media (forced-colors: active) {
+  :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(input[type=checkbox], input[type=radio]) { appearance: auto; }
+  :where(loom-stage:not([skin]), loom-stage[skin="holo"]) .loom-source::before, :where(loom-stage:not([skin]), loom-stage[skin="holo"]) .loom-source::after { display: none; }
+}

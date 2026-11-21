@@ -6,10 +6,14 @@
   "description": "Plain HTML controls drawn through a WebGPU compositor with game-grade motion and light, built on HTML-in-Canvas.",
   "exports": {
     ".": "./src/index.js",
+    "./core": "./src/core/index.js",
     "./style.css": "./src/loom.css",
     "./base.css": "./src/base.css",
-    "./skins/holo": "./src/skins/holo/index.js",
-    "./skins/holo.css": "./src/skins/holo/holo.css"
+    "./skins/holo.css": "./src/skins/holo/holo.css",
+    "./skins/holo/*.css": "./src/skins/holo/*.css",
+    "./primitives/*": "./src/primitives/*.js",
+    "./package.json": "./package.json",
+    "./*": "./src/components/*.js"
   },
   "files": [
     "src"
@@ -30,5 +34,13 @@
     "@fontsource/chakra-petch": "^5.3.0",
     "playwright-core": "1.62.1",
     "vite": "7.3.7"
-  }
+  },
+  "sideEffects": [
+    "*.css",
+    "./src/index.js",
+    "./src/core/index.js",
+    "./src/components/*.js",
+    "./src/skins/**/*.js",
+    "./src/primitives/*.js"
+  ]
 }

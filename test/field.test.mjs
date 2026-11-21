@@ -1,6 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { BEND, DENT, GHOST, GLITCH, JITTER, LENS, MORPH, ROLL, SHIFT, STRETCH, TILT, VORTEX, Scene, U, UNIFORM_FLOATS, mapThrough, offsetAt, pcg } from '../src/field.js';
+import { mapThrough, offsetAt } from '../src/core/mapper.js';
+import { pcg } from '../src/core/math.js';
+import { Scene, U, UNIFORM_FLOATS } from '../src/core/scene.js';
+import { BEND } from '../src/primitives/bend.js';
+import { DENT } from '../src/primitives/dent.js';
+import { GHOST } from '../src/primitives/ghost.js';
+import { GLITCH } from '../src/primitives/glitch.js';
+import { JITTER } from '../src/primitives/jitter.js';
+import { LENS } from '../src/primitives/lens.js';
+import { MORPH } from '../src/primitives/morph.js';
+import { ROLL } from '../src/primitives/roll.js';
+import { SHIFT } from '../src/primitives/shift.js';
+import { STRETCH } from '../src/primitives/stretch.js';
+import { TILT } from '../src/primitives/tilt.js';
+import { VORTEX } from '../src/primitives/vortex.js';
 
 const W = 400;
 const H = 300;

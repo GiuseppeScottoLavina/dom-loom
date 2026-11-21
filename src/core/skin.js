@@ -24,6 +24,7 @@ const DURATIONS = {
 };
 
 const registry = new Map();
+const pending = new Map(); // draw hooks for skins not defined yet
 
 /**
  * Registers a skin. Stages that use its name pick it up at once.
@@ -43,8 +44,9 @@ export function defineSkin(skin) {
   const full = Object.freeze({
     ...skin,
     tokens: { ...skin.tokens },
-    draw: { ...skin.draw },
-    sounds: { ...skin.sounds },
+    // Hooks added by component modules (extendSkin) join this object.
+    draw: { ...registry.get(skin.name)?.draw, ...pending.get(skin.name)?.draw, ...skin.draw },
+    sounds: { ...registry.get(skin.name)?.sounds, ...pending.get(skin.name)?.sounds, ...skin.sounds },
     shader: { scanlines: 0, chroma: 0, crumble: 0, hatch: 0, ...skin.shader },
     transition: { ms: 640, scopedMs: 430, band: 0.1, slant: 0.42, ...skin.transition },
     boot: skin.boot === undefined ? { ms: 760 } : skin.boot,
@@ -57,6 +59,24 @@ export function defineSkin(skin) {
   registry.set(full.name, full);
   globalThis.document?.dispatchEvent(new CustomEvent('loom-skin', { detail: { name: full.name } }));
   return full;
+}
+
+/**
+ * Adds draw hooks (and sounds) to a skin: a component module brings the drawing of its control,
+ * so a page pays only for the controls it imports. Works before the skin is defined.
+ */
+export function extendSkin(name, draw, sounds = null) {
+  const skin = registry.get(name);
+  if (skin) {
+    Object.assign(skin.draw, draw);
+    if (sounds) Object.assign(skin.sounds, sounds);
+  } else {
+    const p = pending.get(name) ?? { draw: {}, sounds: {} };
+    Object.assign(p.draw, draw);
+    if (sounds) Object.assign(p.sounds, sounds);
+    pending.set(name, p);
+  }
+  globalThis.document?.dispatchEvent(new CustomEvent('loom-skin', { detail: { name } }));
 }
 
 /** The skin of that name, or the default one. */

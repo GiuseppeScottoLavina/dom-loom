@@ -1,0 +1,12 @@
+/* DomLoom skin "holo": tilt (see base.css for the scope and the rules). */
+/* Cards that tilt */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([tilt]) {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 16px;
+  border: 1px solid var(--loom-line);
+  background:
+    linear-gradient(135deg, var(--loom-holo) 0 6px, transparent 6px) no-repeat,
+    color-mix(in srgb, var(--loom-holo) 4%, var(--loom-panel));
+}

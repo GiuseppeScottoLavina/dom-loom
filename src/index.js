@@ -1,16 +1,47 @@
-import './skins/holo/index.js';
-import { LoomStage } from './stage.js';
+// domloom: every component. To pay only for some, import domloom/core and the
+// components you use (domloom/tabs, domloom/table, …) instead.
+import './components/alert.js';
+import './components/badge.js';
+import './components/busy.js';
+import './components/carousel.js';
+import './components/choice.js';
+import './components/combobox.js';
+import './components/current.js';
+import './components/details.js';
+import './components/dropzone.js';
+import './components/field.js';
+import './components/gauge.js';
+import './components/number.js';
+import './components/range.js';
+import './components/rating.js';
+import './components/removable.js';
+import './components/split.js';
+import './components/table.js';
+import './components/tabs.js';
+import './components/tilt.js';
+import './components/toast.js';
 
-export { LoomStage };
-export { DEFAULT_SKIN, defineSkin, getSkin, skinNames } from './skin.js';
-// For skin authors: the scene primitives, their blend modes, and the audio engine.
-export {
-  ADD, ARC, BEHIND, BEND, BRACKETS, DENT, DIAMOND, GAUGE, GHOST, GLITCH, JITTER, LENS, LIQUID, MATERIALIZE, MORPH, OVER, PILL,
-  RING, ROLL, SHIFT, STAR, STRETCH, SWEEP, TILT, VORTEX,
-} from './field.js';
-export { audio, noise, output, tone } from './audio.js';
-export { holo } from './skins/holo/index.js';
-
-if (globalThis.customElements && !customElements.get('loom-stage')) {
-  customElements.define('loom-stage', LoomStage);
-}
+export * from './core/index.js';
+// For skin authors: every primitive of the compositor.
+export { ARC } from './primitives/arc.js';
+export { BEND } from './primitives/bend.js';
+export { BRACKETS } from './primitives/brackets.js';
+export { DENT } from './primitives/dent.js';
+export { DIAMOND } from './primitives/diamond.js';
+export { GAUGE } from './primitives/gauge.js';
+export { GHOST } from './primitives/ghost.js';
+export { GLITCH } from './primitives/glitch.js';
+export { JITTER } from './primitives/jitter.js';
+export { LENS } from './primitives/lens.js';
+export { LIQUID } from './primitives/liquid.js';
+export { MATERIALIZE } from './primitives/materialize.js';
+export { MORPH } from './primitives/morph.js';
+export { PILL } from './primitives/pill.js';
+export { RING } from './primitives/ring.js';
+export { ROLL } from './primitives/roll.js';
+export { SHIFT } from './primitives/shift.js';
+export { STAR } from './primitives/star.js';
+export { STRETCH } from './primitives/stretch.js';
+export { SWEEP } from './primitives/sweep.js';
+export { TILT } from './primitives/tilt.js';
+export { VORTEX } from './primitives/vortex.js';
