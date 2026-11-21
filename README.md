@@ -224,7 +224,7 @@ The holo material is themed with custom properties on the stage: `--loom-void`, 
 - Opening or closing a `<details>` changes the height of the stage at once (the canvas must have the size of its content); the content inside slides. In a multi-column layout only the column of the `<details>` slides.
 - A press in the first moments of a flight (rows sorting) can reach nothing on Chrome's own HTML-in-Canvas: the press is mapped with the frame the browser captured for it, which may still show the row leaving. It never reaches another row.
 
-On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 190 KB of JavaScript for the whole demo, 60 KB gzip).
+On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 190 KB of JavaScript for the whole demo, 66 KB gzip).
 
 ## Publish the demo
 
