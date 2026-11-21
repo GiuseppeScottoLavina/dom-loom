@@ -273,3 +273,13 @@ decryptButton.addEventListener('click', () => {
 
 comms.toggleAttribute('sound', stage.hasAttribute('sound'));
 soundButton.addEventListener('click', () => comms.toggleAttribute('sound', stage.hasAttribute('sound')));
+
+/* --------------------------------------------------------- archive panel */
+const archive = document.querySelector('#archive');
+const replayOut = document.querySelector('#replay-out');
+archive.addEventListener('click', (event) => {
+  const button = event.target.closest('.replay');
+  if (button) replayOut.value = `Replaying Op ${button.dataset.op}…`;
+});
+archive.toggleAttribute('sound', stage.hasAttribute('sound'));
+soundButton.addEventListener('click', () => archive.toggleAttribute('sound', stage.hasAttribute('sound')));

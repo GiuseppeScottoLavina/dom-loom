@@ -73,7 +73,8 @@ fn offsetAt(p: vec2f) -> vec2f {
   for (var i = 0u; i < n; i++) {
     let it = items[i];
     let kind = u32(it.h.x + 0.5);
-    if (kind == 0u || kind == 4u || kind == 6u || kind == 8u || kind > 9u) { continue; }
+    if (kind == 0u || kind == 4u || kind == 6u || kind == 8u) { continue; }
+    if (kind > 9u && kind != 21u && kind != 22u) { continue; }
     if (!insideR(p, it.r)) { continue; }
     if (kind == 1u) {
       let e = edgeF(p, it.r, 10.0);
@@ -92,6 +93,17 @@ fn offsetAt(p: vec2f) -> vec2f {
       o.y += it.p.x * 0.4 * sin(it.p.z + p.x * 0.09) * e;
     } else if (kind == 5u) {
       o += it.p.xy;
+    } else if (kind == 21u) {
+      let half = it.r.z * 0.5;
+      let xn = clamp((p.x - it.r.x - half) / half, -1.0, 1.0);
+      let curve = it.p.x;
+      if (curve > 1e-4) { o.x += (asin(xn * sin(curve)) / curve - xn) * half; }
+      o.x += it.p.y * xn * xn;
+    } else if (kind == 22u) {
+      var sx = p.x;
+      if (p.x <= it.p.w) { sx = it.p.x + (p.x - it.p.x) * (it.p.z - it.p.x) / max(it.p.w - it.p.x, 1e-3); }
+      else { sx = it.p.z + (p.x - it.p.w) * (it.p.y - it.p.z) / max(it.p.y - it.p.w, 1e-3); }
+      o.x += sx - p.x;
     } else if (kind == 9u) {
       let d = p - it.p.xy;
       let w = exp(-dot(d, d) / (it.p.z * it.p.z)) * edgeF(p, it.r, 12.0);
@@ -125,13 +137,28 @@ fn offsetAt(p: vec2f) -> vec2f {
   return o;
 }
 
-// The part of the displacement that slides content whole (no chromatic split).
+// The part of the displacement that moves content whole, without tearing it: shifts,
+// bends and stretches (no chromatic split there; twins of offsetAt's branches).
 fn shiftAt(p: vec2f) -> vec2f {
   var o = vec2f(0.0);
   let n = u32(u.misc.x);
   for (var i = 0u; i < n; i++) {
     let it = items[i];
-    if (u32(it.h.x + 0.5) == 5u && insideR(p, it.r)) { o += it.p.xy; }
+    let kind = u32(it.h.x + 0.5);
+    if (!insideR(p, it.r)) { continue; }
+    if (kind == 5u) {
+      o += it.p.xy;
+    } else if (kind == 21u) {
+      let half = it.r.z * 0.5;
+      let xn = clamp((p.x - it.r.x - half) / half, -1.0, 1.0);
+      if (it.p.x > 1e-4) { o.x += (asin(xn * sin(it.p.x)) / it.p.x - xn) * half; }
+      o.x += it.p.y * xn * xn;
+    } else if (kind == 22u) {
+      var sx = p.x;
+      if (p.x <= it.p.w) { sx = it.p.x + (p.x - it.p.x) * (it.p.z - it.p.x) / max(it.p.w - it.p.x, 1e-3); }
+      else { sx = it.p.z + (p.x - it.p.w) * (it.p.y - it.p.z) / max(it.p.y - it.p.w, 1e-3); }
+      o.x += sx - p.x;
+    }
   }
   return o;
 }
@@ -226,6 +253,71 @@ fn sdStar5(p0: vec2f, r: f32, rf: f32) -> f32 {
   let ba = rf * vec2f(-k1.y, k1.x) - vec2f(0.0, 1.0);
   let h = clamp(dot(p, ba) / dot(ba, ba), 0.0, r);
   return length(p - ba * h) * sign(p.y * ba.x - p.x * ba.y);
+}
+
+// Twin of tiltLocal() in field.js: (u, v, inside) on the turned card's plane.
+fn tiltLocal(p: vec2f, it: Item) -> vec3f {
+  let q = (p - it.r.xy - it.r.zw * 0.5) / it.p.w;
+  let sa = sin(it.p.x);
+  let ca = cos(it.p.x);
+  let sb = sin(it.p.y);
+  let cb = cos(it.p.y);
+  let eye = it.p.z;
+  let n = vec3f(sb * ca, -sa, cb * ca);
+  let t = (n.z * eye) / (n.z * eye - n.x * q.x - n.y * q.y);
+  let X = vec3f(t * q.x, t * q.y, eye - t * eye);
+  let u = X.x * cb - X.z * sb;
+  let v = X.x * sb * sa + X.y * ca + X.z * cb * sa;
+  let inside = step(abs(u), it.r.z * 0.5) * step(abs(v), it.r.w * 0.5);
+  return vec3f(u, v, inside);
+}
+
+// A tilted card where an item covers p: rgb, w = 1; w = -1 elsewhere. Beside the turned
+// card, inside its margin, is the panel with the card's shadow.
+fn tiltPicture(p: vec2f, light: ptr<function, vec3f>) -> vec4f {
+  let n = u32(u.misc.x);
+  for (var i = 0u; i < n; i++) {
+    let it = items[i];
+    if (u32(it.h.x + 0.5) != 20u) { continue; }
+    let m = it.h.y;
+    if (!insideR(p, vec4f(it.r.xy - vec2f(m), it.r.zw + vec2f(2.0 * m)))) { continue; }
+    let l = tiltLocal(p, it);
+    let c = it.r.xy + it.r.zw * 0.5;
+    if (l.z < 0.5) {
+      // The shadow: the flat card, pushed away from the light, blurred.
+      let off = vec2f(it.p.y, -it.p.x) * 40.0 + vec2f(0.0, 6.0);
+      let d = sdBox(p - c - off, it.r.zw * 0.5, 6.0);
+      let shade = exp(-max(d, 0.0) / 9.0) * 0.45 * clamp((abs(it.p.x) + abs(it.p.y)) * 6.0, 0.0, 1.0);
+      return vec4f(u.bg.rgb * (1.0 - shade), 1.0);
+    }
+    let q = c + l.xy;
+    var col = livePicture(q);
+    // The card's normal against a light up and to the left: the far side dims.
+    let sa = sin(it.p.x);
+    let ca = cos(it.p.x);
+    let sb = sin(it.p.y);
+    let cb = cos(it.p.y);
+    let nrm = vec3f(sb * ca, -sa, cb * ca);
+    let lit = dot(nrm, normalize(vec3f(-0.35, -0.5, 1.0)));
+    col *= 0.82 + 0.25 * lit;
+    // Glare: a soft hot spot where the pointer is.
+    let g = (q - it.q.zw) / max(it.r.zw, vec2f(1.0));
+    *light += vec3f(1.0) * exp(-dot(g, g) * 5.0) * 0.16 * it.q.y;
+    // Foil: the edges of the content itself shine in colours that shift with the angle.
+    if (it.q.x > 0.0) {
+      let e = vec2f(1.0, 0.0);
+      let f = vec2f(0.0, 1.0);
+      let gx = luma(sampleSrc(q + e)) - luma(sampleSrc(q - e));
+      let gy = luma(sampleSrc(q + f)) - luma(sampleSrc(q - f));
+      let edge = clamp(length(vec2f(gx, gy)) * 2.2, 0.0, 1.0);
+      let hue = l.x * 0.004 + l.y * 0.003 + it.p.y * 2.2 - it.p.x * 1.6;
+      let rainbow = 0.5 + 0.5 * cos(6.28318530718 * (hue + vec3f(0.0, 0.33, 0.67)));
+      let angle = clamp((abs(it.p.x) + abs(it.p.y)) * 5.0, 0.0, 1.0);
+      *light += rainbow * edge * angle * 0.75 * it.q.x;
+    }
+    return vec4f(col, 1.0);
+  }
+  return vec4f(0.0, 0.0, 0.0, -1.0);
 }
 
 fn inMorphNow(p: vec2f) -> bool {
@@ -360,7 +452,10 @@ fn composeCut(p: vec2f, light: ptr<function, vec3f>) -> vec3f {
   } else {
     let g = ghostPicture(p);
     let rl = rollPicture(p);
-    if (rl.w >= 0.0) {
+    let tl = tiltPicture(p, &light);
+    if (tl.w >= 0.0) {
+      base = tl.rgb;
+    } else if (rl.w >= 0.0) {
       base = rl.rgb;
     } else if (g.w >= 1.0) {
       base = g.rgb;
@@ -375,7 +470,7 @@ fn composeCut(p: vec2f, light: ptr<function, vec3f>) -> vec3f {
   for (var i = 0u; i < n; i++) {
     let it = items[i];
     let kind = u32(it.h.x + 0.5);
-    if (kind < 10u) { continue; }
+    if (kind < 10u || kind >= 20u) { continue; }
     if (kind == 10u) {
       // Lock-on brackets: four corners of a rounded box, a glow, a flash inside.
       let c = it.r.xy + it.r.zw * 0.5;

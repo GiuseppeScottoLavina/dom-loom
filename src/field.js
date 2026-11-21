@@ -19,6 +19,9 @@ export const SHIFT = 5; // r: rect; p: dx, dy (the content shown there comes fro
 export const GHOST = 6; // h.y: crumble zone (px above the bottom edge); h.z: crumble progress; h.w: 1 = the live page shows through. r: rect of the picture from before a change; no input target
 export const ROLL = 8; // r: rect; p: progress (0..1), direction (1: up, -1: down). Old picture rolls out, new rolls in; maps as itself
 export const VORTEX = 9; // r: clip rect; p: cx, cy, radius, angle; q: pinch. Twists the picture around a point
+export const TILT = 20; // h.y: margin; r: card rect; p: rotX, rotY, eye distance, lift; q: foil, glare, glare x, glare y. The card turns in perspective
+export const BEND = 21; // r: rect; p: curve (radians), lag (px). A strip curves like film
+export const STRETCH = 22; // r: rect; p: left, right, divider in the layout, divider shown. Content stretches between them
 export const LENS = 7; // r: clip rect; p: radius, strength, band, skew; q: glass rect. Refracts what is under the glass edge
 
 // Light kinds: they add light or paint over the picture and move nothing.
@@ -98,7 +101,8 @@ export function offsetAt(x, y, items, count, out = { x: 0, y: 0 }) {
   for (let i = 0; i < count; i++) {
     const b = i * ITEM_FLOATS;
     const kind = Math.round(items[b]);
-    if (kind === 0 || kind === MORPH || kind === GHOST || kind === ROLL || kind > VORTEX) continue;
+    if (kind === 0 || kind === MORPH || kind === GHOST || kind === ROLL) continue;
+    if (kind > VORTEX && kind !== BEND && kind !== STRETCH) continue;
     const rx = items[b + 4], ry = items[b + 5], rw = items[b + 6], rh = items[b + 7];
     if (!inside(x, y, rx, ry, rw, rh)) continue;
     if (kind === DENT) {
@@ -123,6 +127,19 @@ export function offsetAt(x, y, items, count, out = { x: 0, y: 0 }) {
     } else if (kind === SHIFT) {
       ox += items[b + 8];
       oy += items[b + 9];
+    } else if (kind === BEND) {
+      // A cylinder seen from outside: the middle swells, the sides crowd together.
+      const half = rw / 2;
+      const xn = Math.min(Math.max((x - rx - half) / half, -1), 1);
+      const curve = items[b + 8];
+      if (curve > 1e-4) ox += (Math.asin(xn * Math.sin(curve)) / curve - xn) * half;
+      ox += items[b + 9] * xn * xn;
+    } else if (kind === STRETCH) {
+      const left = items[b + 8], right = items[b + 9], laid = items[b + 10], shown = items[b + 11];
+      let sx = x;
+      if (x <= shown) sx = left + (x - left) * (laid - left) / Math.max(shown - left, 1e-3);
+      else sx = laid + (x - shown) * (right - laid) / Math.max(right - shown, 1e-3);
+      ox += sx - x;
     } else if (kind === VORTEX) {
       // The picture twists around (cx, cy): strongest at the centre, fading with distance.
       const cx = items[b + 8], cy = items[b + 9], radius = items[b + 10], angle = items[b + 11];
@@ -168,10 +185,31 @@ export function offsetAt(x, y, items, count, out = { x: 0, y: 0 }) {
 }
 
 /**
+ * Where the pixel (x, y) falls on the plane of a TILT card, in the card's flat
+ * coordinates from its centre, or null beside the card (twin of tiltLocal).
+ */
+export function tiltLocal(x, y, items, b) {
+  const rx = items[b + 4], ry = items[b + 5], rw = items[b + 6], rh = items[b + 7];
+  const a = items[b + 8], bb = items[b + 9], eye = items[b + 10], lift = items[b + 11];
+  const qx = (x - rx - rw / 2) / lift;
+  const qy = (y - ry - rh / 2) / lift;
+  const sa = Math.sin(a), ca = Math.cos(a), sb = Math.sin(bb), cb = Math.cos(bb);
+  // The ray from the eye at (0, 0, eye) through (qx, qy, 0) meets the turned plane.
+  const nx = sb * ca, ny = -sa, nz = cb * ca;
+  const t = (nz * eye) / (nz * eye - nx * qx - ny * qy);
+  const X = t * qx, Y = t * qy, Z = eye - t * eye;
+  const u = X * cb - Z * sb;
+  const v = X * sb * sa + Y * ca + Z * cb * sa;
+  if (Math.abs(u) > rw / 2 || Math.abs(v) > rh / 2) return null;
+  return { u, v };
+}
+
+/**
  * The source point that the presented pixel (x, y) shows, in canvas CSS px, or null
  * where it shows no live element (the old page of a transition, the unbooted part).
  */
 export function mapThrough(x, y, uniforms, items, count) {
+  // (x, y) may move onto a tilted card's plane below.
   if (uniforms[U.bootActive] > 0.5 && y > uniforms[U.bootLine]) return null;
   const w = uniforms[U.viewport + 2];
   const h = uniforms[U.viewport + 3];
@@ -208,6 +246,20 @@ export function mapThrough(x, y, uniforms, items, count) {
       if (Math.round(items[b]) !== GHOST) continue;
       if (inside(x, y, items[b + 4], items[b + 5], items[b + 6], items[b + 7])) return null;
     }
+  }
+  // A tilted card: the point of the card's plane under the pixel, or nothing beside it.
+  // (Not during a cut: the shader draws no tilt there.)
+  for (let i = 0; i < count && uniforms[U.wipeActive] < 0.5; i++) {
+    const b = i * ITEM_FLOATS;
+    if (Math.round(items[b]) !== TILT) continue;
+    const m = items[b + 1];
+    const rx = items[b + 4], ry = items[b + 5], rw = items[b + 6], rh = items[b + 7];
+    if (!inside(x, y, rx - m, ry - m, rw + 2 * m, rh + 2 * m)) continue;
+    const local = tiltLocal(x, y, items, b);
+    if (!local) return null;
+    x = rx + rw / 2 + local.u;
+    y = ry + rh / 2 + local.v;
+    break;
   }
   const o = offsetAt(x, y, items, count);
   const sx = x + o.x;

@@ -1,6 +1,6 @@
 import {
   Chips, Combos, Currents, Disclosures, Drops, Fields, Gauges, Notices, Numbers, Presses, Ranges, Ratings, Reticle, Tables, Tabs,
-  Toasts, Toggles,
+  Carousels, Splits, Tilts, Toasts, Toggles,
 } from './behaviors.js';
 import { createCompositor } from './compositor.js';
 import { GHOST, MATERIALIZE, MORPH, ROLL, SHIFT, Scene, U, UNIFORM_FLOATS } from './field.js';
@@ -156,9 +156,12 @@ export class LoomStage extends ElementBase {
     this.combos = new Combos(this);
     this.toasts = new Toasts(this);
     this.notices = new Notices(this);
+    this.tilts = new Tilts(this);
+    this.carousels = new Carousels(this);
+    this.splits = new Splits(this);
     // Emission order is paint order: fills first, the reticle last.
     this.#behaviors = [
-      this.toggles, this.ranges, this.gauges, this.tabs, this.currents, this.tables, this.ratings, this.drops,
+      this.tilts, this.carousels, this.splits, this.toggles, this.ranges, this.gauges, this.tabs, this.currents, this.tables, this.ratings, this.drops,
       this.combos, this.numbers, this.chips, this.notices, this.toasts, this.fields, this.presses, this.disclosures,
       this.reticle,
     ];
@@ -181,6 +184,14 @@ export class LoomStage extends ElementBase {
   /** Adds a listener on the stage that is removed with it. */
   listen(type, listener, options = {}) {
     this.addEventListener(type, listener, { ...options, signal: this.#listeners.signal });
+  }
+
+  /**
+   * Adds a listener on the window that is removed with the stage: for the end of a
+   * gesture, which may happen outside the stage.
+   */
+  listenGlobal(type, listener, options = {}) {
+    globalThis.addEventListener(type, listener, { ...options, signal: this.#listeners.signal });
   }
 
   /**
@@ -525,6 +536,7 @@ export class LoomStage extends ElementBase {
     this.combos?.sync();
     this.toasts?.sync();
     this.notices?.sync();
+    this.splits?.sync();
     this.wake();
   }
 

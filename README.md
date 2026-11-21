@@ -50,6 +50,9 @@ There is nothing else to learn for the controls themselves: DomLoom recognises t
 | `[badge]` | When its number changes, it pings (up and down sound and light differently) |
 | `aria-busy="true"` | The placeholder content is drawn as blocks and a scan passes over it while busy; when it is no longer busy the real content assembles block by block |
 | `<progress ring>`, `<meter ring>` | A ring instead of a bar, with the same damage trail, gain preview, segments and sweep |
+| `[tilt]` (a card) | Turns toward the pointer in perspective, with a shadow and a glare; in holo its foil lights up the edges of the content as it turns. Its content stays clickable where it is drawn |
+| `[carousel]` (a scroll container) | Scroll-snapping strip that the mouse can drag; buttons with `aria-controls` and `data-step` move it a slide. While it moves it curves like film, the more the faster |
+| `[split]` holding a pane, an `<hr>` and a pane | The `<hr>` is a window splitter: drag it, or focus it and use the arrow keys, Home and End (`aria-valuemin`, `aria-valuemax`, `aria-valuenow` in %). Pulled past a limit, the panes stretch like rubber and spring back |
 | `aria-current` in a list | The current page of a `<nav>` list, the place in a `nav[aria-label=breadcrumb]`, or the step of an `<ol>` with `aria-current="step"`: the marker stretches over when it moves, and a stepper's beam runs up to the current step |
 
 ### Transitions
@@ -129,6 +132,9 @@ Draw hooks receive `(scene, state, ctx)`; `ctx` holds `colors` (from `tokens`), 
 | `toast` | `rect`, `left` (time left, 0..1), `paused`, `tone` |
 | `alert`, `badge` | `rect`, `t`, and `tone` or `up` |
 | `busy` | `rect`, `now` |
+| `tilt` | `rect`, `rotX`, `rotY` (radians), `lift`, `glare` (the pointer) |
+| `bend` (carousel) | `rect`, `speed` (px per ms) |
+| `split` | `rect`, `laid` (the divider in the layout), `shown` (where it is drawn), `dragging`, `focused` |
 | `gauge` with `ring` | as `gauge`, with `ring: true` |
 
 Every state also has `el`, the element. A skin's stylesheet styles the controls at rest; scope its rules to `loom-stage[skin="mine"]`, and load it next to `domloom/base.css`, which holds what every skin relies on. `domloom/style.css` is base plus holo.
@@ -154,6 +160,10 @@ The holo material is themed with custom properties on the stage: `--loom-void`, 
 - On the polyfill path (1.0.2) a border 1.5 px wide on a rotated pseudo-element is not drawn (2 px is). The material uses gradients there.
 - When the picture moves under a still pointer (rows flying after a sort), the press is mapped to the row that is shown, but the polyfill (1.0.2) re-targets the click only for controls: on the polyfill path a click on a plain cell reaches the row of the layout (a button inside the row is re-targeted), and on Chrome's native path it is often swallowed. The browser test reports this as a note.
 - On the polyfill path, when a click is remapped to a different element, the native click also reaches the element under the unmapped point (polyfill 1.0.2; Chrome's native path does not do this).
+
+## Publish the demo
+
+`.github/workflows/pages.yml` builds the demo and publishes it on GitHub Pages at every push to `main` (it runs the unit tests first). In the repository, set Settings → Pages → Source to "GitHub Actions" once. The build uses relative URLs, so the demo works under `https://<user>.github.io/<repo>/`.
 
 ## Develop
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { DENT, GHOST, GLITCH, JITTER, LENS, MORPH, ROLL, SHIFT, VORTEX, Scene, U, UNIFORM_FLOATS, mapThrough, offsetAt, pcg } from '../src/field.js';
+import { BEND, DENT, GHOST, GLITCH, JITTER, LENS, MORPH, ROLL, SHIFT, STRETCH, TILT, VORTEX, Scene, U, UNIFORM_FLOATS, mapThrough, offsetAt, pcg } from '../src/field.js';
 
 const W = 400;
 const H = 300;
@@ -146,4 +146,37 @@ test('a rolling value maps as itself', () => {
   const scene = new Scene();
   scene.push(ROLL, [100, 100, 80, 30], [0.5, 1]);
   assert.deepEqual(mapThrough(120, 110, uniforms(), scene.data, scene.count), { x: 120, y: 110 });
+});
+
+test('a flat tilt is the identity; a turned card maps onto its plane, beside it nothing', () => {
+  const flat = new Scene();
+  flat.push(TILT, [100, 100, 200, 120], [0, 0, 900, 1], [0, 0, 0, 0], 12);
+  assert.deepEqual(mapThrough(150, 130, uniforms(), flat.data, flat.count), { x: 150, y: 130 });
+  const turned = new Scene();
+  turned.push(TILT, [100, 100, 200, 120], [0.12, 0.2, 900, 1.03], [0, 0, 0, 0], 14);
+  const centre = mapThrough(200, 160, uniforms(), turned.data, turned.count);
+  assert.ok(Math.abs(centre.x - 200) < 0.01 && Math.abs(centre.y - 160) < 0.01, 'the centre stays');
+  const right = mapThrough(290, 160, uniforms(), turned.data, turned.count);
+  assert.ok(right && right.x > 290, `the receding side is drawn smaller: the pixel shows a farther point (${right?.x})`);
+  assert.equal(mapThrough(305, 104, uniforms(), turned.data, turned.count), null, 'beside the turned card');
+});
+
+test('a bent strip keeps its middle and its ends, and crowds the sides', () => {
+  const scene = new Scene();
+  scene.push(BEND, [0, 0, 400, 100], [0.8, 0]);
+  const at = (x) => mapThrough(x, 50, uniforms(), scene.data, scene.count).x;
+  assert.ok(Math.abs(at(200) - 200) < 1e-6);
+  assert.ok(Math.abs(at(400) - 400) < 0.5);
+  assert.ok(at(250) < 250, 'the middle swells: a pixel shows content nearer the middle');
+  assert.ok(at(399) - at(389) > 10, 'at the ends, content crowds: more than a pixel per pixel');
+});
+
+test('a stretch sends the divider shown to the divider laid out, and keeps the edges', () => {
+  const scene = new Scene();
+  scene.push(STRETCH, [0, 0, 400, 100], [0, 400, 200, 240]);
+  const at = (x) => mapThrough(x, 50, uniforms(), scene.data, scene.count).x;
+  assert.equal(at(240), 200);
+  assert.equal(at(0), 0);
+  assert.ok(Math.abs(at(400) - 400) < 1e-6);
+  assert.ok(Math.abs(at(120) - 100) < 1e-6, 'the left pane is stretched evenly');
 });

@@ -470,6 +470,95 @@ toasts.append(Object.assign(document.createElement('li'),
       </div>
     </loom-stage>
   </section>
+
+  <section class="layout layout--archive" aria-labelledby="archive-pitch">
+    <div class="intro">
+      <p class="eyebrow">Surfaces</p>
+      <h2 id="archive-pitch" class="pitch">Material <span>you can feel.</span></h2>
+      <p class="lede">
+        Cards turn toward the pointer in perspective and their foil catches the light on the edges
+        of what is printed on them. The strip bends like film when it moves. The splitter stretches
+        the panes when you pull past a limit.
+      </p>
+      <ul class="try">
+        <li><strong>Move over a card, then press Replay on it.</strong> The click lands on the turned card.</li>
+        <li><strong>Drag the strip fast</strong>, or use the arrows.</li>
+        <li><strong>Pull the splitter all the way to one side</strong> and let go.</li>
+      </ul>
+      <figure class="code">
+        <figcaption>Three attributes</figcaption>
+<pre><code>&lt;div <b>carousel</b>&gt;&lt;article <b>tilt</b>&gt;…&lt;/article&gt;…&lt;/div&gt;
+&lt;div <b>split</b>&gt;&lt;nav&gt;…&lt;/nav&gt;&lt;hr&gt;&lt;section&gt;…&lt;/section&gt;&lt;/div&gt;</code></pre>
+      </figure>
+    </div>
+
+    <loom-stage id="archive" class="panel panel--archive" sound haptics>
+      <div class="archive">
+        <header class="sheet-head archive-head">
+          <div>
+            <p class="loom-caption">Squad 04 · after-action reports</p>
+            <h2>Archive</h2>
+          </div>
+          <div class="strip-nav">
+            <button type="button" aria-controls="ops-strip" data-step="-1" aria-label="Previous operation">‹</button>
+            <button type="button" aria-controls="ops-strip" data-step="1" aria-label="Next operation">›</button>
+          </div>
+        </header>
+        <div carousel id="ops-strip" aria-label="Operations">
+          <article tilt aria-labelledby="op-nightfall">
+            <p class="loom-caption">2026-03-14</p>
+            <h3 id="op-nightfall">Op Nightfall</h3>
+            <p>Relay station</p>
+            <p class="outcome">Extracted · 0 lost</p>
+            <button type="button" class="replay" data-op="Nightfall">Replay</button>
+          </article>
+          <article tilt aria-labelledby="op-breakwater">
+            <p class="loom-caption">2026-04-02</p>
+            <h3 id="op-breakwater">Op Breakwater</h3>
+            <p>North pier</p>
+            <p class="outcome">Extracted · 1 wounded</p>
+            <button type="button" class="replay" data-op="Breakwater">Replay</button>
+          </article>
+          <article tilt aria-labelledby="op-saltmarsh">
+            <p class="loom-caption">2026-05-19</p>
+            <h3 id="op-saltmarsh">Op Saltmarsh</h3>
+            <p>Rail yard</p>
+            <p class="outcome">Aborted · weather</p>
+            <button type="button" class="replay" data-op="Saltmarsh">Replay</button>
+          </article>
+          <article tilt aria-labelledby="op-ironbark">
+            <p class="loom-caption">2026-07-07</p>
+            <h3 id="op-ironbark">Op Ironbark</h3>
+            <p>Substation 9</p>
+            <p class="outcome">Extracted · 0 lost</p>
+            <button type="button" class="replay" data-op="Ironbark">Replay</button>
+          </article>
+          <article tilt aria-labelledby="op-kingfisher">
+            <p class="loom-caption">2026-09-30</p>
+            <h3 id="op-kingfisher">Op Kingfisher</h3>
+            <p>Freight lift</p>
+            <p class="outcome">Courier recovered</p>
+            <button type="button" class="replay" data-op="Kingfisher">Replay</button>
+          </article>
+        </div>
+        <output id="replay-out" class="replay-out">Pick an operation to replay.</output>
+
+        <div split class="split">
+          <ul class="crew" aria-label="Crew">
+            <li>Nightjar · Scout</li>
+            <li>Kestrel · Breacher</li>
+            <li>Moth · Medic</li>
+            <li>Grackle · Engineer</li>
+          </ul>
+          <hr aria-valuemin="25" aria-valuemax="75" aria-valuenow="40">
+          <section class="notes" aria-label="Notes">
+            <p>Breakwater went loud at the pier when a patrol boat came in early. Kestrel held the stairs while Moth patched the courier.</p>
+            <p>Next time: two drones on the water, and a second exit by the cranes.</p>
+          </section>
+        </div>
+      </div>
+    </loom-stage>
+  </section>
   </main>
 </body>
 </html>

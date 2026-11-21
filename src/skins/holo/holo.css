@@ -683,6 +683,27 @@
   border-color: transparent !important;
 }
 
+/* Cards that tilt */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([tilt]) {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 16px;
+  border: 1px solid var(--loom-line);
+  background:
+    linear-gradient(135deg, var(--loom-holo) 0 6px, transparent 6px) no-repeat,
+    color-mix(in srgb, var(--loom-holo) 4%, var(--loom-panel));
+}
+
+/* Carousels */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([carousel]) { gap: 12px; grid-auto-columns: minmax(200px, 46%); }
+
+/* Splitters: a line with a grip. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([split] > hr) {
+  background: linear-gradient(var(--loom-line), var(--loom-line)) center / 1px 100% no-repeat;
+}
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([split] > :not(hr)) { padding: 14px; }
+
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :focus-visible {
   outline: 2px solid var(--loom-holo);
   outline-offset: 3px;
@@ -743,6 +764,8 @@
     radial-gradient(closest-side, var(--loom-panel) calc(100% - 15px), transparent calc(100% - 15px) calc(100% - 4px), var(--loom-panel) calc(100% - 4px)),
     conic-gradient(var(--loom-holo) calc(var(--loom-value, 0) * 360deg), var(--loom-line) 0);
 }
+
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :where([split] > hr:focus-visible) { outline-offset: -2px; }
 
 @media (prefers-reduced-motion: no-preference) {
   :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(label:has(> input[type=radio]), input[type=checkbox], button) {

@@ -279,6 +279,7 @@ async function run(path, browser, url) {
   await rosterChecks(path, page);
   await inputChecks(path, page);
   await feedbackChecks(path, page);
+  await surfaceChecks(path, page);
 
   await check(`${path}: no errors`, async () => {
     assert.deepEqual(session.errors, []);
@@ -432,7 +433,8 @@ async function opsChecks(path, page) {
     const cx = third.x + 60;
     const cy = third.y + third.height / 2;
     let hit = null;
-    for (let i = 0; i < 60 && !hit; i++) {
+    // The slide starts after the old picture is kept and the new one arrives (a few frames).
+    for (let i = 0; i < 160 && !hit; i++) {
       hit = await page.evaluate(({ cx, cy, canvas }) => {
         const m = document.querySelector('#ops').mapPoint({ x: cx - canvas.x, y: cy - canvas.y });
         if (!m || Math.abs(m.y - (cy - canvas.y)) < 12) return null;
@@ -729,6 +731,115 @@ async function feedbackChecks(path, page) {
     await intercept.evaluate((el) => el.setAttribute('aria-busy', 'false'));
     await page.waitForTimeout(1200);
     assert.equal(await frames(500), 0);
+  });
+}
+
+/** The sixth stage: a tilting card, a carousel, a splitter. */
+async function surfaceChecks(path, page) {
+  await page.locator('#archive').scrollIntoViewIfNeeded();
+  await page.mouse.move(2, 2);
+  await page.waitForTimeout(800);
+  const frames = (ms) => framesDuring(page, ms, '#archive canvas');
+
+  await check(`${path}: the archive renders no frame at rest`, async () => {
+    assert.equal(await frames(800), 0);
+  });
+
+  await check(`${path}: a tilted card's pixels follow the input mapper, and its button takes the click`, async () => {
+    // The foil and the glare are light added on top; for the comparison the card turns without them.
+    await page.evaluate(async () => {
+      const m = await import('/src/index.js');
+      window.__holo = m.holo;
+      m.defineSkin({
+        ...m.holo,
+        draw: { ...m.holo.draw, tilt: (scene, s) => scene.push(m.TILT, s.rect, [s.rotX, s.rotY, 900, s.lift], [0, 0, 0, 0], 16) },
+      });
+    });
+    await page.waitForTimeout(300);
+    const card = await page.locator('#ops-strip article').first().boundingBox();
+    const canvas = await page.locator('#archive canvas').boundingBox();
+    const rest = await greens(page);
+    await page.mouse.move(card.x + card.width * 0.88, card.y + card.height * 0.12);
+    await page.waitForTimeout(1200); // the turn settles
+    const turned = await greens(page);
+    const samples = [];
+    for (let y = Math.ceil(card.y + 4); y < card.y + card.height - 4; y += 1) {
+      for (let x = Math.ceil(card.x + 4); x < card.x + card.width - 4; x += 2) samples.push({ x, y });
+    }
+    const mapped = await page.evaluate(({ samples, cx, cy }) => {
+      const stage = document.querySelector('#archive');
+      return samples.map(({ x, y }) => stage.mapPoint({ x: x + 0.5 - cx, y: y + 0.5 - cy }));
+    }, { samples, cx: canvas.x, cy: canvas.y });
+    let moved = 0;
+    let viaMapper = 0;
+    let viaIdentity = 0;
+    samples.forEach(({ x, y }, i) => {
+      const m = mapped[i];
+      if (!m) return;
+      const sx = m.x + canvas.x - 0.5;
+      const sy = m.y + canvas.y - 0.5;
+      if (Math.hypot(sx - x, sy - y) < 1.5) return;
+      const x0 = Math.floor(sx), y0 = Math.floor(sy), fx = sx - x0, fy = sy - y0;
+      const at = (xx, yy) => rest.g[yy * rest.w + xx];
+      const predicted = (at(x0, y0) * (1 - fx) + at(x0 + 1, y0) * fx) * (1 - fy) + (at(x0, y0 + 1) * (1 - fx) + at(x0 + 1, y0 + 1) * fx) * fy;
+      const flat = rest.g[y * rest.w + x];
+      if (Math.abs(predicted - flat) < 50) return;
+      moved++;
+      const seen = turned.g[y * turned.w + x];
+      if (Math.abs(seen - predicted) <= 45) viaMapper++;
+      if (Math.abs(seen - flat) <= 45) viaIdentity++;
+    });
+    assert.ok(moved >= 20, `too few discriminating samples (${moved})`);
+    assert.ok(viaMapper / moved >= 0.8, `mapper explains ${viaMapper}/${moved}, identity ${viaIdentity}/${moved}`);
+    console.log(`       tilt: mapper ${viaMapper}/${moved} moved pixels, identity ${viaIdentity}/${moved}`);
+    const button = await page.locator('#ops-strip article:first-child .replay').boundingBox();
+    // Click where the button is drawn now: through the mapper, find a point that lands on it.
+    const target = await page.evaluate(({ b, cx, cy }) => {
+      const stage = document.querySelector('#archive');
+      for (let y = b.y - 10; y < b.y + b.height + 10; y += 2) {
+        for (let x = b.x - 10; x < b.x + b.width + 10; x += 2) {
+          const m = stage.mapPoint({ x: x - cx, y: y - cy });
+          if (m && m.x + cx > b.x + 6 && m.x + cx < b.x + b.width - 6 && m.y + cy > b.y + 6 && m.y + cy < b.y + b.height - 6) return { x, y };
+        }
+      }
+      return null;
+    }, { b: button, cx: canvas.x, cy: canvas.y });
+    assert.ok(target, 'the button is drawn somewhere');
+    await page.mouse.click(target.x, target.y);
+    assert.equal(await page.evaluate(() => document.querySelector('#replay-out').value), 'Replaying Op Nightfall…');
+    await page.evaluate(async () => (await import('/src/index.js')).defineSkin(window.__holo));
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(1000);
+    assert.equal(await frames(500), 0, 'the card settles flat and the stage rests');
+  });
+
+  await check(`${path}: the carousel's arrow moves it a slide`, async () => {
+    const before = await page.evaluate(() => document.querySelector('#ops-strip').scrollLeft);
+    await page.click('button[aria-controls=ops-strip][data-step="1"]');
+    await page.waitForTimeout(900);
+    const after = await page.evaluate(() => document.querySelector('#ops-strip').scrollLeft);
+    assert.ok(after > before + 100, `${before} -> ${after}`);
+  });
+
+  await check(`${path}: the splitter is a keyboard splitter, and a drag past its limit springs back`, async () => {
+    const hr = page.locator('[split] > hr');
+    await hr.focus();
+    await page.keyboard.press('Home');
+    assert.equal(await hr.getAttribute('aria-valuenow'), '25');
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await hr.getAttribute('aria-valuenow'), '27');
+    await page.keyboard.press('End');
+    assert.equal(await hr.getAttribute('aria-valuenow'), '75');
+    await page.waitForTimeout(900); // the divider drawn catches up with the layout
+    const box = await hr.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + 30);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++) await page.mouse.move(box.x - i * 60, box.y + 30); // far past the stage
+    await page.mouse.up();
+    assert.equal(await hr.getAttribute('aria-valuenow'), '25');
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(1400);
+    assert.equal(await frames(500), 0, 'released outside the stage, it springs back and rests');
   });
 }
 

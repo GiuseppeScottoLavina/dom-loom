@@ -143,8 +143,9 @@ export class Presses {
       this.start(el, stage.pointOf(e), e.timeStamp);
     });
     const release = (e) => this.release(e.timeStamp);
-    stage.listen('pointerup', release);
-    stage.listen('pointercancel', release);
+    // A press can end anywhere, also outside the stage.
+    stage.listenGlobal('pointerup', release);
+    stage.listenGlobal('pointercancel', release);
     stage.listen('keydown', (e) => {
       if (e.repeat || (e.key !== ' ' && e.key !== 'Enter')) return;
       const el = e.target.closest?.('button, summary');
@@ -437,8 +438,8 @@ export class Ranges {
       this.dragging = null;
       this.stage.wake();
     };
-    stage.listen('pointerup', up);
-    stage.listen('pointercancel', up);
+    stage.listenGlobal('pointerup', up);
+    stage.listenGlobal('pointercancel', up);
     this.sync();
   }
   fraction(el) {
@@ -1633,6 +1634,301 @@ export class Notices {
     }
     for (const region of this.busy) {
       if (this.stage.visible(region)) this.stage.draw('busy', scene, { el: region, rect: this.stage.rectOf(region), now });
+    }
+  }
+}
+
+/* ------------------------------------------------------------------- tilts */
+
+const TILT_MAX = 0.16; // radians, about nine degrees
+
+/**
+ * An element with the `tilt` attribute (a card) turns toward the pointer in
+ * perspective, with a glare where the pointer is. Its content stays live: a click
+ * lands on what is drawn under the pointer.
+ */
+export class Tilts {
+  constructor(stage) {
+    this.stage = stage;
+    this.states = new Map();
+    this.current = null;
+    stage.listen('pointermove', (e) => {
+      if (e.pointerType === 'touch' || stage.reduced) return;
+      const card = e.target.closest?.('[tilt]');
+      if (card !== this.current) this.leave();
+      if (!card || !stage.source.contains(card)) return;
+      this.current = card;
+      const s = this.state(card);
+      const [x, y, w, h] = stage.rectOf(card);
+      const [px, py] = stage.pointOf(e);
+      const nx = clamp01((px - x) / w) * 2 - 1;
+      const ny = clamp01((py - y) / h) * 2 - 1;
+      s.rx.set(-ny * TILT_MAX);
+      s.ry.set(nx * TILT_MAX);
+      s.lift.set(1.025);
+      s.glare = [px, py];
+      stage.wake();
+    });
+    stage.listen('pointerleave', () => this.leave());
+  }
+  state(card) {
+    let s = this.states.get(card);
+    if (!s) {
+      const o = { stiffness: 170, damping: 17, epsilon: 0.0005 };
+      s = { rx: new Spring(0, o), ry: new Spring(0, o), lift: new Spring(1, o), glare: [0, 0] };
+      this.states.set(card, s);
+    }
+    return s;
+  }
+  leave() {
+    const s = this.current && this.states.get(this.current);
+    this.current = null;
+    if (!s) return;
+    s.rx.set(0);
+    s.ry.set(0);
+    s.lift.set(1);
+    this.stage.wake();
+  }
+  step(now, dt) {
+    let active = false;
+    for (const [card, s] of this.states) {
+      const moving = s.rx.step(dt) | s.ry.step(dt) | s.lift.step(dt);
+      if (moving) active = true;
+      else if (card !== this.current && s.lift.x === 1) this.states.delete(card);
+    }
+    return active;
+  }
+  emit(scene) {
+    for (const [card, s] of this.states) {
+      if (!this.stage.visible(card)) continue;
+      if (Math.abs(s.rx.x) < 1e-4 && Math.abs(s.ry.x) < 1e-4 && Math.abs(s.lift.x - 1) < 1e-4) continue;
+      this.stage.draw('tilt', scene, { el: card, rect: this.stage.rectOf(card), rotX: s.rx.x, rotY: s.ry.x, lift: s.lift.x, glare: s.glare });
+    }
+  }
+}
+
+/* --------------------------------------------------------------- carousels */
+
+/**
+ * A scroll container with the `carousel` attribute: the mouse can drag it, buttons
+ * with aria-controls pointing at it and data-step="1" / "-1" move it a slide, and
+ * while it moves it curves like film, the more the faster.
+ */
+export class Carousels {
+  constructor(stage) {
+    this.stage = stage;
+    this.states = new Map();
+    this.drag = null;
+    const root = stage.source;
+    const state = (el) => {
+      let s = this.states.get(el);
+      if (!s) {
+        s = { speed: new Spring(0, { stiffness: 120, damping: 18, epsilon: 0.002 }), last: el.scrollLeft, at: performance.now() };
+        this.states.set(el, s);
+      }
+      return s;
+    };
+    stage.listen('scroll', (e) => {
+      const el = e.target;
+      if (!el.matches?.('[carousel]') || !root.contains(el)) return;
+      const s = state(el);
+      const now = performance.now();
+      const dt = Math.max(now - s.at, 8);
+      const v = (el.scrollLeft - s.last) / dt;
+      s.last = el.scrollLeft;
+      s.at = now;
+      s.speed.set(Math.max(-4, Math.min(4, v)));
+      stage.wake();
+    }, { capture: true });
+    stage.listen('pointerdown', (e) => {
+      const el = e.target.closest?.('[carousel]');
+      if (!el || e.pointerType !== 'mouse' || e.button !== 0 || !root.contains(el)) return;
+      this.drag = { el, x: e.clientX, scroll: el.scrollLeft, moved: false };
+    });
+    stage.listenGlobal('pointermove', (e) => {
+      const d = this.drag;
+      if (!d) return;
+      const dx = e.clientX - d.x;
+      if (!d.moved && Math.abs(dx) < 5) return;
+      if (!d.moved) {
+        d.moved = true;
+        // Snapping would fight the hand; it comes back on release.
+        d.el.style.scrollSnapType = 'none';
+        d.el.style.scrollBehavior = 'auto';
+      }
+      d.el.scrollLeft = d.scroll - dx;
+    });
+    const release = () => {
+      const d = this.drag;
+      this.drag = null;
+      if (!d?.moved) return;
+      d.el.style.scrollBehavior = '';
+      const left = d.el.scrollLeft;
+      d.el.style.scrollSnapType = '';
+      // Re-enabling snapping jumps; glide to the slide it would have snapped to.
+      const target = d.el.scrollLeft;
+      d.el.scrollLeft = left;
+      d.el.scrollTo({ left: target, behavior: stage.reduced ? 'auto' : 'smooth' });
+      // A drag is not a click on the slide under the pointer.
+      const swallow = (e) => e.stopPropagation();
+      stage.addEventListener('click', swallow, { capture: true, once: true });
+      setTimeout(() => stage.removeEventListener('click', swallow, { capture: true }));
+    };
+    stage.listenGlobal('pointerup', release);
+    stage.listenGlobal('pointercancel', release);
+    stage.listen('click', (e) => {
+      const button = e.target.closest?.('button[data-step][aria-controls]');
+      if (!button || !root.contains(button)) return;
+      const el = root.querySelector(`#${CSS.escape(button.getAttribute('aria-controls'))}`);
+      if (!el?.matches('[carousel]')) return;
+      const slide = el.firstElementChild;
+      const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
+      const by = (slide ? slide.getBoundingClientRect().width + gap : el.clientWidth) * (Number(button.dataset.step) || 1);
+      el.scrollBy({ left: by, behavior: stage.reduced ? 'auto' : 'smooth' });
+      stage.play('swipe');
+    });
+  }
+  step(now, dt) {
+    let active = false;
+    const t = performance.now();
+    for (const s of this.states.values()) {
+      // No scroll for a moment: it has stopped.
+      if (t - s.at > 70) s.speed.set(0);
+      if (s.speed.step(dt) || Math.abs(s.speed.x) > 0.002) active = true;
+    }
+    return active;
+  }
+  emit(scene) {
+    for (const [el, s] of this.states) {
+      if (!this.stage.visible(el) || Math.abs(s.speed.x) < 0.002) continue;
+      this.stage.draw('bend', scene, { el, rect: this.stage.rectOf(el), speed: s.speed.x });
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ splits */
+
+let splitIds = 0;
+
+/**
+ * An element with the `split` attribute holding a pane, an <hr> and a pane: the <hr>
+ * is a window splitter (focusable, arrow keys, Home and End, aria-valuenow in %),
+ * with aria-valuemin and aria-valuemax as limits. Dragged past a limit, the panes
+ * stretch like rubber and spring back.
+ */
+export class Splits {
+  constructor(stage) {
+    this.stage = stage;
+    this.states = new Map();
+    this.drag = null;
+    const root = stage.source;
+    stage.listen('pointerdown', (e) => {
+      const hr = e.target.closest?.('[split] > hr');
+      if (!hr || e.button !== 0 || !root.contains(hr)) return;
+      e.preventDefault();
+      hr.focus({ preventScroll: true });
+      this.drag = hr.parentElement;
+      this.stage.play('press');
+    });
+    stage.listenGlobal('pointermove', (e) => {
+      if (!this.drag) return;
+      const s = this.states.get(this.drag);
+      const [x, , w] = stage.rectOf(this.drag);
+      this.moveTo(this.drag, ((stage.pointOf(e)[0] - x) / w) * 100, true);
+      s.dragging = true;
+    });
+    const release = () => {
+      if (!this.drag) return;
+      const s = this.states.get(this.drag);
+      s.dragging = false;
+      s.raw = s.value;
+      this.drag = null;
+      stage.wake();
+    };
+    stage.listenGlobal('pointerup', release);
+    stage.listenGlobal('pointercancel', release);
+    stage.listen('keydown', (e) => {
+      const hr = e.target.closest?.('[split] > hr');
+      if (!hr || !root.contains(hr)) return;
+      const s = this.states.get(hr.parentElement);
+      const by = { ArrowLeft: -2, ArrowRight: 2, ArrowUp: 2, ArrowDown: -2 }[e.key];
+      if (by) this.moveTo(hr.parentElement, s.value + by, false);
+      else if (e.key === 'Home') this.moveTo(hr.parentElement, s.min, false);
+      else if (e.key === 'End') this.moveTo(hr.parentElement, s.max, false);
+      else return;
+      e.preventDefault();
+    });
+    this.sync();
+  }
+  sync() {
+    for (const el of this.stage.source.querySelectorAll('[split]')) {
+      const hr = el.querySelector(':scope > hr');
+      if (!hr || this.states.has(el)) continue;
+      const first = hr.previousElementSibling;
+      if (first && !first.id) first.id = `loom-pane-${++splitIds}`;
+      const min = Number(hr.getAttribute('aria-valuemin') ?? 10);
+      const max = Number(hr.getAttribute('aria-valuemax') ?? 90);
+      const value = Number(hr.getAttribute('aria-valuenow') ?? 50);
+      hr.tabIndex = 0;
+      hr.setAttribute('aria-orientation', 'vertical');
+      hr.setAttribute('aria-valuemin', String(min));
+      hr.setAttribute('aria-valuemax', String(max));
+      if (first) hr.setAttribute('aria-controls', first.id);
+      if (!hr.hasAttribute('aria-label')) hr.setAttribute('aria-label', 'Resize panes');
+      const s = { hr, min, max, value, raw: value, dragging: false, shown: new Spring(0, { stiffness: 260, damping: 15, epsilon: 0.05 }) };
+      this.states.set(el, s);
+      this.apply(el, value);
+    }
+  }
+  apply(el, value) {
+    const s = this.states.get(el);
+    s.value = value;
+    el.style.setProperty('--loom-split', `${value}%`);
+    s.hr.setAttribute('aria-valuenow', String(Math.round(value)));
+  }
+  moveTo(el, raw, byPointer) {
+    const s = this.states.get(el);
+    const value = Math.min(s.max, Math.max(s.min, raw));
+    s.raw = byPointer ? raw : value;
+    if (Math.abs(value - s.value) > 0.01) this.apply(el, value);
+    else if (byPointer && raw !== value && !s.limit) this.stage.play('error');
+    s.limit = raw !== value;
+    this.stage.wake();
+  }
+  step(now, dt) {
+    let active = false;
+    for (const [el, s] of this.states) {
+      if (!el.isConnected) {
+        this.states.delete(el);
+        continue;
+      }
+      const w = this.stage.rectOf(el)[2];
+      const laid = this.laid(s);
+      // Past a limit the hand still pulls, against growing resistance.
+      const over = s.raw - s.value;
+      const target = laid + (Math.sign(over) * Math.min(Math.abs(over), 40) * 0.45 * w) / 100;
+      if (Math.abs(s.shown.target - target) > 0.01) s.shown.set(target);
+      if (s.shown.x === 0 && s.shown.target === target && !s.seen) {
+        s.shown.snap(target);
+        s.seen = true;
+      }
+      if (this.stage.reduced) s.shown.snap(target);
+      if (s.shown.step(dt)) active = true;
+    }
+    return active;
+  }
+  laid(s) {
+    const r = this.stage.rectOf(s.hr);
+    return r[0] + r[2] / 2;
+  }
+  emit(scene) {
+    for (const [el, s] of this.states) {
+      if (!this.stage.visible(el)) continue;
+      const laid = this.laid(s);
+      const shown = s.shown.x || laid;
+      this.stage.draw('split', scene, {
+        el, rect: this.stage.rectOf(el), laid, shown, dragging: Boolean(s.dragging), focused: s.hr.matches(':focus-visible'),
+      });
     }
   }
 }

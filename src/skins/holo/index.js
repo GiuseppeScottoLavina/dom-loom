@@ -1,7 +1,8 @@
 // Holo: the holo-kinetic skin. Light is projected (it adds, with scan lines), the
 // selection is a slanted cut in signal red, focus is a lock-on reticle, hits shake.
 import {
-  ADD, ARC, BEHIND, BRACKETS, DENT, DIAMOND, GAUGE, GLITCH, JITTER, LENS, LIQUID, OVER, PILL, RING, SHIFT, STAR, SWEEP, VORTEX,
+  ADD, ARC, BEHIND, BEND, BRACKETS, DENT, DIAMOND, GAUGE, GLITCH, JITTER, LENS, LIQUID, OVER, PILL, RING, SHIFT, STAR, STRETCH,
+  SWEEP, TILT, VORTEX,
 } from '../../field.js';
 import { defineSkin } from '../../skin.js';
 import { clamp01, easeInOutCubic, easeOutBack, easeOutCubic } from '../../spring.js';
@@ -293,6 +294,28 @@ const draw = {
     // A scan passes over the placeholder again and again.
     const phase = (now % 1400) / 1400;
     scene.push(SWEEP, rect, [phase * 1.3 - 0.1, 1, 0.55], colors.holo);
+  },
+
+  tilt(scene, { rect, rotX, rotY, lift, glare }) {
+    // Holo cards are foil: the edges of what is on them shine as they turn.
+    scene.push(TILT, rect, [rotX, rotY, 900, lift], [1, 1, glare[0], glare[1]], 16);
+  },
+
+  bend(scene, { rect, speed }, { colors }) {
+    const curve = Math.min(Math.abs(speed) * 0.3, 0.85);
+    scene.push(BEND, rect, [curve, -speed * 7]);
+    // The leading edge catches the light.
+    const x = speed > 0 ? rect[0] + rect[2] - 2 : rect[0];
+    scene.push(PILL, [x, rect[1], 2, rect[3]], [0, 0, 14, Math.min(Math.abs(speed) * 0.35, 0.7)], colors.holo, ADD);
+  },
+
+  split(scene, { rect, laid, shown, dragging, focused }, { colors }) {
+    if (Math.abs(shown - laid) > 0.3) scene.push(STRETCH, rect, [rect[0], rect[0] + rect[2], laid, shown]);
+    const strain = Math.min(Math.abs(shown - laid) / 30, 1);
+    const color = colors.line.map((c, i) => c + (colors.signal[i] - c) * strain);
+    const lit = dragging || focused ? 1 : 0.35;
+    scene.push(PILL, [shown - 1, rect[1], 2, rect[3]], [0, 0, 8 * lit, lit], strain > 0.05 ? color : colors.holo, ADD);
+    scene.push(DIAMOND, [shown, rect[1] + rect[3] / 2, 6, 0], [5 * lit, lit, dragging ? 1 : 0], strain > 0.05 ? colors.signal : colors.holo);
   },
 
   reveal(scene, { column: [cx, cw], line, shown, k, opening }, { colors }) {

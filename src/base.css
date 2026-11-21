@@ -36,6 +36,34 @@ loom-stage .loom-listbox {
 }
 loom-stage .loom-listbox[hidden] { display: none; }
 
+/* Split panes: pane, <hr> splitter, pane. DomLoom sets --loom-split. */
+loom-stage :where([split]) {
+  display: grid;
+  grid-template-columns: minmax(0, var(--loom-split, 50%)) auto minmax(0, 1fr);
+}
+loom-stage :where([split] > hr) {
+  box-sizing: border-box;
+  width: 13px;
+  height: auto;
+  margin: 0;
+  border: 0;
+  cursor: col-resize;
+  touch-action: none;
+}
+loom-stage :where([split] > :not(hr)) { min-width: 0; overflow: hidden; }
+
+/* Carousels: a scroll-snapping strip. */
+loom-stage :where([carousel]) {
+  display: grid;
+  grid-auto-flow: column;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+loom-stage :where([carousel])::-webkit-scrollbar { display: none; }
+loom-stage :where([carousel] > *) { scroll-snap-align: start; }
+
 /* ---------------------------------------------------------------- GPU path */
 /* The skin's draw hooks paint focus, thumbs and fills; the DOM keeps the static parts. */
 /* (A range's CSS fill is set while the stage is plain DOM; it must not stay in the picture.) */
