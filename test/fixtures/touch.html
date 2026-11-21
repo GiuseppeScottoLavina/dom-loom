@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Touch</title>
+  <link rel="stylesheet" href="/src/loom.css">
+  <script type="module">
+    import '/src/index.js';
+    window.__log = [];
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest?.('button');
+      if (b?.id) window.__log.push(`click:${b.id}`);
+    });
+  </script>
+  <style>
+    body { margin: 0; background: #0a0e24; }
+    #touch { width: 560px; }
+    .row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+    [carousel] { grid-auto-columns: 160px; }
+    [carousel] > * { height: 70px; }
+  </style>
+</head>
+<body>
+  <!-- One stage, everything in the first screen: an automated tap on iPadOS only reaches it there. -->
+  <loom-stage id="touch">
+    <div class="row">
+      <label><input type="radio" name="r" value="a" checked> Alpha</label>
+      <label><input type="radio" name="r" value="b"> Bravo</label>
+    </div>
+    <div class="row">
+      <button type="button" id="held" hold="800ms">Hold</button>
+      <input type="range" id="range" min="0" max="100" value="20" style="flex: 1">
+    </div>
+    <details id="d"><summary>Open me</summary><p>Inside.</p></details>
+    <div carousel id="strip" style="margin-top: 14px">
+      <article tilt>One</article><article tilt>Two</article><article tilt>Three</article><article tilt>Four</article><article tilt>Five</article>
+    </div>
+  </loom-stage>
+</body>
+</html>
