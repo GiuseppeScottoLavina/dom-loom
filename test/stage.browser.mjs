@@ -813,6 +813,29 @@ async function surfaceChecks(path, page) {
     assert.equal(await frames(500), 0, 'the card settles flat and the stage rests');
   });
 
+  await check(`${path}: dragging the carousel with the mouse scrolls it and selects no text`, async () => {
+    const strip = await page.locator('#ops-strip').boundingBox();
+    const y = strip.y + 40;
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#ops-strip')).cursor), 'grab');
+    const before = await page.evaluate(() => document.querySelector('#ops-strip').scrollLeft);
+    await page.mouse.move(strip.x + strip.width * 0.7, y);
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) await page.mouse.move(strip.x + strip.width * (0.7 - i * 0.06), y);
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#ops-strip')).cursor), 'grabbing');
+    await page.mouse.up();
+    await page.waitForTimeout(900);
+    const state = await page.evaluate(() => ({
+      scroll: document.querySelector('#ops-strip').scrollLeft,
+      selected: getSelection().toString(),
+      dragging: document.querySelector('#ops-strip').hasAttribute('data-dragging'),
+    }));
+    assert.ok(state.scroll > before + 50, `it scrolled (${before} -> ${state.scroll})`);
+    assert.equal(state.selected, '', 'no text was selected');
+    assert.equal(state.dragging, false);
+    await page.evaluate(() => document.querySelector('#ops-strip').scrollTo({ left: 0 }));
+    await page.waitForTimeout(300);
+  });
+
   await check(`${path}: the carousel's arrow moves it a slide`, async () => {
     const before = await page.evaluate(() => document.querySelector('#ops-strip').scrollLeft);
     await page.click('button[aria-controls=ops-strip][data-step="1"]');

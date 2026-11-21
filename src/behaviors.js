@@ -1752,6 +1752,7 @@ export class Carousels {
       if (!d.moved && Math.abs(dx) < 5) return;
       if (!d.moved) {
         d.moved = true;
+        d.el.toggleAttribute('data-dragging', true);
         // Snapping would fight the hand; it comes back on release.
         d.el.style.scrollSnapType = 'none';
         d.el.style.scrollBehavior = 'auto';
@@ -1762,6 +1763,7 @@ export class Carousels {
       const d = this.drag;
       this.drag = null;
       if (!d?.moved) return;
+      d.el.removeAttribute('data-dragging');
       d.el.style.scrollBehavior = '';
       const left = d.el.scrollLeft;
       d.el.style.scrollSnapType = '';

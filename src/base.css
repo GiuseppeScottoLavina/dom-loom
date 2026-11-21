@@ -62,6 +62,10 @@ loom-stage :where([carousel]) {
   scrollbar-width: none;
 }
 loom-stage :where([carousel])::-webkit-scrollbar { display: none; }
+/* It is dragged, not selected: a hand, and no text selection (fields keep theirs). */
+loom-stage :where([carousel]) { cursor: grab; user-select: none; -webkit-user-select: none; }
+loom-stage :where([carousel][data-dragging]) { cursor: grabbing; }
+loom-stage :where([carousel] :is(input, textarea, [contenteditable])) { cursor: auto; user-select: text; -webkit-user-select: text; }
 loom-stage :where([carousel] > *) { scroll-snap-align: start; }
 
 /* ---------------------------------------------------------------- GPU path */
