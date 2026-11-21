@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DomLoom</title>
+  <meta name="description" content="Plain HTML controls drawn through a WebGPU compositor, with game-grade motion and light.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0e24'/%3E%3Cpath d='M16 5 27 16 16 27 5 16z' fill='none' stroke='%237ff0ff' stroke-width='3'/%3E%3C/svg%3E">
+  <script type="module" src="/demo/demo.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <span class="mark">DomLoom</span>
+    <span class="status" id="status" aria-live="polite">Starting the compositor…</span>
+    <button type="button" class="sound" id="sound" aria-pressed="true">Sound on</button>
+  </header>
+
+  <main>
+  <div class="layout">
+    <section class="intro" aria-labelledby="pitch">
+      <p class="eyebrow">Web components on HTML-in-Canvas</p>
+      <h1 id="pitch">Forms with <span>game feel.</span></h1>
+      <p class="lede">
+        DomLoom draws ordinary HTML controls through one WebGPU compositor. Presses dent,
+        selections slide, focus locks on, and the elements underneath stay real HTML:
+        focusable, readable by screen readers, and submitted with the form.
+      </p>
+      <ul class="try">
+        <li><strong>Hold Deploy</strong> until it fires. A tap is not enough.</li>
+        <li><strong>Press Tab</strong> to move through the form. The brackets follow focus.</li>
+        <li><strong>Leave Callsign empty</strong> and deploy. The field glitches.</li>
+        <li><strong>Drag Drop altitude</strong> fast and let go.</li>
+      </ul>
+      <figure class="code">
+        <figcaption>The markup of the panel, minus labels</figcaption>
+<pre><code>&lt;<b>loom-stage</b> sound&gt;
+  &lt;form&gt;
+    &lt;input name="callsign" required&gt;
+    &lt;label&gt;&lt;input type="radio" name="role" checked&gt; Scout&lt;/label&gt;
+    &lt;input type="range" name="altitude"&gt;
+    &lt;input type="checkbox" role="switch" name="nv"&gt;
+    &lt;button <b>hold="900ms"</b>&gt;Deploy&lt;/button&gt;
+  &lt;/form&gt;
+&lt;/<b>loom-stage</b>&gt;
+
+await stage.<b>transition</b>(() =&gt; showReceipt());</code></pre>
+      </figure>
+    </section>
+
+    <loom-stage id="loadout" class="panel" sound haptics>
+      <div class="views">
+        <form id="loadout-form" class="view loadout" data-view="form">
+          <header class="sheet-head">
+            <p class="loom-caption">Squad 04 · pre-deploy check</p>
+            <h2 style="view-transition-name: title">Loadout</h2>
+          </header>
+
+          <label class="field">
+            <span class="loom-caption">Callsign</span>
+            <input name="callsign" required minlength="3" maxlength="12" pattern="[A-Za-z0-9\-]+"
+              autocomplete="off" spellcheck="false" placeholder="Nightjar" style="view-transition-name: callsign">
+          </label>
+
+          <fieldset class="field">
+            <legend>Role</legend>
+            <div class="segments">
+              <label><input type="radio" name="role" value="Scout" checked> Scout</label>
+              <label><input type="radio" name="role" value="Breacher"> Breacher</label>
+              <label><input type="radio" name="role" value="Medic"> Medic</label>
+              <label><input type="radio" name="role" value="Engineer"> Engineer</label>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <div class="field-row">
+              <label for="altitude" class="loom-caption">Drop altitude</label>
+              <output id="altitude-out" for="altitude" style="view-transition-name: altitude">1,200 m</output>
+            </div>
+            <input id="altitude" type="range" name="altitude" min="300" max="3000" step="50" value="1200">
+          </div>
+
+          <div class="toggles">
+            <label><input type="checkbox" role="switch" name="nv" checked> Night vision</label>
+            <label><input type="checkbox" role="switch" name="comms"> Silent comms</label>
+          </div>
+
+          <label class="consent"><input type="checkbox" name="roe" required> I have read the rules of engagement</label>
+
+          <div class="actions">
+            <button type="reset">Clear</button>
+            <button type="submit" hold="900ms" style="view-transition-name: action">Deploy</button>
+          </div>
+        </form>
+
+        <section class="view receipt" data-view="receipt" aria-labelledby="receipt-title" inert>
+          <header class="sheet-head">
+            <p class="loom-caption">Squad 04 · in flight <span class="clock" id="clock">T+00:00.0</span></p>
+            <h2 id="receipt-title" tabindex="-1" style="view-transition-name: title">Deployed</h2>
+          </header>
+          <p class="callsign" data-out="callsign" style="view-transition-name: callsign"></p>
+          <dl class="readout">
+            <div><dt>Role</dt><dd data-out="role" style="view-transition-name: role"></dd></div>
+            <div><dt>Altitude</dt><dd data-out="altitude" style="view-transition-name: altitude"></dd></div>
+            <div><dt>Night vision</dt><dd data-out="nv"></dd></div>
+            <div><dt>Comms</dt><dd data-out="comms"></dd></div>
+          </dl>
+          <div class="actions">
+            <button type="button" id="edit" class="loom-primary" style="view-transition-name: action">Edit loadout</button>
+          </div>
+        </section>
+      </div>
+    </loom-stage>
+  </div>
+
+  <section class="layout layout--ops" aria-labelledby="ops-pitch">
+    <div class="intro">
+      <p class="eyebrow">Still plain HTML</p>
+      <h2 id="ops-pitch" class="pitch">Damage you <span>can read.</span></h2>
+      <p class="lede">
+        Bars are <code>&lt;meter&gt;</code> and <code>&lt;progress&gt;</code>, objectives are
+        <code>&lt;details&gt;</code>, and the tabs are the ARIA tabs pattern. Change a value
+        from your code and the compositor shows how it changed.
+      </p>
+      <ul class="try">
+        <li><strong>Take a hit.</strong> The hull drops at once, a shock bends the whole panel, and the white trail drains after a beat.</li>
+        <li><strong>Open the uplink.</strong> The bar sweeps until there is a value, then fills to a flash.</li>
+        <li><strong>Switch tabs with the arrow keys.</strong> The cut runs the way you move and the old panel crumbles ahead of it.</li>
+        <li><strong>Open an objective.</strong> What is below slides down, and a scan line uncovers the brief.</li>
+      </ul>
+      <figure class="code">
+        <figcaption>The hull bar and the code that hits it</figcaption>
+<pre><code>&lt;<b>meter</b> id="hull" min="0" max="100"
+  low="30" high="60" optimum="100" value="82"&gt;&lt;/<b>meter</b>&gt;
+
+hull.value -= 18;</code></pre>
+      </figure>
+    </div>
+
+    <loom-stage id="ops" class="panel panel--ops" sound haptics>
+      <div class="ops">
+        <header class="sheet-head">
+          <p class="loom-caption">Squad 04 · live feed</p>
+          <h2>Ops</h2>
+        </header>
+
+        <div role="tablist" aria-label="Ops views">
+          <button type="button" role="tab" id="tab-vitals" aria-controls="panel-vitals" aria-selected="true">Vitals</button>
+          <button type="button" role="tab" id="tab-objectives" aria-controls="panel-objectives">Objectives</button>
+          <button type="button" role="tab" id="tab-intel" aria-controls="panel-intel">Intel</button>
+        </div>
+
+        <div class="tabpanels">
+          <section role="tabpanel" id="panel-vitals" aria-labelledby="tab-vitals" class="vitals">
+            <div class="gauge">
+              <div class="field-row">
+                <label for="hull" class="loom-caption">Hull</label>
+                <output id="hull-out" for="hull">82 / 100</output>
+              </div>
+              <meter id="hull" min="0" max="100" low="30" high="60" optimum="100" value="82">82 of 100</meter>
+            </div>
+            <div class="gauge">
+              <div class="field-row">
+                <label for="shield" class="loom-caption">Shield cells</label>
+                <output id="shield-out" for="shield">3 / 5</output>
+              </div>
+              <meter id="shield" min="0" max="5" low="2" high="3" optimum="5" value="3" segments="5">3 of 5</meter>
+            </div>
+            <div class="gauge">
+              <div class="field-row">
+                <label for="uplink" class="loom-caption">Uplink</label>
+                <output id="uplink-out" for="uplink">Idle</output>
+              </div>
+              <progress id="uplink" max="100" value="0">0 %</progress>
+            </div>
+            <div class="actions">
+              <button type="button" id="hit">Take a hit</button>
+              <button type="button" id="patch">Patch hull</button>
+              <button type="button" id="link" class="loom-primary">Open uplink</button>
+            </div>
+          </section>
+
+          <section role="tabpanel" id="panel-objectives" aria-labelledby="tab-objectives" hidden>
+            <div class="phase">
+              <ol class="steps" aria-label="Mission phase">
+                <li>Insert</li>
+                <li aria-current="step">Secure</li>
+                <li>Extract</li>
+                <li>Debrief</li>
+              </ol>
+              <button type="button" id="advance">Next phase</button>
+            </div>
+            <details open>
+              <summary>Secure the relay <span class="tag">Primary</span></summary>
+              <p>Hold the roof of the relay station for three minutes while Engineer patches the dish. Drones come up the east stairwell.</p>
+            </details>
+            <details>
+              <summary>Extract the courier <span class="tag">Primary</span></summary>
+              <p>The courier waits in the freight lift on level −2 with the drive. Bring both out by the south ramp.</p>
+            </details>
+            <details>
+              <summary>Wipe the logs <span class="tag">Optional</span></summary>
+              <p>The terminal next to the lift keeps 48 hours of camera logs. Wipe them and Squad 04 stays off tomorrow's news.</p>
+            </details>
+          </section>
+
+          <section role="tabpanel" id="panel-intel" aria-labelledby="tab-intel" hidden>
+            <dl class="readout">
+              <div><dt>Window</dt><dd>04:10–04:40</dd></div>
+              <div><dt>Hostiles</dt><dd>12 (est.)</dd></div>
+              <div><dt>Weather</dt><dd>Rain · W 9 km/h</dd></div>
+              <div><dt>Exfil</dt><dd>South ramp</dd></div>
+            </dl>
+            <p class="note">Drone patrols pass the relay roof every 90 seconds. The last pass before the window is at 04:08.</p>
+          </section>
+        </div>
+      </div>
+    </loom-stage>
+  </section>
+
+  <section class="layout layout--roster" aria-labelledby="roster-pitch">
+    <div class="intro">
+      <p class="eyebrow">Collections</p>
+      <h2 id="roster-pitch" class="pitch">Sort it. <span>Watch it move.</span></h2>
+      <p class="lede">
+        A <code>&lt;table sortable&gt;</code> sorts by any column, and its rows fly to their new places
+        along arcs. They stay clickable in flight. Pages, breadcrumbs and steppers are plain lists
+        with <code>aria-current</code>.
+      </p>
+      <ul class="try">
+        <li><strong>Sort by Health twice.</strong> The bars travel with their rows.</li>
+        <li><strong>Go to page 2.</strong> The marker stretches over and the rows are cut in.</li>
+        <li><strong>Tab to a column header and press Enter.</strong> Sorting is a real button.</li>
+      </ul>
+      <figure class="code">
+        <figcaption>The whole API of the table</figcaption>
+<pre><code>&lt;<b>table sortable</b>&gt;…&lt;/table&gt;
+
+table.addEventListener('<b>loom-sorted</b>', (e) =&gt; …);</code></pre>
+      </figure>
+    </div>
+
+    <loom-stage id="roster" class="panel panel--roster" sound haptics>
+      <div class="roster">
+        <nav aria-label="breadcrumb">
+          <ol>
+            <li><a href="#ops-pitch">Ops</a></li>
+            <li><a href="#loadout">Squad 04</a></li>
+            <li><a aria-current="page">Roster</a></li>
+          </ol>
+        </nav>
+        <h2>Roster</h2>
+        <div class="table-wrap">
+          <table sortable id="roster-table">
+            <caption>Squad 04 · 12 operators</caption>
+            <thead>
+              <tr><th>Callsign</th><th>Role</th><th>Level</th><th>Hit rate</th><th>Health</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                  <td>Nightjar</td><td>Scout</td><td>14</td><td>71 %</td>
+                  <td data-value="92"><meter min="0" max="100" low="35" high="70" optimum="100" value="92" segments="8">92 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Kestrel</td><td>Breacher</td><td>11</td><td>64 %</td>
+                  <td data-value="78"><meter min="0" max="100" low="35" high="70" optimum="100" value="78" segments="8">78 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Moth</td><td>Medic</td><td>9</td><td>58 %</td>
+                  <td data-value="100"><meter min="0" max="100" low="35" high="70" optimum="100" value="100" segments="8">100 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Grackle</td><td>Engineer</td><td>12</td><td>61 %</td>
+                  <td data-value="45"><meter min="0" max="100" low="35" high="70" optimum="100" value="45" segments="8">45 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Vesper</td><td>Scout</td><td>16</td><td>77 %</td>
+                  <td data-value="64"><meter min="0" max="100" low="35" high="70" optimum="100" value="64" segments="8">64 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Halyard</td><td>Breacher</td><td>8</td><td>52 %</td>
+                  <td data-value="30"><meter min="0" max="100" low="35" high="70" optimum="100" value="30" segments="8">30 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Ostrich</td><td>Medic</td><td>13</td><td>60 %</td>
+                  <td data-value="88"><meter min="0" max="100" low="35" high="70" optimum="100" value="88" segments="8">88 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Ferro</td><td>Engineer</td><td>10</td><td>57 %</td>
+                  <td data-value="71"><meter min="0" max="100" low="35" high="70" optimum="100" value="71" segments="8">71 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Lark</td><td>Scout</td><td>7</td><td>49 %</td>
+                  <td data-value="96"><meter min="0" max="100" low="35" high="70" optimum="100" value="96" segments="8">96 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Basalt</td><td>Breacher</td><td>15</td><td>69 %</td>
+                  <td data-value="12"><meter min="0" max="100" low="35" high="70" optimum="100" value="12" segments="8">12 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Wren</td><td>Medic</td><td>11</td><td>55 %</td>
+                  <td data-value="59"><meter min="0" max="100" low="35" high="70" optimum="100" value="59" segments="8">59 %</meter></td>
+                </tr>
+                <tr>
+                  <td>Tamarind</td><td>Engineer</td><td>9</td><td>62 %</td>
+                  <td data-value="83"><meter min="0" max="100" low="35" high="70" optimum="100" value="83" segments="8">83 %</meter></td>
+                </tr>
+            </tbody>
+          </table>
+        </div>
+        <nav aria-label="Roster pages" class="pages">
+          <ol>
+            <li><button type="button" aria-current="page" data-page="1">1</button></li>
+            <li><button type="button" data-page="2">2</button></li>
+          </ol>
+        </nav>
+      </div>
+    </loom-stage>
+  </section>
+
+  <section class="layout layout--req" aria-labelledby="req-pitch">
+    <div class="intro">
+      <p class="eyebrow">Inputs</p>
+      <h2 id="req-pitch" class="pitch">Every value <span>has weight.</span></h2>
+      <p class="lede">
+        A number field, a pair of ranges, a <code>&lt;datalist&gt;</code>, a file input, a radio group.
+        Their values roll over, files pull the panel into a vortex, and chips crumble when you remove them.
+      </p>
+      <ul class="try">
+        <li><strong>Press + on Ammo crates.</strong> The digits roll over.</li>
+        <li><strong>Drag a file from your desktop onto the drop zone.</strong> The panel twists toward it.</li>
+        <li><strong>Remove a tag, then add one.</strong> It crumbles; the new one assembles.</li>
+        <li><strong>Type in Extraction point.</strong> The list unfolds inside the stage.</li>
+      </ul>
+      <figure class="code">
+        <figcaption>What DomLoom adds to plain HTML here</figcaption>
+<pre><code>&lt;button <b>aria-controls</b>="crates" <b>data-step</b>="1"&gt;+&lt;/button&gt;
+&lt;div <b>interval</b>&gt;&lt;input type="range"&gt;&lt;input type="range"&gt;&lt;/div&gt;
+&lt;li <b>removable</b>&gt;Night op&lt;/li&gt;
+&lt;label <b>dropzone</b>&gt;&lt;input type="file" multiple&gt;…&lt;/label&gt;
+&lt;fieldset <b>rating</b>&gt;…radios…&lt;/fieldset&gt;</code></pre>
+      </figure>
+    </div>
+
+    <loom-stage id="req" class="panel panel--req" sound haptics>
+      <form class="req" id="req-form">
+        <header class="sheet-head">
+          <p class="loom-caption">Quartermaster · requisition 7-B</p>
+          <h2>Supply</h2>
+        </header>
+
+        <div class="req-row">
+          <div class="field">
+            <label for="crates" class="loom-caption">Ammo crates</label>
+            <div class="stepper">
+              <button type="button" aria-controls="crates" data-step="-1" aria-label="One crate less">−</button>
+              <input id="crates" name="crates" type="number" min="0" max="24" value="6">
+              <button type="button" aria-controls="crates" data-step="1" aria-label="One crate more">+</button>
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-row">
+              <span class="loom-caption" id="window-label">Drop window</span>
+              <output id="window-out">04:00 – 18:00</output>
+            </div>
+            <div interval role="group" aria-labelledby="window-label">
+              <input type="range" name="from" min="0" max="24" value="4" aria-label="Window opens">
+              <input type="range" name="to" min="0" max="24" value="18" aria-label="Window closes">
+            </div>
+          </div>
+        </div>
+
+        <label class="field">
+          <span class="loom-caption">Extraction point</span>
+          <input name="exfil" list="exfil-points" placeholder="Start typing: ramp, roof, pier…">
+        </label>
+        <datalist id="exfil-points">
+          <option value="South ramp"></option>
+          <option value="Relay roof"></option>
+          <option value="Freight lift, level −2"></option>
+          <option value="Rail yard"></option>
+          <option value="North pier"></option>
+          <option value="Substation 9"></option>
+        </datalist>
+
+        <div class="field">
+          <label for="tag-input" class="loom-caption">Tags</label>
+          <ul class="tags" id="tags" aria-label="Tags">
+            <li removable>Night op</li>
+            <li removable>Low profile</li>
+            <li removable>Drones</li>
+            <li removable>Rain</li>
+          </ul>
+          <input id="tag-input" placeholder="Add a tag and press Enter" autocomplete="off">
+        </div>
+
+        <label dropzone class="drop">
+          <input type="file" name="intel" multiple>
+          <span><strong>Drop intel files</strong> or browse</span>
+          <output id="files-out">No files yet</output>
+        </label>
+
+        <fieldset rating>
+          <legend>Rate the last mission</legend>
+              <label><input type="radio" name="debrief" value="1" aria-label="1 star"></label>
+              <label><input type="radio" name="debrief" value="2" aria-label="2 stars"></label>
+              <label><input type="radio" name="debrief" value="3" aria-label="3 stars" checked></label>
+              <label><input type="radio" name="debrief" value="4" aria-label="4 stars"></label>
+              <label><input type="radio" name="debrief" value="5" aria-label="5 stars"></label>
+        </fieldset>
+      </form>
+    </loom-stage>
+  </section>
+  </main>
+</body>
+</html>

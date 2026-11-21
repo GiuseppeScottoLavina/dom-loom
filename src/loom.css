@@ -1,0 +1,3 @@
+/* DomLoom with its default skin. Other skins: import their stylesheet next to base.css. */
+@import url('./base.css');
+@import url('./skins/holo/holo.css');

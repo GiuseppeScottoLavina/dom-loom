@@ -1,0 +1,34 @@
+{
+  "name": "domloom",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Plain HTML controls drawn through a WebGPU compositor with game-grade motion and light, built on HTML-in-Canvas.",
+  "exports": {
+    ".": "./src/index.js",
+    "./style.css": "./src/loom.css",
+    "./base.css": "./src/base.css",
+    "./skins/holo": "./src/skins/holo/index.js",
+    "./skins/holo.css": "./src/skins/holo/holo.css"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test test/*.test.mjs",
+    "test:browser": "node test/stage.browser.mjs"
+  },
+  "dependencies": {
+    "@giuseppe-scotto-lavina/html-in-canvas-polyfill": "1.0.2"
+  },
+  "devDependencies": {
+    "@fontsource-variable/big-shoulders-display": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource/chakra-petch": "^5.3.0",
+    "playwright-core": "1.62.1",
+    "vite": "7.3.7"
+  }
+}
