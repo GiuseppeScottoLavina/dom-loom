@@ -1,4 +1,4 @@
-// domloom/badge: [badge]: a ping when its number changes.
+// dom-loom/badge: [badge]: a ping when its number changes.
 import '../core/index.js';
 import { Notices } from '../behaviors/notices.js';
 import { defineComponent } from '../core/behaviors.js';

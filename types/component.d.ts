@@ -1,2 +1,2 @@
-// A component entry (domloom/tabs, domloom/table, …) registers its behaviour and exports nothing.
+// A component entry (dom-loom/tabs, dom-loom/table, …) registers its behaviour and exports nothing.
 export {};

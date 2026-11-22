@@ -1,4 +1,4 @@
-// domloom/dropzone: [dropzone] with a file input: a vortex pulls the panel toward the files.
+// dom-loom/dropzone: [dropzone] with a file input: a vortex pulls the panel toward the files.
 import '../core/index.js';
 import { Drops } from '../behaviors/drops.js';
 import { defineComponent } from '../core/behaviors.js';

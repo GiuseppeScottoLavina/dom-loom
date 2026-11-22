@@ -1,4 +1,4 @@
-// Types of DomLoom (domloom, domloom/core).
+// Types of DomLoom (dom-loom, dom-loom/core).
 
 export type Rect = [x: number, y: number, width: number, height: number];
 

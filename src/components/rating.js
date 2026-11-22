@@ -1,4 +1,4 @@
-// domloom/rating: [rating] around a radio group: stars.
+// dom-loom/rating: [rating] around a radio group: stars.
 import '../core/index.js';
 import { Ratings } from '../behaviors/ratings.js';
 import { defineComponent } from '../core/behaviors.js';

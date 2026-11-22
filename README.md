@@ -9,8 +9,8 @@ DomLoom is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and
 For AI agents building a screen, the [DomLoom skill](skills/domloom/SKILL.md) includes a runnable form, component markup, framework recipes and browser checks.
 
 ```html
-<link rel="stylesheet" href="domloom/style.css">
-<script type="module">import 'domloom';</script>
+<link rel="stylesheet" href="dom-loom/style.css">
+<script type="module">import 'dom-loom';</script>
 
 <loom-stage sound>
   <form>
@@ -28,27 +28,27 @@ There is nothing else to learn for the controls themselves: DomLoom recognises t
 
 ### Only what you use
 
-`import 'domloom'` brings every component. To pay only for some, import the core and the components you use; each brings its behaviour, its drawing in the default skin and the compositor primitives it needs, and the shader is built from those primitives only.
+`import 'dom-loom'` brings every component. To pay only for some, import the core and the components you use; each brings its behaviour, its drawing in the default skin and the compositor primitives it needs, and the shader is built from those primitives only.
 
 ```js
-import 'domloom/core';     // <loom-stage>, transitions, buttons and hold, the focus reticle
-import 'domloom/forms';    // choices, ranges, text fields, numbers
-import 'domloom/table';
-import 'domloom/tabs';
+import 'dom-loom/core';     // <loom-stage>, transitions, buttons and hold, the focus reticle
+import 'dom-loom/forms';    // choices, ranges, text fields, numbers
+import 'dom-loom/table';
+import 'dom-loom/tabs';
 ```
 
 ```css
-@import 'domloom/base.css';
-@import 'domloom/skins/holo/base.css';      /* standard HTML */
-@import 'domloom/skins/holo/toast.css';     /* and the attribute components you use */
+@import 'dom-loom/base.css';
+@import 'dom-loom/skins/holo/base.css';      /* standard HTML */
+@import 'dom-loom/skins/holo/toast.css';     /* and the attribute components you use */
 ```
 
 | Entry (minified, gzip) | |
 | --- | --- |
-| `domloom/core` | 22 KB |
-| `domloom/core` + `domloom/tabs` | 24 KB |
-| `domloom/forms` | 27 KB |
-| `domloom` (all) | 41 KB |
+| `dom-loom/core` | 22 KB |
+| `dom-loom/core` + `dom-loom/tabs` | 24 KB |
+| `dom-loom/forms` | 27 KB |
+| `dom-loom` (all) | 41 KB |
 
 Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, `popover`, `menu`, `select`, `gauge`, `tabs`, `details`, `table`, `current`, `rating`, `dropzone`, `removable`, `combobox`, `toast`, `alert`, `badge`, `busy`, `tilt`, `carousel`, `split`. A component imported later (a lazy chunk) joins the stages already running. The polyfill and the effects host are loaded by the first stage that starts, in their own chunks.
 
@@ -120,11 +120,11 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 
 `<loom-stage>` is a custom element and works in any framework. Two things need care. A transition keeps a picture of the page before your update, so the update must be in the DOM when it returns. And DomLoom changes the DOM of a sorted table or a removed chip only when nobody else owns it: in a framework, cancel `loom-sort` and `loom-remove` and change your state instead, inside a transition or a discard.
 
-**React** (`domloom/react`):
+**React** (`dom-loom/react`):
 
 ```jsx
-import { LoomStage, useLoomDiscard, useLoomEvent, useLoomTransition } from 'domloom/react';
-import 'domloom/table';
+import { LoomStage, useLoomDiscard, useLoomEvent, useLoomTransition } from 'dom-loom/react';
+import 'dom-loom/table';
 
 function Roster() {
   const stage = useRef(null);
@@ -139,12 +139,12 @@ function Roster() {
 }
 ```
 
-Write DomLoom's attributes as strings in JSX (`sortable=""`, `hold="900ms"`); the types in `domloom/react` declare them.
+Write DomLoom's attributes as strings in JSX (`sortable=""`, `hold="900ms"`); the types in `dom-loom/react` declare them.
 
-**Vue** (`domloom/vue`):
+**Vue** (`dom-loom/vue`):
 
 ```js
-import { DomLoom, isCustomElement, useLoomStage } from 'domloom/vue';
+import { DomLoom, isCustomElement, useLoomStage } from 'dom-loom/vue';
 app.use(DomLoom);                                  // runtime templates
 vue({ template: { compilerOptions: { isCustomElement } } }); // single-file components (vite.config)
 
@@ -159,7 +159,7 @@ Svelte, Solid, Angular (with `CUSTOM_ELEMENTS_SCHEMA`) and plain HTML use the el
 A skin decides how a stage looks, moves and sounds. The behaviours (pressing, holding, selecting, sorting, validating) are the same for every skin: they compute what a control is doing and hand that state to the skin's draw hooks, which turn it into compositor primitives. `holo`, the holo-kinetic material above, is the default skin.
 
 ```js
-import { defineSkin, PILL, RING, ADD } from 'domloom';
+import { defineSkin, PILL, RING, ADD } from 'dom-loom';
 
 defineSkin({
   name: 'mine',
@@ -207,7 +207,7 @@ Draw hooks receive `(scene, state, ctx)`; `ctx` holds `colors` (from `tokens`), 
 | `split` | `rect`, `laid` (the divider in the layout), `shown` (where it is drawn), `dragging`, `focused` |
 | `gauge` with `ring` | as `gauge`, with `ring: true` |
 
-Every state also has `el`, the element. A skin's stylesheet styles the controls at rest; scope its rules to `loom-stage[skin="mine"]`, and load it next to `domloom/base.css`, which holds what every skin relies on. `domloom/style.css` is base plus holo.
+Every state also has `el`, the element. A skin's stylesheet styles the controls at rest; scope its rules to `loom-stage[skin="mine"]`, and load it next to `dom-loom/base.css`, which holds what every skin relies on. `dom-loom/style.css` is base plus holo.
 
 The holo material is themed with custom properties on the stage: `--loom-void`, `--loom-panel`, `--loom-line`, `--loom-ink`, `--loom-dim`, `--loom-holo`, `--loom-signal`, `--loom-warn`, `--loom-cut`, `--loom-font`, `--loom-display`, `--loom-mono`.
 
@@ -225,7 +225,7 @@ The holo material is themed with custom properties on the stage: `--loom-void`, 
 
 - A stage on the page is an opaque rectangle: its cut corners are painted in `--loom-void`, so put stages on a background of that colour. Overlay stages are transparent.
 - All stages of a page share one GPU device. Still, use a few stages per page (one per panel), not one per control: each has its own canvas and capture.
-- Top-layer content (an open modal `<dialog>`, an open popover) is not drawn into the canvas of the page's stages: give it its own `<loom-stage overlay>` (domloom/dialog, domloom/popover).
+- Top-layer content (an open modal `<dialog>`, an open popover) is not drawn into the canvas of the page's stages: give it its own `<loom-stage overlay>` (dom-loom/dialog, dom-loom/popover).
 - Date and colour pickers open with the browser's own look; so does a select's popup when opened from the keyboard or a screen reader (on purpose: it is fully accessible).
 - Opening or closing a `<details>` changes the height of the stage at once (the canvas must have the size of its content); the content inside slides. In a multi-column layout only the column of the `<details>` slides.
 - A press in the first moments of a flight (rows sorting) can reach nothing on Chrome's own HTML-in-Canvas: the press is mapped with the frame the browser captured for it, which may still show the row leaving. It never reaches another row.

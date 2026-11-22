@@ -1,4 +1,4 @@
-/* DomLoom skin "holo": menus (domloom/menu). */
+/* DomLoom skin "holo": menus (dom-loom/menu). */
 :where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay] .loom-source:has(> [role=menu]) { padding: 8px; }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=menu]) {
   display: grid;

@@ -1,9 +1,9 @@
-// domloom/vue: the plugin that tells Vue <loom-stage> is a custom element, and a
+// dom-loom/vue: the plugin that tells Vue <loom-stage> is a custom element, and a
 // composable for transitions with Vue's state. A transition keeps a picture of the
 // page before `update`, so the update must be rendered when it ends: it waits for
 // Vue's next tick.
 //
-// Components are imported as usual: import 'domloom/tabs', or import 'domloom'.
+// Components are imported as usual: import 'dom-loom/tabs', or import 'dom-loom'.
 // With single-file components, give the compiler the same test:
 //   vue({ template: { compilerOptions: { isCustomElement } } })
 import { nextTick } from 'vue';

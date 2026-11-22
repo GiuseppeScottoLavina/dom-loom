@@ -1,4 +1,4 @@
-// domloom/toast: [toasts] regions: toasts that count down and crumble.
+// dom-loom/toast: [toasts] regions: toasts that count down and crumble.
 import '../core/index.js';
 import './removable.js';
 import { Toasts } from '../behaviors/toasts.js';

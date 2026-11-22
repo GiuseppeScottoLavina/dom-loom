@@ -1,5 +1,5 @@
-// domloom: every component. To pay only for some, import domloom/core and the
-// components you use (domloom/tabs, domloom/table, …) instead.
+// dom-loom: every component. To pay only for some, import dom-loom/core and the
+// components you use (dom-loom/tabs, dom-loom/table, …) instead.
 import './components/alert.js';
 import './components/badge.js';
 import './components/busy.js';

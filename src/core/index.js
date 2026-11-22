@@ -1,5 +1,5 @@
-// domloom/core: <loom-stage>, transitions, buttons and hold-to-confirm, the focus
-// reticle and the holo skin's base. Every component module (domloom/tabs, …) imports
+// dom-loom/core: <loom-stage>, transitions, buttons and hold-to-confirm, the focus
+// reticle and the holo skin's base. Every component module (dom-loom/tabs, …) imports
 // this; import it alone to build on the stage with your own behaviours.
 import { Presses } from '../behaviors/presses.js';
 import { Reticle } from '../behaviors/reticle.js';

@@ -19,7 +19,7 @@ Start with a working HTML interaction. Put the controls that belong together ins
 
 ## Run a complete interaction
 
-This guide targets DomLoom 0.3.0. In an existing app, use its installed DomLoom package and bundler. For a blank app, use Node 22.12+ and run `npm init -y` in the app directory. Place the supplied archive next to `package.json`, run `npm install ./domloom-0.3.0.tgz`, then `npm install -D vite@7.3.7`. To make the archive from the DomLoom checkout, run `npm ci` and `npm pack` there. The archive includes the project's matching HTML-in-Canvas polyfill. Serve the app on localhost or HTTPS for WebGPU.
+This guide targets DomLoom 0.3.0. In an existing app, use its installed DomLoom package and bundler. For a blank app, use Node 22.12+ and run `npm init -y` in the app directory. Place the supplied archive next to `package.json`, run `npm install ./dom-loom-0.3.0.tgz`, then `npm install -D vite@7.3.7`. To make the archive from the DomLoom checkout, run `npm ci` and `npm pack` there. The archive includes the project's matching HTML-in-Canvas polyfill. Serve the app on localhost or HTTPS for WebGPU.
 
 Create these two files side by side. In a blank app run `npx vite` from that directory and open the URL it prints.
 
@@ -62,8 +62,8 @@ Create these two files side by side. In a blank app run `npx vite` from that dir
 **`main.js`**
 
 ```js
-import 'domloom/style.css';
-import 'domloom';
+import 'dom-loom/style.css';
+import 'dom-loom';
 
 const stage = document.querySelector('#booking');
 const form = stage.querySelector('#booking-form');
@@ -93,7 +93,7 @@ Try submitting an empty field. The browser should keep the form open and identif
 
 ## Pick the markup that activates the effect
 
-The full `domloom` entry registers every row. For a smaller bundle, keep `import 'domloom/style.css'` and replace `import 'domloom'` with imports for the features you use, e.g. `import 'domloom/forms'` and `import 'domloom/tabs'`. Each feature imports core. `domloom/forms` groups exactly `choice`, `field`, `number` and `range`. The entries below are relative to `domloom/`.
+The full `dom-loom` entry registers every row. For a smaller bundle, keep `import 'dom-loom/style.css'` and replace `import 'dom-loom'` with imports for the features you use, e.g. `import 'dom-loom/forms'` and `import 'dom-loom/tabs'`. Each feature imports core. `dom-loom/forms` groups exactly `choice`, `field`, `number` and `range`. The entries below are relative to `dom-loom/`.
 
 | Interaction | Markup and application contract | Entry |
 | --- | --- | --- |
@@ -144,13 +144,13 @@ Put the actual DOM or state change **inside** the callback. Finish network reque
 
 Keep a stable HTML root inside the stage and use stable data keys for repeated items. Query descendants through the stage ref. The stage moves its content into a source wrapper when it connects. For server-rendered screens, initialize the enhancement on the client after the framework has hydrated the subtree, or use the framework's client-only boundary.
 
-**React.** Use the wrapper and hooks from `domloom/react`. This component reorders the same keyed nodes and removes a tag from React state on pointer or keyboard input.
+**React.** Use the wrapper and hooks from `dom-loom/react`. This component reorders the same keyed nodes and removes a tag from React state on pointer or keyboard input.
 
 ```jsx
 import React, { useRef, useState } from 'react';
-import { LoomStage, useLoomDiscard, useLoomEvent, useLoomTransition } from 'domloom/react';
-import 'domloom/removable';
-import 'domloom/style.css';
+import { LoomStage, useLoomDiscard, useLoomEvent, useLoomTransition } from 'dom-loom/react';
+import 'dom-loom/removable';
+import 'dom-loom/style.css';
 
 export default function Tags() {
   const stage = useRef(null);
@@ -190,14 +190,14 @@ export default function Tags() {
 
 Use `useLoomTransition(stage)` for other state changes. For a state-owned sortable table, listen for `loom-sort`, call `event.preventDefault()` synchronously, read `event.detail.column` and `event.detail.direction` (`ascending` or `descending`), collect the existing rows, then update ordered state inside the transition with `{ morph: rows, cut: false }`. Update the header's `aria-sort` as part of that state. Vanilla tables that accept the default sort can observe `loom-sorted` afterward.
 
-**Vue 3.** In the Vite config, import `isCustomElement` from `domloom/vue` and pass `vue({ template: { compilerOptions: { isCustomElement } } })` to the existing Vue plugin setup. Merge that predicate with any custom-element test the application already uses. For runtime-compiled templates, install `DomLoom` from `domloom/vue` via `app.use(DomLoom)`. Here is a complete single-file component.
+**Vue 3.** In the Vite config, import `isCustomElement` from `dom-loom/vue` and pass `vue({ template: { compilerOptions: { isCustomElement } } })` to the existing Vue plugin setup. Merge that predicate with any custom-element test the application already uses. For runtime-compiled templates, install `DomLoom` from `dom-loom/vue` via `app.use(DomLoom)`. Here is a complete single-file component.
 
 ```vue
 <script setup>
 import { ref } from 'vue';
-import { useLoomStage } from 'domloom/vue';
-import 'domloom/core';
-import 'domloom/style.css';
+import { useLoomStage } from 'dom-loom/vue';
+import 'dom-loom/core';
+import 'dom-loom/style.css';
 
 const stage = ref(null);
 const boarding = ref(false);
@@ -222,18 +222,18 @@ The Vue composable waits for `nextTick`. For state-owned removal, intercept `@lo
 
 ## Art direction and custom effects
 
-The linked files ship in DomLoom. If this skill was copied elsewhere, open the same `src/` and `types/` paths under the installed `node_modules/domloom/` directory.
+The linked files ship in DomLoom. If this skill was copied elsewhere, open the same `src/` and `types/` paths under the installed `node_modules/dom-loom/` directory.
 
 1. Give each interaction a purpose. A seat selector can use radios for the moving choice indicator, a shared title for the jump to the ticket, and `[badge]` for a changing seat count. Motion then communicates selection, continuity and change using three ordinary controls.
 2. To recolor Holo, keep the default skin and set tokens on the stage in the initial stylesheet. For the example use `#booking { --loom-holo: #91ffb5; --loom-signal: #ff795d; --loom-panel: #101d20; }`. Style layout in CSS. A per-frame CSS animation inside captured content can force a new capture each frame.
 3. For a new skin, register `defineSkin({ name, tokens, roles, draw, sounds })` before using that name in `skin`. Supply its resting-state CSS too. Holo's stylesheet selects only the default and `skin="holo"`. `extendSkin(name, draw, sounds)` changes hooks for every stage using that skin. For a working draw hook and its inputs, read the [Holo choice implementation](../../src/skins/holo/choice.js).
-4. For a new behavior, follow [the behavior contract](../../types/index.d.ts) and [a built-in implementation](../../src/behaviors/tilts.js). Register with `defineBehavior(name, Class, order)`. Let `step(now, dt)` return true while frames are needed and false at rest. Emit existing primitives before writing a shader. Import a primitive from the full entry or its exact module, e.g. `import { PILL } from 'domloom/primitives/pill'`.
+4. For a new behavior, follow [the behavior contract](../../types/index.d.ts) and [a built-in implementation](../../src/behaviors/tilts.js). Register with `defineBehavior(name, Class, order)`. Let `step(now, dt)` return true while frames are needed and false at rest. Emit existing primitives before writing a shader. Import a primitive from the full entry or its exact module, e.g. `import { PILL } from 'dom-loom/primitives/pill'`.
 5. For a new deformation, use `definePrimitive` with a unique kind and follow [the tilt primitive](../../src/primitives/tilt.js) and [registry contract](../../src/core/primitives.js). Match the JS input mapping to the WGSL drawing at the same frame. For a custom cut, return `null` over the old snapshot and `undefined` over the live picture in its JS mapping. Test with a real pointer at a visibly displaced target.
 
 **Recipe for a signature press.** To light the bottom edge as a button sinks under the pointer, add `data-lit-edge` to that button. Load this module once at app startup. It keeps Holo's press and release animations and adds a strip only on marked controls. The strip paints light, so the existing input mapping still applies.
 
 ```js
-import { ADD, PILL, extendSkin, getSkin } from 'domloom';
+import { ADD, PILL, extendSkin, getSkin } from 'dom-loom';
 
 const drawHoloPress = getSkin('holo').draw.press;
 extendSkin('holo', {
@@ -253,7 +253,7 @@ extendSkin('holo', {
 
 | Symptom | First check |
 | --- | --- |
-| The controls look like unstyled HTML | Verify the entry actually imports `domloom/style.css` and the bundle served its CSS. Verify the controls are descendants of the stage. |
+| The controls look like unstyled HTML | Verify the entry actually imports `dom-loom/style.css` and the bundle served its CSS. Verify the controls are descendants of the stage. |
 | Styled controls, no expected effect | Inspect `await stage.ready` on the affected, visible stage. `'webgpu'` is the compositor and `stage.dataset.mode` identifies `native` or `polyfill`. `'dom'` is expected with `static`, forced colors, or unavailable WebGPU. Reduced motion can suppress a transition even on WebGPU. Also check the feature import and markup in the table. |
 | Two views cut but their elements never morph | Keep the same stage, check equal visible keys on both sides, and use an unscoped transition for automatic key matching. For reordered nodes, check that each old node survives the update. |
 | An automated click immediately after startup misses | `ready` reports the renderer. Holo can still be revealing the control. For a settled-state pointer test, wait for its visible position to map to the intended live control before clicking. |

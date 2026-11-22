@@ -1,9 +1,9 @@
 // Compile-only check of the public types (npm run test:types).
 import { useRef } from 'react';
-import { defineSkin, extendSkin, PILL, ADD, type LoomStage as Stage } from 'domloom';
-import 'domloom/tabs';
-import { LoomStage, useLoomEvent, useLoomDiscard, useLoomTransition } from 'domloom/react';
-import { DomLoom, isCustomElement, useLoomStage } from 'domloom/vue';
+import { defineSkin, extendSkin, PILL, ADD, type LoomStage as Stage } from 'dom-loom';
+import 'dom-loom/tabs';
+import { LoomStage, useLoomEvent, useLoomDiscard, useLoomTransition } from 'dom-loom/react';
+import { DomLoom, isCustomElement, useLoomStage } from 'dom-loom/vue';
 import { ref } from 'vue';
 
 const skin = defineSkin({ name: 'mine', tokens: { accent: ['--accent', '#fc0'] }, roles: { hot: 'accent' } });

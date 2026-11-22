@@ -1,4 +1,4 @@
-// domloom/carousel: [carousel] strips: drag, arrows, a bend with speed.
+// dom-loom/carousel: [carousel] strips: drag, arrows, a bend with speed.
 import '../core/index.js';
 import { Carousels } from '../behaviors/carousels.js';
 import { defineComponent } from '../core/behaviors.js';

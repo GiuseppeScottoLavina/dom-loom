@@ -1,8 +1,8 @@
-// domloom/react: <LoomStage> for React, and hooks that make DomLoom's motion and
+// dom-loom/react: <LoomStage> for React, and hooks that make DomLoom's motion and
 // React's state agree. A transition keeps a picture of the page before `update`,
 // so the update must be in the DOM when it returns: the hooks flush it (flushSync).
 //
-// Components are imported as usual: import 'domloom/tabs', or import 'domloom'.
+// Components are imported as usual: import 'dom-loom/tabs', or import 'dom-loom'.
 import { createElement, forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import '../core/index.js';

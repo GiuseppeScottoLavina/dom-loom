@@ -1081,7 +1081,7 @@ export class LoomStage extends ElementBase {
         return 'dom';
       }
       this.#host = host;
-      // An overlay opens with its own motion (domloom/dialog), not with the boot sweep.
+      // An overlay opens with its own motion (dom-loom/dialog), not with the boot sweep.
       this.#boot = this.reduced || !this.skin.boot || this.overlay ? null : { start: NaN };
       await host.addPlugin(createCompositor(runtime, this), {});
       if (generation !== this.#generation) return 'dom';

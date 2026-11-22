@@ -1,4 +1,4 @@
-/* DomLoom skin "holo": overlays (domloom/dialog, domloom/popover). */
+/* DomLoom skin "holo": overlays (dom-loom/dialog, dom-loom/popover). */
 
 /* The stage is transparent: the panel's cut corners are cut out, not painted. */
 :where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay] { background: transparent; }
