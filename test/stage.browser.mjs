@@ -8,6 +8,8 @@ import { launch, startServer } from './harness.mjs';
 
 const only = process.argv.includes('--native') ? ['native'] : ['native', 'polyfill'];
 const results = [];
+// The accessibility trees seen on each path (they must be the same).
+const trees = {};
 
 async function check(name, fn) {
   const started = Date.now();
@@ -94,6 +96,19 @@ async function run(path, browser, url) {
   await check(`${path}: the compositor draws the stage`, async () => {
     assert.equal(session.renderer, 'webgpu');
     assert.equal(await page.evaluate(() => document.querySelector('loom-stage').dataset.mode), path);
+  });
+
+  await check(`${path}: the accessibility tree is the plain HTML's`, async () => {
+    const tree = {};
+    for (const id of ['loadout', 'ops']) tree[id] = await page.locator(`#${id}`).ariaSnapshot();
+    trees[path] = tree;
+    assert.match(tree.loadout, /textbox "Callsign"/);
+    assert.match(tree.loadout, /radio "Scout" \[checked\]/);
+    assert.match(tree.loadout, /slider "Drop altitude"/);
+    assert.match(tree.loadout, /switch "Night vision" \[checked\]/);
+    assert.match(tree.ops, /tab "Vitals" \[selected\]/);
+    assert.match(tree.ops, /meter "Hull"/);
+    if (trees.native && path !== 'native') assert.deepEqual(tree, trees.native, 'the same tree as on the native path');
   });
 
   await check(`${path}: no frame is rendered at rest`, async () => {
@@ -190,6 +205,20 @@ async function run(path, browser, url) {
     assert.equal(await formActive(page), true);
   });
 
+  await check(`${path}: an activation nobody pressed arms the hold button, a second one confirms`, async () => {
+    await fillValid(page);
+    // What a screen reader does: a click with no pointer press (detail 0).
+    await page.evaluate(() => document.querySelector('button[type=submit]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 0 })));
+    await page.waitForTimeout(150);
+    assert.equal(await formActive(page), true, 'the first activation only arms');
+    assert.match(await page.locator('#loadout .loom-live').textContent(), /Deploy: activate again to confirm/);
+    await page.waitForTimeout(5000);
+    await page.evaluate(() => document.querySelector('button[type=submit]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 0 })));
+    await page.waitForTimeout(150);
+    assert.equal(await formActive(page), true, 'an arming expires');
+    assert.equal(await page.locator('button[type=submit]').getAttribute('aria-description'), 'Press and hold, or activate twice, to confirm');
+  });
+
   await check(`${path}: a completed hold runs the form's validation`, async () => {
     await page.fill('input[name=callsign]', '');
     await holdDeploy(page, 1150);
@@ -270,6 +299,21 @@ async function run(path, browser, url) {
     await page.evaluate(() => window.__flight);
   });
 
+  await check(`${path}: two activations nobody pressed submit through the hold button`, async () => {
+    await page.evaluate(() => {
+      document.querySelector('[data-view=receipt]').inert = true;
+      document.querySelector('#loadout-form').inert = false;
+    });
+    await fillValid(page);
+    const click = () => page.evaluate(() => document.querySelector('button[type=submit]').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 0 })));
+    await click();
+    await page.waitForTimeout(300);
+    assert.equal(await formActive(page), true);
+    await click();
+    await page.waitForFunction(() => !document.querySelector('[data-view=receipt]').inert, null, { timeout: 4000 });
+    await page.waitForTimeout(1500);
+  });
+
   await opsChecks(path, page);
   await rosterChecks(path, page);
   await inputChecks(path, page);
@@ -343,6 +387,12 @@ async function run(path, browser, url) {
   await session.context.close();
 
   session = await open(browser, url, { noGpu: true });
+  await check('dom: the accessibility tree is the same as on the GPU paths', async () => {
+    const p = session.page;
+    const tree = {};
+    for (const id of ['loadout', 'ops']) tree[id] = await p.locator(`#${id}`).ariaSnapshot();
+    assert.deepEqual(tree, trees.native);
+  });
   await check('dom: tabs and details work without WebGPU', async () => {
     const p = session.page;
     await p.focus('#tab-vitals');

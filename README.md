@@ -53,7 +53,7 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, 
 | You write | What happens |
 | --- | --- |
 | `<button>`, `<summary>`, a link, a label of a radio or checkbox | Pressing dents it around the contact point; releasing sends a ring through it |
-| `<button hold="900ms">` | The button only fires after a hold. It charges, shakes, and bursts when it fires. A tap, a click from a script or Enter in a field is refused with a shake. Screen readers hear "Press and hold to confirm" |
+| `<button hold="900ms">` | The button only fires after a hold (pointer, or Space / Enter on it). It charges, shakes, and bursts when it fires; a tap is refused with a shake. An activation that nobody pressed (a screen reader's, Enter in a field) arms it instead, says "activate again to confirm", and a second one within 4 seconds confirms: hold-to-confirm needs that alternative (WCAG 2.5.1). Screen readers hear "Press and hold, or activate twice, to confirm" |
 | Radios with the same name | The selection is a slanted fill that slides to the new choice, front edge first |
 | `<input type="checkbox" role="switch">` | A knob that stretches as it travels; the track lights up |
 | `<input type="checkbox">` | The box fills from the centre |

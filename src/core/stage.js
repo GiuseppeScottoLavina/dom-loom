@@ -28,6 +28,7 @@ const FLIGHT_MS = 720;
 const MAX_KEYED = 12;
 const MAX_MOVERS = 48;
 const EXIT_MS = 420;
+const ARM_MS = 4000;
 const ROLL_MS = 260;
 const ARRIVE_MS = 520;
 const UNFOLD_MS = 240;
@@ -75,6 +76,7 @@ export class LoomStage extends ElementBase {
   #domFrame = 0;
   #transition = null;
   #reflow = null;
+  #armed = null;
   #changes = []; // rolls and overlay unfolds: pictures from before a change, animated
   #arrivals = []; // elements assembling block by block
   #flights = [];
@@ -450,7 +452,7 @@ export class LoomStage extends ElementBase {
 
   #describeHold(button) {
     if (!button.hasAttribute('aria-description')) {
-      button.setAttribute('aria-description', 'Press and hold to confirm');
+      button.setAttribute('aria-description', 'Press and hold, or activate twice, to confirm');
     }
   }
 
@@ -458,10 +460,35 @@ export class LoomStage extends ElementBase {
     const button = event.target.closest?.('button[hold]');
     if (!button || !this.#source.contains(button) || button.disabled) return;
     if (button === this.#allowed) return;
+    const presses = this.#instances.get('presses');
+    // A click that nobody pressed (a screen reader's activation, Enter in a field) cannot
+    // hold: the first one arms the button, a second one soon after confirms. Pointer and
+    // key presses on the button keep needing the hold.
+    const pressed = presses?.list.some((p) => p.el === button);
+    if (event.detail === 0 && !pressed) {
+      if (this.#armed?.el === button && event.timeStamp - this.#armed.at < ARM_MS) {
+        this.#armed = null;
+        this.#announce('');
+        return;
+      }
+      this.#armed = { el: button, at: event.timeStamp };
+      this.#announce(`${button.textContent.trim()}: activate again to confirm`);
+    }
     event.preventDefault();
     event.stopImmediatePropagation();
-    const presses = this.#instances.get('presses');
     if (presses && !presses.holding(button)) presses.nudge(button, event.timeStamp);
+  }
+
+  /** Says something to screen readers, from a live region of the stage. */
+  #announce(text) {
+    let live = this.#source.querySelector(':scope > .loom-live');
+    if (!live) {
+      live = document.createElement('div');
+      live.className = 'loom-live';
+      live.setAttribute('aria-live', 'assertive');
+      this.#source.append(live);
+    }
+    live.textContent = text;
   }
 
   #unlockAudio() {

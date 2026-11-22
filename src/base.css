@@ -82,6 +82,16 @@ loom-stage :where([carousel][data-dragging]) { cursor: grabbing; }
 loom-stage :where([carousel] :is(input, textarea, [contenteditable])) { cursor: auto; user-select: text; -webkit-user-select: text; }
 loom-stage :where([carousel] > *) { scroll-snap-align: start; }
 
+/* The stage's live region (announcements for screen readers): read, not seen. */
+loom-stage .loom-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Overlays: a dialog or a popover holding a stage is only a frame; the stage draws. */
 :where(dialog, [popover]):has(> loom-stage[overlay]) {
   max-width: none;
