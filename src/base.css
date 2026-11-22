@@ -82,6 +82,19 @@ loom-stage :where([carousel][data-dragging]) { cursor: grabbing; }
 loom-stage :where([carousel] :is(input, textarea, [contenteditable])) { cursor: auto; user-select: text; -webkit-user-select: text; }
 loom-stage :where([carousel] > *) { scroll-snap-align: start; }
 
+/* Overlays: a dialog or a popover holding a stage is only a frame; the stage draws. */
+:where(dialog, [popover]):has(> loom-stage[overlay]) {
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+loom-stage[overlay] { background: transparent; }
+
 /* ---------------------------------------------------------------- GPU path */
 /* The skin's draw hooks paint focus, thumbs and fills; the DOM keeps the static parts. */
 /* (A range's CSS fill is set while the stage is plain DOM; it must not stay in the picture.) */

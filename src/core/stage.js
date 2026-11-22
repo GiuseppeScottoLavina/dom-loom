@@ -98,6 +98,16 @@ export class LoomStage extends ElementBase {
     if (name === 'skin' && this.#source) this.#restyle();
   }
 
+  /** A stage in a dialog or a popover: transparent around its panel (the `overlay` attribute). */
+  get overlay() {
+    return this.hasAttribute('overlay');
+  }
+
+  /** Adds a listener on another element that is removed with the stage. */
+  listenOn(target, type, listener, options = {}) {
+    target.addEventListener(type, listener, { ...options, signal: this.#listeners.signal });
+  }
+
   /** The skin that draws this stage: its `skin` attribute, or the default one. */
   get skin() {
     return getSkin(this.getAttribute('skin'));
@@ -635,6 +645,7 @@ export class LoomStage extends ElementBase {
     u.set(role('void', role('bg', [0, 0, 0])), U.void);
     u.set([skin.shader.scanlines, skin.shader.chroma, skin.shader.crumble, skin.shader.hatch], U.style);
     u[U.wipeDir] = 1;
+    u[U.alpha] = this.overlay ? 1 : 0;
     const whole = [0, 0, sourceRect.width, sourceRect.height];
     this.#ctx = { colors, now, reduced: this.reduced, whole, durations: skin.durations, stage: this };
 
@@ -809,13 +820,16 @@ export class LoomStage extends ElementBase {
 
       // The polyfill finds new drawable canvases from a MutationObserver.
       await Promise.resolve();
-      const host = await runtime.api.createHost(canvas, source, { maxDpr: 2, interposer: true, device: sharedDevice });
+      // An overlay stage (in a dialog, a popover) is transparent around its panel.
+      const alphaMode = this.overlay ? 'premultiplied' : 'opaque';
+      const host = await runtime.api.createHost(canvas, source, { maxDpr: 2, interposer: true, device: sharedDevice, alphaMode });
       if (generation !== this.#generation) {
         host.destroy();
         return 'dom';
       }
       this.#host = host;
-      this.#boot = this.reduced || !this.skin.boot ? null : { start: NaN };
+      // An overlay opens with its own motion (domloom/dialog), not with the boot sweep.
+      this.#boot = this.reduced || !this.skin.boot || this.overlay ? null : { start: NaN };
       await host.addPlugin(createCompositor(runtime, this), {});
       if (generation !== this.#generation) return 'dom';
 

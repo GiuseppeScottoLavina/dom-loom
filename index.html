@@ -177,6 +177,10 @@ hull.value -= 18;</code></pre>
               <button type="button" id="patch">Patch hull</button>
               <button type="button" id="link" class="loom-primary">Open uplink</button>
             </div>
+            <div class="abort-row">
+              <button type="button" id="abort">Abort mission</button>
+              <output id="abort-out"></output>
+            </div>
           </section>
 
           <section role="tabpanel" id="panel-objectives" aria-labelledby="tab-objectives" hidden>
@@ -541,7 +545,10 @@ toasts.append(Object.assign(document.createElement('li'),
             <button type="button" class="replay" data-op="Kingfisher">Replay</button>
           </article>
         </div>
-        <output id="replay-out" class="replay-out">Pick an operation to replay.</output>
+        <div class="replay-row">
+          <output id="replay-out" class="replay-out">Pick an operation to replay.</output>
+          <button type="button" id="crew">Crew sheet</button>
+        </div>
 
         <div split class="split">
           <ul class="crew" aria-label="Crew">
@@ -560,5 +567,35 @@ toasts.append(Object.assign(document.createElement('li'),
     </loom-stage>
   </section>
   </main>
+
+  <dialog id="abort-dialog" class="confirm-dialog" aria-labelledby="abort-title">
+    <loom-stage overlay sound haptics>
+      <form method="dialog" class="confirm">
+        <p class="loom-caption">Squad 04 · mission control</p>
+        <h2 id="abort-title">Abort mission?</h2>
+        <p>The squad pulls out by the south ramp. The relay stays in enemy hands.</p>
+        <div class="actions">
+          <button value="stay">Stay</button>
+          <button value="abort" hold="900ms" class="loom-primary">Abort</button>
+        </div>
+      </form>
+    </loom-stage>
+  </dialog>
+
+  <dialog id="crew-drawer" class="crew-drawer" aria-labelledby="crew-title">
+    <loom-stage overlay="right" sound>
+      <div class="sheet">
+        <p class="loom-caption">Squad 04 · crew sheet</p>
+        <h2 id="crew-title">Crew</h2>
+        <dl class="readout">
+          <div><dt>Nightjar</dt><dd>Scout · 14</dd></div>
+          <div><dt>Kestrel</dt><dd>Breacher · 11</dd></div>
+          <div><dt>Moth</dt><dd>Medic · 9</dd></div>
+          <div><dt>Grackle</dt><dd>Engineer · 12</dd></div>
+        </dl>
+        <form method="dialog" class="actions"><button>Close</button></form>
+      </div>
+    </loom-stage>
+  </dialog>
 </body>
 </html>

@@ -18,6 +18,7 @@ struct Uniforms {
   wipe2: vec4f, // direction
   style: vec4f, // the skin's look: scan lines, chroma, crumble, hatch
   present: vec4f, // the kinds in the scene, as a bit mask
+  alpha: vec4f,   // 1: a transparent canvas; the output is premultiplied
 }
 struct Item { h: vec4f, r: vec4f, p: vec4f, q: vec4f }
 
@@ -82,6 +83,14 @@ fn livePicture(p: vec2f) -> vec3f {
   let r = sampleSrc(clamp(sp + dir * k, vec2f(0.0), u.view.zw)).r;
   let b = sampleSrc(clamp(sp - dir * k, vec2f(0.0), u.view.zw)).b;
   return vec3f(r, g.g, b);
+}
+
+// How opaque the live picture is at p (a transparent canvas only).
+fn liveAlpha(p: vec2f) -> f32 {
+  var q = p;
+  if (present(SPATIAL)) { q = p + offsetAt(p); }
+  if (q.x < -0.5 || q.y < -0.5 || q.x > u.view.z + 0.5 || q.y > u.view.w + 0.5) { return 0.0; }
+  return textureSampleLevel(src, samp, clamp(q, vec2f(0.0), u.view.zw) / u.view.zw, 0.0).a;
 }
 
 // The old picture breaking into 4 px blocks: t = 0 whole, 1 gone. Each block leaves
@@ -258,12 +267,23 @@ const TAIL = /* wgsl */ `
   // Light is projected: faint scan lines run through it.
   let scan = 1.0 - u.style.x + u.style.x * step(0.5, fract(p.y / 3.0));
   var color = base + light * scan;
+  // On a transparent canvas the picture's own alpha holds, and light makes its own.
+  let transparent = u.alpha.x > 0.5;
+  var alpha = 1.0;
+  if (transparent) {
+    alpha = max(liveAlpha(p), clamp(max(max(light.r, light.g), light.b) * scan, 0.0, 1.0));
+  }
 
   if (u.boot.x > 0.5) {
     let dy = p.y - u.boot.y;
     if (dy > 0.0) { color = u.bg.rgb; }
     color += u.holo.rgb * exp(-pow(dy / 1.3, 2.0)) * 0.9;
     color += u.holo.rgb * exp(-abs(min(dy, 0.0)) / 40.0) * 0.12 * scan;
+  }
+/*POST*/
+  if (transparent) {
+    let a = clamp(alpha, 0.0, 1.0);
+    return vec4f(min(color, vec3f(a)), a);
   }
   return vec4f(min(color, vec3f(1.0)), 1.0);
 }`;
@@ -279,6 +299,7 @@ export function buildShader(defs) {
   const whole = offsets.filter((d) => d.offset.whole);
   const pictures = defs.filter((d) => d.picture).sort((a, b) => a.picture.order - b.picture.order);
   const lights = defs.filter((d) => d.light);
+  const posts = defs.filter((d) => d.post);
   const spatial = maskOf(offsets);
 
   const offsetAt = /* wgsl */ `
@@ -359,7 +380,15 @@ ${chain(lights, (d) => d.light.wgsl)}
     offsetAt,
     CORE,
     pictureFns,
-    fs + TAIL,
+    fs + TAIL.replace('/*POST*/', posts.length ? /* wgsl */ `
+  if (present(${maskOf(posts)}u)) {
+    let n = u32(u.misc.x);
+    for (var i = 0u; i < n; i++) {
+      let it = items[i];
+      let kind = u32(it.h.x + 0.5);
+${chain(posts, (d) => d.post.wgsl)}
+    }
+  }` : ''),
   ].join('\n');
 }
 

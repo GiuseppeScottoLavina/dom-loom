@@ -6,6 +6,8 @@ export interface LoomStageProps extends HTMLAttributes<LoomStageElement> {
   sound?: boolean;
   haptics?: boolean;
   static?: boolean;
+  /** A stage inside a dialog or a popover: transparent; the value is the edge it opens from. */
+  overlay?: boolean | 'center' | 'left' | 'right' | 'top' | 'bottom';
   onFallback?: (error: unknown) => void;
   onReady?: (renderer: 'webgpu' | 'dom') => void;
   children?: ReactNode;

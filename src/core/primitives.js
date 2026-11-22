@@ -15,6 +15,8 @@
 //             js(x, y, items, b) -> undefined (does not cover), null (no input
 //             target), { x, y } (map on from there) or { x, y, final: true }
 //   light     paints over the picture: { wgsl } with p, it, `var base`, `var light`
+//   post      works on the finished pixel: { wgsl, js(x, y, items, b) -> false where
+//             the pixel shows nothing } with p, it, `var color`, `var alpha`
 
 const table = new Map();
 let version = 0;
@@ -45,7 +47,7 @@ export const primitives = {
   },
 };
 
-let cached = { version: -1, offsets: [], pictures: [] };
+let cached = { version: -1, offsets: [], pictures: [], posts: [] };
 
 /** The mapper's view of the registry, rebuilt when a primitive is added. */
 export function mapperTables() {
@@ -53,7 +55,8 @@ export function mapperTables() {
     const offsets = [];
     for (const def of table.values()) if (def.offset?.js) offsets[def.kind] = def.offset.js;
     const pictures = [...table.values()].filter((d) => d.picture?.js).sort((a, b) => a.picture.order - b.picture.order);
-    cached = { version, offsets, pictures };
+    const posts = [...table.values()].filter((d) => d.post?.js);
+    cached = { version, offsets, pictures, posts };
   }
   return cached;
 }

@@ -211,7 +211,9 @@ export function createCompositor(runtime, stage) {
           const pass = frame.encoder.beginRenderPass({
             colorAttachments: [{
               view: frame.destinationView, loadOp: 'clear', storeOp: 'store',
-              clearValue: { r: scene.uniforms[U.bg], g: scene.uniforms[U.bg + 1], b: scene.uniforms[U.bg + 2], a: 1 },
+              // A transparent canvas starts transparent; an opaque one starts as the panel.
+              clearValue: scene.uniforms[U.alpha] > 0.5 ? { r: 0, g: 0, b: 0, a: 0 }
+                : { r: scene.uniforms[U.bg], g: scene.uniforms[U.bg + 1], b: scene.uniforms[U.bg + 2], a: 1 },
             }],
           });
           if (frame.sourceReady) {

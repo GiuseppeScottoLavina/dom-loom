@@ -282,6 +282,16 @@ body {
 .notes { display: grid; gap: 10px; align-content: start; }
 .notes p { font-size: 14px; }
 
+/* ------------------------------------------------------------------ overlays */
+.abort-row, .replay-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.abort-row output { color: var(--dim); font: 500 12px/1 'JetBrains Mono Variable', monospace; }
+.confirm-dialog > loom-stage { width: min(460px, calc(100vw - 32px)); }
+.confirm { display: grid; gap: 16px; }
+.confirm h2 { font-size: 44px; }
+.crew-drawer > loom-stage { width: min(380px, 100vw); }
+.sheet { display: grid; gap: 18px; align-content: start; }
+.sheet .readout { grid-template-columns: 1fr; }
+
 /* ---------------------------------------------------------- the roster panel */
 .layout--roster {
   border-top: 1px solid var(--line);

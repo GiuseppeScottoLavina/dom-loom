@@ -1,0 +1,21 @@
+/* DomLoom skin "holo": overlays (domloom/dialog, domloom/popover). */
+
+/* The stage is transparent: the panel's cut corners are cut out, not painted. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay] { background: transparent; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay] .loom-source {
+  background: var(--loom-panel);
+  clip-path: polygon(var(--loom-cut) 0, 100% 0, 100% calc(100% - var(--loom-cut)), calc(100% - var(--loom-cut)) 100%, 0 100%, 0 var(--loom-cut));
+  box-shadow: none;
+}
+
+/* Behind a modal dialog the page dims and blurs. */
+dialog:has(> :where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay])::backdrop {
+  background: color-mix(in srgb, var(--loom-void, #0a0e24) 62%, transparent);
+  backdrop-filter: blur(3px) saturate(0.8);
+}
+
+/* A drawer: overlay="left" or "right" on a dialog's stage. */
+dialog:has(> :where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay=right]) { margin: 0 0 0 auto; height: 100dvh; }
+dialog:has(> :where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay=left]) { margin: 0 auto 0 0; height: 100dvh; }
+:where(dialog:has(> :where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay=right]), dialog:has(> :where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay=left])) > loom-stage { height: 100%; }
+:where(dialog:has(> :where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay=right]), dialog:has(> :where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay=left])) .loom-source { min-height: 100dvh; }

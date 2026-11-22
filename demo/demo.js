@@ -283,3 +283,17 @@ archive.addEventListener('click', (event) => {
 });
 archive.toggleAttribute('sound', stage.hasAttribute('sound'));
 soundButton.addEventListener('click', () => archive.toggleAttribute('sound', stage.hasAttribute('sound')));
+
+/* -------------------------------------------------------------- overlays */
+const abortDialog = document.querySelector('#abort-dialog');
+const abortOut = document.querySelector('#abort-out');
+document.querySelector('#abort').addEventListener('click', () => abortDialog.showModal());
+abortDialog.addEventListener('close', () => {
+  abortOut.value = { abort: 'Abort ordered. Pulling out.', stay: 'Holding position.' }[abortDialog.returnValue] ?? '';
+});
+const crewDrawer = document.querySelector('#crew-drawer');
+document.querySelector('#crew').addEventListener('click', () => crewDrawer.showModal());
+for (const s of document.querySelectorAll('dialog loom-stage')) {
+  s.toggleAttribute('sound', stage.hasAttribute('sound'));
+  soundButton.addEventListener('click', () => s.toggleAttribute('sound', stage.hasAttribute('sound')));
+}

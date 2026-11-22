@@ -38,6 +38,13 @@ function coveredBy(kind, x, y, items, count) {
  */
 export function mapThrough(x, y, uniforms, items, count) {
   if (uniforms[U.bootActive] > 0.5 && y > uniforms[U.bootLine]) return null;
+  // What a post primitive hides (an overlay that is still opening) takes no input.
+  for (const def of mapperTables().posts) {
+    for (let i = 0; i < count; i++) {
+      const b = i * ITEM_FLOATS;
+      if (Math.round(items[b]) === def.kind && def.post.js(x, y, items, b) === false) return null;
+    }
+  }
   const w = uniforms[U.viewport + 2];
   const h = uniforms[U.viewport + 3];
   if (uniforms[U.wipeActive] > 0.5) {

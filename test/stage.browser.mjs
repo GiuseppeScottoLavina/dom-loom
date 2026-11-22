@@ -275,6 +275,7 @@ async function run(path, browser, url) {
   await inputChecks(path, page);
   await feedbackChecks(path, page);
   await surfaceChecks(path, page);
+  await overlayChecks(path, page);
 
   await check(`${path}: no errors`, async () => {
     assert.deepEqual(session.errors, []);
@@ -367,6 +368,14 @@ async function run(path, browser, url) {
     assert.equal(await p.locator('#tags li').count(), 3, 'removal is immediate without the compositor');
     await p.click('button[aria-controls=crates][data-step="-1"]');
     assert.equal(await p.evaluate(() => document.querySelector('#crates').value), '5');
+  });
+  await check('dom: a dialog opens and closes at once without WebGPU', async () => {
+    const p = session.page;
+    await p.evaluate(() => document.querySelector('#abort-dialog').showModal());
+    await p.waitForTimeout(200);
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(50);
+    assert.equal(await p.evaluate(() => document.querySelector('#abort-dialog').open), false);
   });
   await check('dom: without WebGPU the same form works in plain DOM', async () => {
     const p = session.page;
@@ -916,6 +925,80 @@ async function surfaceChecks(path, page) {
     await page.mouse.move(2, 2);
     await page.waitForTimeout(1400);
     assert.equal(await frames(500), 0, 'released outside the stage, it springs back and rests');
+  });
+}
+
+/** Overlays: a dialog and a drawer drawn by transparent stages. */
+async function overlayChecks(path, page) {
+  const dialog = '#abort-dialog';
+  const open = () => page.evaluate((sel) => document.querySelector(sel).open, dialog);
+  await page.locator('#ops').scrollIntoViewIfNeeded();
+  // The Abort button is on the Vitals tab; earlier checks left another tab open.
+  await page.click('#tab-vitals');
+  await page.mouse.move(2, 2);
+  await page.waitForTimeout(900);
+
+  await check(`${path}: a dialog opens from a line, transparent outside its panel and its cut corners`, async () => {
+    await page.click('#abort');
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(90);
+    // Early in the opening, the panel's top edge is still closed: no input there.
+    const early = await page.evaluate((sel) => {
+      const s = document.querySelector(`${sel} loom-stage`);
+      return { renderer: s.dataset.renderer, top: s.mapPoint({ x: 60, y: 6 }) };
+    }, dialog);
+    assert.equal(early.renderer, 'webgpu');
+    assert.equal(early.top, null, 'the part that is not open yet takes no input');
+    await page.waitForTimeout(1000);
+    const box = await page.locator(`${dialog} loom-stage`).boundingBox();
+    const g = await greens(page);
+    const at = (x, y) => g.g[Math.round(y) * g.w + Math.round(x)];
+    const corner = at(box.x + 3, box.y + 3);
+    const outside = at(box.x - 8, box.y + 3);
+    // Inside, the panel draws its content: the brightest pixel across the title is its ink.
+    const title = await page.locator(`${dialog} h2`).boundingBox();
+    let ink = 0;
+    for (let x = title.x; x < title.x + Math.min(title.width, 260); x++) ink = Math.max(ink, at(x, title.y + title.height / 2));
+    assert.ok(Math.abs(corner - outside) <= 6, `the cut corner shows the page behind (corner ${corner}, outside ${outside})`);
+    assert.ok(ink > 200, `the panel and its title are drawn (brightest ${ink})`);
+    assert.equal(await framesDuring(page, 600, `${dialog} canvas`), 0, 'an open dialog rests');
+  });
+
+  await check(`${path}: Escape, Stay and a held Abort close the dialog after it has shut`, async () => {
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(60);
+    assert.equal(await open(), true, 'it is still shutting');
+    await page.waitForTimeout(900);
+    assert.equal(await open(), false);
+    await page.click('#abort');
+    await page.waitForTimeout(900);
+    await page.click(`${dialog} button[value=stay]`);
+    await page.waitForTimeout(900);
+    assert.deepEqual(await page.evaluate((sel) => [document.querySelector(sel).open, document.querySelector(sel).returnValue], dialog), [false, 'stay']);
+    await page.click('#abort');
+    await page.waitForTimeout(900);
+    const b = await page.locator(`${dialog} button[value=abort]`).boundingBox();
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(1150);
+    await page.mouse.up();
+    await page.waitForTimeout(1200);
+    assert.deepEqual(await page.evaluate((sel) => [document.querySelector(sel).open, document.querySelector(sel).returnValue], dialog), [false, 'abort']);
+    assert.equal(await page.locator('#abort-out').textContent(), 'Abort ordered. Pulling out.');
+  });
+
+  await check(`${path}: a drawer opens from its edge and closes with its form`, async () => {
+    await page.locator('#archive').scrollIntoViewIfNeeded();
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(1200);
+    await page.click('#crew');
+    await page.waitForTimeout(1000);
+    assert.equal(await page.evaluate(() => document.querySelector('#crew-drawer').open), true);
+    await page.click('#crew-drawer button');
+    await page.waitForTimeout(80);
+    assert.equal(await page.evaluate(() => document.querySelector('#crew-drawer').open), true, 'it is still shutting');
+    await page.waitForTimeout(900);
+    assert.equal(await page.evaluate(() => document.querySelector('#crew-drawer').open), false);
   });
 }
 

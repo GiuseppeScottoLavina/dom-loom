@@ -4,7 +4,7 @@
 
 export const ITEM_FLOATS = 16; // header, rect, p, q: 4 x vec4f
 export const MAX_ITEMS = 128;
-export const UNIFORM_FLOATS = 52; // 13 x vec4f
+export const UNIFORM_FLOATS = 56; // 14 x vec4f
 
 // Blend modes of PILL and SWEEP.
 export const ADD = 0; // light added on top
@@ -26,6 +26,7 @@ export const U = {
   wipeDir: 40, // 1: the blade runs left to right, -1: right to left
   style: 44, // the skin's look: scan lines (0..1), chroma (0..1), crumble (0 | 1), hatch (0..1)
   present: 48, // the kinds in this frame's scene, as a bit mask: passes for absent kinds are skipped
+  alpha: 52, // 1: the canvas is transparent (an overlay stage); the shader writes premultiplied alpha
 };
 
 const ZERO = [0, 0, 0, 0];

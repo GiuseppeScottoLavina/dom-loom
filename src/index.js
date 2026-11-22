@@ -8,10 +8,12 @@ import './components/choice.js';
 import './components/combobox.js';
 import './components/current.js';
 import './components/details.js';
+import './components/dialog.js';
 import './components/dropzone.js';
 import './components/field.js';
 import './components/gauge.js';
 import './components/number.js';
+import './components/popover.js';
 import './components/range.js';
 import './components/rating.js';
 import './components/removable.js';
@@ -23,6 +25,7 @@ import './components/toast.js';
 
 export * from './core/index.js';
 // For skin authors: every primitive of the compositor.
+export { APERTURE } from './primitives/aperture.js';
 export { ARC } from './primitives/arc.js';
 export { BEND } from './primitives/bend.js';
 export { BRACKETS } from './primitives/brackets.js';

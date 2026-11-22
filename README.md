@@ -48,7 +48,7 @@ import 'domloom/tabs';
 | `domloom/forms` | 27 KB |
 | `domloom` (all) | 41 KB |
 
-Components: `choice`, `range`, `field`, `number`, `forms` (the four), `gauge`, `tabs`, `details`, `table`, `current`, `rating`, `dropzone`, `removable`, `combobox`, `toast`, `alert`, `badge`, `busy`, `tilt`, `carousel`, `split`. A component imported later (a lazy chunk) joins the stages already running. The polyfill and the effects host are loaded by the first stage that starts, in their own chunks.
+Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, `popover`, `gauge`, `tabs`, `details`, `table`, `current`, `rating`, `dropzone`, `removable`, `combobox`, `toast`, `alert`, `badge`, `busy`, `tilt`, `carousel`, `split`. A component imported later (a lazy chunk) joins the stages already running. The polyfill and the effects host are loaded by the first stage that starts, in their own chunks.
 
 | You write | What happens |
 | --- | --- |
@@ -79,6 +79,7 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `gauge`, `
 | `[tilt]` (a card) | Turns toward the pointer in perspective, with a shadow and a glare; in holo its foil lights up the edges of the content as it turns. Its content stays clickable where it is drawn |
 | `[carousel]` (a scroll container) | Scroll-snapping strip that the mouse can drag; buttons with `aria-controls` and `data-step` move it a slide. While it moves it curves like film, the more the faster |
 | `[split]` holding a pane, an `<hr>` and a pane | The `<hr>` is a window splitter: drag it, or focus it and use the arrow keys, Home and End (`aria-valuemin`, `aria-valuemax`, `aria-valuenow` in %). Pulled past a limit, the panes stretch like rubber and spring back |
+| `<dialog>` or `[popover]` holding `<loom-stage overlay>` | The stage is transparent around its panel (cut corners are cut out) and opens from a line of light; `overlay="left|right|top|bottom"` opens it from that edge (a drawer). A dialog closed by Escape, a `<form method="dialog">` or a `command="close"` button shuts first, then closes, with its `returnValue`. `dialog.close()` from a script closes at once, and so does a popover dismissed by a click outside |
 | `aria-current` in a list | The current page of a `<nav>` list, the place in a `nav[aria-label=breadcrumb]`, or the step of an `<ol>` with `aria-current="step"`: the marker stretches over when it moves, and a stepper's beam runs up to the current step |
 
 ### Transitions
@@ -217,9 +218,9 @@ The holo material is themed with custom properties on the stage: `--loom-void`, 
 
 ## Limits
 
-- Stages are opaque rectangles: the cut corners are painted in `--loom-void`, so put stages on a background of that colour. (Polyfill 1.0.3 can make a canvas transparent; DomLoom does not use it yet.)
+- A stage on the page is an opaque rectangle: its cut corners are painted in `--loom-void`, so put stages on a background of that colour. Overlay stages are transparent.
 - All stages of a page share one GPU device. Still, use a few stages per page (one per panel), not one per control: each has its own canvas and capture.
-- Top-layer content (an open modal `<dialog>`, an open popover) is not drawn into a canvas. A dialog needs its own stage inside it.
+- Top-layer content (an open modal `<dialog>`, an open popover) is not drawn into the canvas of the page's stages: give it its own `<loom-stage overlay>` (domloom/dialog, domloom/popover).
 - Select popups, date pickers and other native pickers open with the browser's own look.
 - Opening or closing a `<details>` changes the height of the stage at once (the canvas must have the size of its content); the content inside slides. In a multi-column layout only the column of the `<details>` slides.
 - A press in the first moments of a flight (rows sorting) can reach nothing on Chrome's own HTML-in-Canvas: the press is mapped with the frame the browser captured for it, which may still show the row leaving. It never reaches another row.
