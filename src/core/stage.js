@@ -300,12 +300,10 @@ export class LoomStage extends ElementBase {
       const r = union([...scopeBefore, ...this.#rectsOf(scopes)]);
       transition.scope = r ? [r[0] - 2, r[1] - 2, r[2] + 4, r[3] + 4] : null;
     }
-    this.play(sound ?? (!transition.cut ? 'shuffle' : scopes ? 'swipe' : 'whoosh'));
-    await this.#compositor?.waitForSource(version, 600);
-    // Give the polyfill one more frame to settle the new picture.
-    await frame();
-    if (this.#transition !== transition) return done;
-    this.#sync();
+    // Where everything goes is known as soon as the DOM has changed: the flights are
+    // set now, so that while the new picture is on its way each element is drawn where
+    // it was (from the old picture, so nothing changes on screen) and a press on it
+    // already reaches it.
     const after = measure();
     const most = movers ? MAX_MOVERS : MAX_KEYED;
     for (const [key, a] of before) {
@@ -314,6 +312,12 @@ export class LoomStage extends ElementBase {
       // A moved element that is no longer shown crumbles where it was.
       else if (!b && movers) transition.exits.push(a.rect);
     }
+    this.play(sound ?? (!transition.cut ? 'shuffle' : scopes ? 'swipe' : 'whoosh'));
+    await this.#compositor?.waitForSource(version, 600);
+    // Give the polyfill one more frame to settle the new picture.
+    await frame();
+    if (this.#transition !== transition) return done;
+    this.#sync();
     transition.pending = false;
     this.wake();
     return done;
@@ -655,6 +659,12 @@ export class LoomStage extends ElementBase {
       if (t.scope) u.set(t.scope, U.scope);
       if (t.pending) {
         u[U.wipeFront] = 0;
+        // Waiting for the new picture: everything stands where it was.
+        for (const rect of t.exits) scene.push(GHOST, rect, ZERO4, ZERO4, 0, 0, 1);
+        for (const { a, b, el } of t.pairs) {
+          scene.push(MORPH, a, a, b, 0, 0, 0);
+          if (el) this.#flights.push({ el, to: b, now: a });
+        }
       } else {
         if (Number.isNaN(t.start)) t.start = now;
         const e = now - t.start;
