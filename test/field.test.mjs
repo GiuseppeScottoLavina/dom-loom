@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mapThrough, offsetAt } from '../src/core/mapper.js';
-import { pcg } from '../src/core/math.js';
+import { fieldAt, pcg } from '../src/core/math.js';
+import { definePrimitive, primitives } from '../src/core/primitives.js';
 import { Scene, U, UNIFORM_FLOATS } from '../src/core/scene.js';
+import { buildShader } from '../src/core/shader.js';
 import { BEND } from '../src/primitives/bend.js';
 import { DENT } from '../src/primitives/dent.js';
 import { GHOST } from '../src/primitives/ghost.js';
@@ -193,4 +195,88 @@ test('a stretch sends the divider shown to the divider laid out, and keeps the e
   assert.equal(at(0), 0);
   assert.ok(Math.abs(at(400) - 400) < 1e-6);
   assert.ok(Math.abs(at(120) - 100) < 1e-6, 'the left pane is stretched evenly');
+});
+
+// A cut style registered here: the left half of the scope is live behind the front, and the
+// style shows the old page everywhere while front is 0 (the cut waits for the new picture).
+const CUT_KIND = 30;
+definePrimitive({
+  kind: CUT_KIND,
+  name: 'test-cut',
+  cut: {
+    wgsl: 'fn testCut(p: vec2f, sc: vec4f, s: f32, front: f32, dir: f32, light: ptr<function, vec3f>) -> vec3f { return sampleGhost(p); }',
+    fn: 'testCut',
+    js: (x, y, sc, s, front) => (front > 0 && x < sc[0] + sc[2] / 2 ? undefined : null),
+  },
+});
+
+test('a cut style maps as its js says, inside the scope only', () => {
+  const none = new Float32Array(16);
+  const u = uniforms({ wipeActive: 1, wipeFront: 0.3, wipeBand: 0.1, wipeSlant: 0.42, wipeStyle: CUT_KIND });
+  // The blade would show the old page at s > 0.3 here; the style says live (left half).
+  assert.deepEqual(mapThrough(100, 250, u, none, 0), { x: 100, y: 250 }, 'live where the style says so');
+  assert.equal(mapThrough(300, 20, u, none, 0), null, 'old where the style says null');
+  u.set([100, 100, 200, 100], U.scope);
+  assert.deepEqual(mapThrough(20, 280, u, none, 0), { x: 20, y: 280 }, 'outside the scope the page is live');
+  assert.deepEqual(mapThrough(150, 150, u, none, 0), { x: 150, y: 150 });
+  assert.equal(mapThrough(250, 150, u, none, 0), null);
+  // Waiting for the new picture: front is 0, everything is the old page.
+  u[U.wipeFront] = 0;
+  assert.equal(mapThrough(150, 150, u, none, 0), null);
+  // An unknown style kind keeps the blade.
+  u[U.wipeFront] = 0.5;
+  u[U.wipeStyle] = 28;
+  assert.deepEqual(mapThrough(150, 150, u, none, 0), { x: 150, y: 150 });
+  assert.equal(mapThrough(250, 150, u, none, 0), null);
+});
+
+test('the shader emits the presence mask as unsigned integers up to kind 31', () => {
+  const code = buildShader([{ kind: 27, name: 'a', light: { wgsl: '' } }, { kind: 31, name: 'b', post: { wgsl: '' } }]);
+  assert.ok(code.includes(`present(${(1 << 27) >>> 0}u)`), 'kind 27');
+  assert.ok(code.includes('present(2147483648u)'), 'kind 31 does not turn negative');
+  assert.ok(code.includes('u32(u.present.y) << 16u'), 'the mask has two halves');
+});
+
+test('the shader chains the registered cut styles after the scope check', () => {
+  const code = buildShader(primitives.all());
+  assert.ok(code.includes('fn testCut('));
+  assert.ok(code.includes(`if (style == ${CUT_KIND}u) { return testCut(p, sc, s, front, dir, light); }`));
+  assert.ok(code.indexOf('let style = u32(u.wipe2.y + 0.5)') < code.indexOf('if (s > front)'));
+  assert.ok(!buildShader([]).includes('let style = u32'), 'no styles, no chain');
+});
+
+test('the displacement field samples bilinearly between cell centres and is zero when off', () => {
+  const cols = 4, rows = 2;
+  const field = new Float32Array(cols * rows * 2);
+  // Cell (c, r) holds (c * 10, r * 100): the field is a ramp, so bilinear is exact.
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) field.set([c * 10, r * 100], (r * cols + c) * 2);
+  const u = uniforms();
+  u.set([cols, rows, 1], U.field);
+  // Cell centres of a 400 x 300 canvas: x = 50, 150, 250, 350; y = 75, 225.
+  assert.deepEqual(fieldAt(150, 75, u, field), { x: 10, y: 0 }, 'on a cell centre');
+  assert.deepEqual(fieldAt(200, 150, u, field), { x: 15, y: 50 }, 'halfway between four cells');
+  assert.deepEqual(fieldAt(0, 0, u, field), { x: 0, y: 0 }, 'clamped at the corner');
+  assert.deepEqual(fieldAt(399, 299, u, field), { x: 30, y: 100 }, 'clamped at the far corner');
+  u[U.field + 2] = 0;
+  assert.deepEqual(fieldAt(200, 150, u, field), { x: 0, y: 0 }, 'zero when inactive');
+  u[U.field + 2] = 1;
+  assert.deepEqual(fieldAt(200, 150, u, null), { x: 0, y: 0 }, 'zero without data');
+});
+
+test('a primitive twin receives the frame uniforms and the frozen field', () => {
+  let seen = null;
+  definePrimitive({
+    kind: 29,
+    name: 'test-field',
+    offset: { wgsl: '', js(x, y, items, b, out, ctx) { seen = ctx; out.x += fieldAt(x, y, ctx.uniforms, ctx.field).x; } },
+  });
+  const scene = new Scene();
+  scene.push(29, [0, 0, W, H]);
+  const field = new Float32Array(2 * 2 * 2).fill(7);
+  const u = uniforms();
+  u.set([2, 2, 1], U.field);
+  assert.deepEqual(mapThrough(100, 100, u, scene.data, scene.count, field), { x: 107, y: 100 });
+  assert.equal(seen.field, field);
+  assert.equal(seen.uniforms, u);
+  assert.deepEqual(mapThrough(100, 100, u, scene.data, scene.count), { x: 100, y: 100 }, 'no field: no displacement');
 });

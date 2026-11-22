@@ -2,22 +2,29 @@
 // picture it answers which point of the live content is shown there (or null where
 // no element is), with the numbers of the frame that was presented. Each primitive
 // brings its own twin (src/primitives/*); this file runs them in the shader's order.
-import { inside } from './math.js';
+import { fieldAt, inside } from './math.js';
 import { mapperTables } from './primitives.js';
 import { ITEM_FLOATS, U } from './scene.js';
 
 const MORPH = 4;
 const GHOST = 6;
 
-/** Total displacement at (x, y): the source point shown there is (x + ox, y + oy). */
-export function offsetAt(x, y, items, count, out = { x: 0, y: 0 }) {
+export { fieldAt };
+
+const NO_CTX = { uniforms: null, field: null };
+
+/**
+ * Total displacement at (x, y): the source point shown there is (x + ox, y + oy).
+ * ctx = { uniforms, field } is handed to every twin (the numbers of the presented frame).
+ */
+export function offsetAt(x, y, items, count, out = { x: 0, y: 0 }, ctx = NO_CTX) {
   const { offsets } = mapperTables();
   const acc = { x: 0, y: 0 };
   for (let i = 0; i < count; i++) {
     const b = i * ITEM_FLOATS;
     const js = offsets[Math.round(items[b])];
     if (!js || !inside(x, y, items[b + 4], items[b + 5], items[b + 6], items[b + 7])) continue;
-    js(x, y, items, b, acc);
+    js(x, y, items, b, acc, ctx);
   }
   out.x = acc.x;
   out.y = acc.y;
@@ -35,8 +42,9 @@ function coveredBy(kind, x, y, items, count) {
 /**
  * The source point that the presented pixel (x, y) shows, in canvas CSS px, or null
  * where it shows no live element (the old page of a transition, the unbooted part).
+ * `field` is the displacement field of that frame (a copy), or null where it is off.
  */
-export function mapThrough(x, y, uniforms, items, count) {
+export function mapThrough(x, y, uniforms, items, count, field = null) {
   if (uniforms[U.bootActive] > 0.5 && y > uniforms[U.bootLine]) return null;
   // What a post primitive hides (an overlay that is still opening) takes no input.
   for (const def of mapperTables().posts) {
@@ -68,7 +76,12 @@ export function mapThrough(x, y, uniforms, items, count) {
       const slant = uniforms[U.wipeSlant];
       const lx = uniforms[U.wipeDir] < 0 ? sw - (x - sx) : x - sx;
       const s = (lx + (y - sy) * slant) / (sw + sh * slant);
-      if (s > uniforms[U.wipeFront]) return null;
+      const front = uniforms[U.wipeFront];
+      const style = mapperTables().cuts[Math.round(uniforms[U.wipeStyle])];
+      if (style) {
+        // A registered style decides: null shows the old page, anything else the live one.
+        if (style(x, y, [sx, sy, sw, sh], s, front, uniforms[U.wipeDir] < 0 ? -1 : 1, uniforms) === null) return null;
+      } else if (s > front) return null;
     }
   } else {
     // Pictures that replace the live one, in the shader's order, then ghosts.
@@ -89,7 +102,7 @@ export function mapThrough(x, y, uniforms, items, count) {
     }
     if (!moved && coveredBy(GHOST, x, y, items, count)) return null;
   }
-  const o = offsetAt(x, y, items, count);
+  const o = offsetAt(x, y, items, count, undefined, { uniforms, field });
   const sx = x + o.x;
   const sy = y + o.y;
   // Content moved in from beyond the edges is empty space.

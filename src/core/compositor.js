@@ -1,6 +1,6 @@
 import { mapThrough } from './mapper.js';
 import { primitives } from './primitives.js';
-import { ITEM_FLOATS, MAX_ITEMS, U, UNIFORM_FLOATS } from './scene.js';
+import { FIELD_COLS, FIELD_ROWS, ITEM_FLOATS, MAX_ITEMS, U, UNIFORM_FLOATS } from './scene.js';
 import { BLIT_WGSL, buildShader } from './shader.js';
 // The core's own primitives: transitions, ghosts, rolls, slides, arrivals.
 import '../primitives/ghost.js';
@@ -24,13 +24,28 @@ export function createCompositor(runtime, stage) {
       const { device, format } = context;
       const GPUUsage = globalThis.GPUBufferUsage;
       const TexUsage = globalThis.GPUTextureUsage;
+      const FRAGMENT = globalThis.GPUShaderStage?.FRAGMENT ?? 2;
+      // An explicit layout: with 'auto' a binding the shader does not use (the field,
+      // until a primitive reads it) would be dropped, and the bind group would fail.
+      const bindLayout = device.createBindGroupLayout({
+        label: 'domloom',
+        entries: [
+          { binding: 0, visibility: FRAGMENT, buffer: { type: 'uniform' } },
+          { binding: 1, visibility: FRAGMENT, sampler: { type: 'filtering' } },
+          { binding: 2, visibility: FRAGMENT, texture: { sampleType: 'float' } },
+          { binding: 3, visibility: FRAGMENT, buffer: { type: 'read-only-storage' } },
+          { binding: 4, visibility: FRAGMENT, texture: { sampleType: 'float' } },
+          { binding: 5, visibility: FRAGMENT, buffer: { type: 'read-only-storage' } },
+        ],
+      });
+      const pipelineLayout = device.createPipelineLayout({ label: 'domloom', bindGroupLayouts: [bindLayout] });
       // The shader holds the primitives the page has imported; a primitive imported
       // later (a lazy component) rebuilds it, and the old one draws meanwhile.
       const compile = (defs) => {
         const module = device.createShaderModule({ label: 'domloom', code: buildShader(defs) });
         return device.createRenderPipelineAsync({
           label: 'domloom',
-          layout: 'auto',
+          layout: pipelineLayout,
           vertex: { module, entryPoint: 'vs' },
           fragment: { module, entryPoint: 'fs', targets: [{ format }] },
           primitive: { topology: 'triangle-list' },
@@ -51,6 +66,7 @@ export function createCompositor(runtime, stage) {
       ]);
       const uniformBuffer = device.createBuffer({ size: UNIFORM_FLOATS * 4, usage: GPUUsage.UNIFORM | GPUUsage.COPY_DST });
       const itemBuffer = device.createBuffer({ size: MAX_ITEMS * ITEM_FLOATS * 4, usage: GPUUsage.STORAGE | GPUUsage.COPY_DST });
+      const fieldBuffer = device.createBuffer({ size: FIELD_COLS * FIELD_ROWS * 2 * 4, usage: GPUUsage.STORAGE | GPUUsage.COPY_DST });
       const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
       const blank = device.createTexture({ size: [1, 1], format: 'rgba8unorm', usage: TexUsage.TEXTURE_BINDING | TexUsage.RENDER_ATTACHMENT });
       const uniforms = new Float32Array(UNIFORM_FLOATS);
@@ -60,7 +76,8 @@ export function createCompositor(runtime, stage) {
       let lastNow = NaN;
       let sourceVersion = -1;
       let versionWaiters = [];
-      let presented = { uniforms: new Float32Array(UNIFORM_FLOATS), items: new Float32Array(0), count: 0 };
+      let presented = { uniforms: new Float32Array(UNIFORM_FLOATS), items: new Float32Array(0), count: 0, field: null };
+      let fieldCopy = null; // the field as last uploaded: frozen with each presented frame that uses it
       let groups = new WeakMap();
       const rebuild = () => {
         if (rebuilding || builtVersion === primitives.version) return;
@@ -87,13 +104,14 @@ export function createCompositor(runtime, stage) {
         let group = perGhost.get(key);
         if (!group) {
           group = device.createBindGroup({
-            layout: pipeline.getBindGroupLayout(0),
+            layout: bindLayout,
             entries: [
               { binding: 0, resource: { buffer: uniformBuffer } },
               { binding: 1, resource: sampler },
               { binding: 2, resource: sourceView },
               { binding: 3, resource: { buffer: itemBuffer } },
               { binding: 4, resource: ghostView },
+              { binding: 5, resource: { buffer: fieldBuffer } },
             ],
           });
           perGhost.set(key, group);
@@ -192,7 +210,19 @@ export function createCompositor(runtime, stage) {
           uniforms[U.time] = frame.now / 1000;
           uniforms[U.dpr] = frame.dpr;
           uniforms.set(scene.uniforms.subarray(8), 8);
-          uniforms[U.present] = scene.mask;
+          // The mask is a 32-bit integer: a float holds 24 bits exactly, so it goes in halves.
+          uniforms[U.present] = scene.mask & 0xffff;
+          uniforms[U.present + 1] = scene.mask >>> 16;
+          const field = stage.field;
+          if (field.dirty) {
+            device.queue.writeBuffer(fieldBuffer, 0, field.data);
+            field.dirty = false;
+            fieldCopy = null;
+          }
+          if (field.active && !fieldCopy) fieldCopy = field.data.slice();
+          uniforms[U.field] = field.cols;
+          uniforms[U.field + 1] = field.rows;
+          uniforms[U.field + 2] = field.active ? 1 : 0;
           rebuild();
           if (ghost) {
             uniforms[U.ghostCss] = ghost.cssW;
@@ -206,6 +236,8 @@ export function createCompositor(runtime, stage) {
             uniforms: uniforms.slice(),
             items: scene.data.slice(0, scene.count * ITEM_FLOATS),
             count: scene.count,
+            // The input mapper must see the field of the frame that was drawn.
+            field: field.active ? fieldCopy : null,
           };
 
           const pass = frame.encoder.beginRenderPass({
@@ -227,8 +259,8 @@ export function createCompositor(runtime, stage) {
           if (ghostResolves) for (const resolve of ghostResolves) resolve();
         },
         captureInputMapper() {
-          const { uniforms: u, items, count } = presented;
-          const mapper = (point) => mapThrough(point.x, point.y, u, items, count) ?? NO_TARGET;
+          const { uniforms: u, items, count, field } = presented;
+          const mapper = (point) => mapThrough(point.x, point.y, u, items, count, field) ?? NO_TARGET;
           mapper.captureGestureSnapshot = () => mapper;
           return mapper;
         },
@@ -245,6 +277,7 @@ export function createCompositor(runtime, stage) {
           blank.destroy();
           uniformBuffer.destroy();
           itemBuffer.destroy();
+          fieldBuffer.destroy();
         },
       };
     },

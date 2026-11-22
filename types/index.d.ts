@@ -13,6 +13,20 @@ export interface TransitionOptions {
   cut?: boolean;
   /** The skin's sound to play. */
   sound?: string | null;
+  /** The name of a registered primitive with a `cut` capability, drawn in place of the blade. */
+  style?: string | null;
+}
+
+/** A grid of displacements in CSS px over the whole canvas, written by behaviours. */
+export interface DisplacementField {
+  readonly cols: number;
+  readonly rows: number;
+  /** cols * rows vec2 (x, y), row by row. */
+  readonly data: Float32Array;
+  /** false: the shader ignores the field. */
+  active: boolean;
+  /** Call after writing: uploads the grid and wakes the stage. */
+  changed(): void;
 }
 
 export declare class LoomStage extends HTMLElement {
@@ -25,6 +39,8 @@ export declare class LoomStage extends HTMLElement {
   /** The element that holds the stage's content. */
   readonly source: HTMLElement;
   readonly skin: Skin | null;
+  /** A displacement field for behaviours to write (inactive until a behaviour sets `active`). */
+  readonly field: DisplacementField;
   /** Like document.startViewTransition(update), drawn by the compositor and live while it plays. */
   transition(update?: () => unknown, options?: TransitionOptions): Promise<void>;
   /** Removes an element with motion; `update` removes it (default: el.remove()). */
@@ -91,9 +107,11 @@ export interface PrimitiveDefinition {
   kind: number;
   name: string;
   functions?: string;
-  offset?: { wgsl: string; js(x: number, y: number, items: Float32Array, base: number, out: { x: number; y: number }): void; whole?: boolean };
+  offset?: { wgsl: string; js(x: number, y: number, items: Float32Array, base: number, out: { x: number; y: number }, ctx: { uniforms: Float32Array | null; field: Float32Array | null }): void; whole?: boolean };
   picture?: { name: string; order: number; wgsl: string; js(x: number, y: number, items: Float32Array, base: number): { x: number; y: number; final?: boolean } | null | undefined };
   light?: { wgsl: string };
+  /** A style for stage.transition(..., { style: name }): js returns null where the OLD page shows, undefined where the live one does. */
+  cut?: { wgsl: string; fn: string; js(x: number, y: number, scope: [number, number, number, number], s: number, front: number, dir: 1 | -1, uniforms: Float32Array): null | undefined };
 }
 export declare function definePrimitive(def: PrimitiveDefinition): number;
 

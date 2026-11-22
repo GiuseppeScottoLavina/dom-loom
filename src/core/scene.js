@@ -4,7 +4,12 @@
 
 export const ITEM_FLOATS = 16; // header, rect, p, q: 4 x vec4f
 export const MAX_ITEMS = 128;
-export const UNIFORM_FLOATS = 56; // 14 x vec4f
+export const UNIFORM_FLOATS = 60; // 15 x vec4f
+
+// The displacement field: a grid of vec2 displacements (CSS px) over the whole canvas.
+// Cell centres are spread over the canvas CSS width and height (core/math.js: fieldAt).
+export const FIELD_COLS = 64;
+export const FIELD_ROWS = 40;
 
 // Blend modes of PILL and SWEEP.
 export const ADD = 0; // light added on top
@@ -24,9 +29,12 @@ export const U = {
   void: 32, // rgb: shown where no content is (beyond the edges)
   scope: 36, // x, y, w, h of a scoped transition (w = 0: the whole stage)
   wipeDir: 40, // 1: the blade runs left to right, -1: right to left
+  wipeStyle: 41, // the kind of the primitive that styles the cut (0: the blade)
   style: 44, // the skin's look: scan lines (0..1), chroma (0..1), crumble (0 | 1), hatch (0..1)
-  present: 48, // the kinds in this frame's scene, as a bit mask: passes for absent kinds are skipped
+  present: 48, // the kinds in this frame's scene, as a bit mask: passes for absent kinds are skipped.
+  // A float holds integers exactly only up to 2^24, so the mask takes two slots: bits 0..15, then bits 16..31.
   alpha: 52, // 1: the canvas is transparent (an overlay stage); the shader writes premultiplied alpha
+  field: 56, // cols, rows, active (1: the displacement field is in use)
 };
 
 const ZERO = [0, 0, 0, 0];

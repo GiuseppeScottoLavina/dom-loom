@@ -5,7 +5,8 @@ import { MATERIALIZE } from '../primitives/materialize.js';
 import { MORPH } from '../primitives/morph.js';
 import { ROLL } from '../primitives/roll.js';
 import { SHIFT } from '../primitives/shift.js';
-import { Scene, U, UNIFORM_FLOATS } from './scene.js';
+import { primitives } from './primitives.js';
+import { FIELD_COLS, FIELD_ROWS, Scene, U, UNIFORM_FLOATS } from './scene.js';
 import { loadRuntime, sharedDevice } from './runtime.js';
 import { audio } from './audio.js';
 import { getSkin } from './skin.js';
@@ -91,6 +92,23 @@ export class LoomStage extends ElementBase {
   #syncQueued = false;
   #ready = Promise.resolve('dom');
   #motion = null;
+
+  /**
+   * A displacement field for behaviours to write: a grid of cols x rows vec2 in CSS px
+   * (row by row, x then y) over the whole canvas. While `active` is false the shader
+   * ignores it. Call changed() after writing: it uploads the grid and wakes the stage.
+   */
+  field = {
+    cols: FIELD_COLS,
+    rows: FIELD_ROWS,
+    data: new Float32Array(FIELD_COLS * FIELD_ROWS * 2),
+    active: false,
+    dirty: true, // @internal: the compositor uploads the grid when this is set
+    changed: () => {
+      this.field.dirty = true;
+      this.wake();
+    },
+  };
 
   static get observedAttributes() {
     return ['skin'];
@@ -273,9 +291,11 @@ export class LoomStage extends ElementBase {
    * - morph: a list of elements that fly from where they were to where they are
    *   (a reorder, a move); with it, the names of the rest of the stage are ignored.
    * - cut: false to have no blade: only the elements fly.
+   * - style: the name of a registered primitive with a `cut` capability, drawn in place
+   *   of the blade (an unknown name keeps the blade).
    * - sound: the skin's sound to play.
    */
-  async transition(update, { scope = null, direction = 1, morph = null, cut = true, sound = null } = {}) {
+  async transition(update, { scope = null, direction = 1, morph = null, cut = true, sound = null, style = null } = {}) {
     if (!this.#compositor || this.reduced) {
       await update?.();
       return;
@@ -290,6 +310,7 @@ export class LoomStage extends ElementBase {
     const transition = {
       start: NaN, pending: true, pairs: [], exits: [], movers, resolve: null, cut: cut !== false,
       scope: null, direction: direction < 0 ? -1 : 1,
+      style: style ? (primitives.all().find((d) => d.name === style && d.cut)?.kind ?? 0) : 0,
       ms: scopes ? this.skin.transition.scopedMs : this.skin.transition.ms,
       band: this.skin.transition.band, slant: this.skin.transition.slant,
     };
@@ -694,6 +715,7 @@ export class LoomStage extends ElementBase {
       u[U.wipeSlant] = t.slant;
       active = true;
       u[U.wipeDir] = t.direction;
+      u[U.wipeStyle] = t.style;
       if (t.scope) u.set(t.scope, U.scope);
       if (t.pending) {
         u[U.wipeFront] = 0;

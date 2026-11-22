@@ -15,10 +15,11 @@ struct Uniforms {
   holo: vec4f,  // rgb
   voidc: vec4f, // rgb
   scope: vec4f, // x, y, w, h of a scoped transition (w = 0: the whole stage)
-  wipe2: vec4f, // direction
+  wipe2: vec4f, // direction, the cut's style (a primitive kind; 0: the blade)
   style: vec4f, // the skin's look: scan lines, chroma, crumble, hatch
-  present: vec4f, // the kinds in the scene, as a bit mask
+  present: vec4f, // the kinds in the scene, as a bit mask: bits 0..15 in x, bits 16..31 in y
   alpha: vec4f,   // 1: a transparent canvas; the output is premultiplied
+  field: vec4f,   // displacement field: cols, rows, active
 }
 struct Item { h: vec4f, r: vec4f, p: vec4f, q: vec4f }
 
@@ -27,13 +28,15 @@ struct Item { h: vec4f, r: vec4f, p: vec4f, q: vec4f }
 @group(0) @binding(2) var src: texture_2d<f32>;
 @group(0) @binding(3) var<storage, read> items: array<Item>;
 @group(0) @binding(4) var ghostTex: texture_2d<f32>;
+@group(0) @binding(5) var<storage, read> fieldBuf: array<vec2f>;
 
 @vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
   var corners = array<vec2f, 3>(vec2f(-1.0, -1.0), vec2f(3.0, -1.0), vec2f(-1.0, 3.0));
   return vec4f(corners[i], 0.0, 1.0);
 }
 
-fn present(mask: u32) -> bool { return (u32(u.present.x) & mask) != 0u; }
+// A float holds integers exactly only up to 2^24: the mask comes in two halves of 16 bits.
+fn present(mask: u32) -> bool { return ((u32(u.present.x) | (u32(u.present.y) << 16u)) & mask) != 0u; }
 
 fn pcg(v: u32) -> u32 {
   let state = v * 747796405u + 2891336453u;
@@ -54,6 +57,25 @@ fn sdBox(p: vec2f, b: vec2f, radius: f32) -> f32 {
   return length(max(q, vec2f(0.0))) + min(max(q.x, q.y), 0.0) - radius;
 }
 fn luma(c: vec3f) -> f32 { return dot(c, vec3f(0.2126, 0.7152, 0.0722)); }
+
+// The displacement field at the canvas css point p: a bilinear sample of the grid
+// (cell centres spread over the canvas), clamped at its edges. Twin: fieldAt in core/math.js.
+fn fieldAt(p: vec2f) -> vec2f {
+  if (u.field.z < 0.5) { return vec2f(0.0); }
+  let cols = u32(u.field.x + 0.5);
+  let rows = u32(u.field.y + 0.5);
+  let g = clamp(p / u.view.zw * u.field.xy - vec2f(0.5), vec2f(0.0), u.field.xy - vec2f(1.0));
+  let c0 = vec2u(floor(g));
+  let c1 = min(c0 + vec2u(1u), vec2u(cols - 1u, rows - 1u));
+  let f = g - floor(g);
+  let a = fieldBuf[c0.y * cols + c0.x];
+  let b = fieldBuf[c0.y * cols + c1.x];
+  let c = fieldBuf[c1.y * cols + c0.x];
+  let d = fieldBuf[c1.y * cols + c1.x];
+  let top = a + (b - a) * f.x;
+  let bottom = c + (d - c) * f.x;
+  return top + (bottom - top) * f.y;
+}
 
 fn sampleSrc(p: vec2f) -> vec3f {
   return textureSampleLevel(src, samp, p / u.view.zw, 0.0).rgb;
@@ -232,6 +254,7 @@ fn composeCut(p: vec2f, light: ptr<function, vec3f>) -> vec3f {
   let s = (lx + (p.y - sc.y) * slant) / (w + h * slant);
   let front = u.wipe.y;
   let band = u.wipe.z;
+/*CUTS*/
   if (s > front) {
     // The old page, pushed along the cut as the blade arrives.
     let push = clamp(1.0 - (s - front) / 0.25, 0.0, 1.0) * step(1e-4, front);
@@ -301,6 +324,7 @@ export function buildShader(defs) {
   const lights = defs.filter((d) => d.light);
   const posts = defs.filter((d) => d.post);
   const spatial = maskOf(offsets);
+  const cuts = defs.filter((d) => d.cut);
 
   const offsetAt = /* wgsl */ `
 // The sum of what the primitives that move the picture do at p (twins in their JS).
@@ -371,14 +395,20 @@ ${chain(lights, (d) => d.light.wgsl)}
   }
 `;
 
-  const functions = defs.map((d) => d.functions).filter(Boolean).join('\n');
+  // The styles of the cut, in place of the blade; a style that is not registered falls through to it.
+  const cutChain = cuts.length ? /* wgsl */ `
+  let style = u32(u.wipe2.y + 0.5);
+  if (style != 0u) {
+${cuts.map((d) => `    if (style == ${d.kind}u) { return ${d.cut.fn}(p, sc, s, front, dir, light); }`).join('\n')}
+  }` : '';
+  const functions = defs.map((d) => [d.functions, d.cut?.wgsl]).flat().filter(Boolean).join('\n');
   const pictureFns = pictures.map((d) => d.picture.wgsl).join('\n');
   return [
     HEAD,
     `const SPATIAL: u32 = ${spatial}u;`,
     functions,
     offsetAt,
-    CORE,
+    CORE.replace('/*CUTS*/', cutChain),
     pictureFns,
     fs + TAIL.replace('/*POST*/', posts.length ? /* wgsl */ `
   if (present(${maskOf(posts)}u)) {
