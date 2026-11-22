@@ -283,6 +283,7 @@ body {
 .notes p { font-size: 14px; }
 
 /* ------------------------------------------------------------------ overlays */
+.ops-head { grid-template-columns: 1fr auto; align-items: end; }
 .abort-row, .replay-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .abort-row output { color: var(--dim); font: 500 12px/1 'JetBrains Mono Variable', monospace; }
 .confirm-dialog > loom-stage { width: min(460px, calc(100vw - 32px)); }

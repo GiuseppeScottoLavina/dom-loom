@@ -297,3 +297,15 @@ for (const s of document.querySelectorAll('dialog loom-stage')) {
   s.toggleAttribute('sound', stage.hasAttribute('sound'));
   soundButton.addEventListener('click', () => s.toggleAttribute('sound', stage.hasAttribute('sound')));
 }
+
+/* ------------------------------------------------------------------ menu */
+document.querySelector('#resupply').addEventListener('click', () => {
+  hull.value = Math.min(100, hull.value + 25);
+  shield.value = 5;
+  showVitals();
+});
+document.querySelector('#menu-abort').addEventListener('click', () => setTimeout(() => abortDialog.showModal(), 60));
+for (const s of document.querySelectorAll('[popover] loom-stage')) {
+  s.toggleAttribute('sound', stage.hasAttribute('sound'));
+  soundButton.addEventListener('click', () => s.toggleAttribute('sound', stage.hasAttribute('sound')));
+}

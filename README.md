@@ -48,7 +48,7 @@ import 'domloom/tabs';
 | `domloom/forms` | 27 KB |
 | `domloom` (all) | 41 KB |
 
-Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, `popover`, `gauge`, `tabs`, `details`, `table`, `current`, `rating`, `dropzone`, `removable`, `combobox`, `toast`, `alert`, `badge`, `busy`, `tilt`, `carousel`, `split`. A component imported later (a lazy chunk) joins the stages already running. The polyfill and the effects host are loaded by the first stage that starts, in their own chunks.
+Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, `popover`, `menu`, `select`, `gauge`, `tabs`, `details`, `table`, `current`, `rating`, `dropzone`, `removable`, `combobox`, `toast`, `alert`, `badge`, `busy`, `tilt`, `carousel`, `split`. A component imported later (a lazy chunk) joins the stages already running. The polyfill and the effects host are loaded by the first stage that starts, in their own chunks.
 
 | You write | What happens |
 | --- | --- |
@@ -80,6 +80,8 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, 
 | `[carousel]` (a scroll container) | Scroll-snapping strip that the mouse can drag; buttons with `aria-controls` and `data-step` move it a slide. While it moves it curves like film, the more the faster |
 | `[split]` holding a pane, an `<hr>` and a pane | The `<hr>` is a window splitter: drag it, or focus it and use the arrow keys, Home and End (`aria-valuemin`, `aria-valuemax`, `aria-valuenow` in %). Pulled past a limit, the panes stretch like rubber and spring back |
 | `<dialog>` or `[popover]` holding `<loom-stage overlay>` | The stage is transparent around its panel (cut corners are cut out) and opens from a line of light; `overlay="left|right|top|bottom"` opens it from that edge (a drawer). A dialog closed by Escape, a `<form method="dialog">` or a `command="close"` button shuts first, then closes, with its `returnValue`. `dialog.close()` from a script closes at once, and so does a popover dismissed by a click outside |
+| `[role=menu]` in a popover's overlay stage | The ARIA menu pattern: the first item takes the focus; arrows, Home, End and a letter move it (a light follows); `menuitemcheckbox` and `menuitemradio` toggle; choosing closes the menu; Escape and Tab close it; the focus returns to the button. A popover opened by a `popovertarget` button is anchored under it (above if there is no room) and opens from that side |
+| `<select>` | A pointer opens its list inside the stage (the browser's popup cannot be drawn into a canvas). The keyboard and screen readers keep the select's own behaviour and popup |
 | `aria-current` in a list | The current page of a `<nav>` list, the place in a `nav[aria-label=breadcrumb]`, or the step of an `<ol>` with `aria-current="step"`: the marker stretches over when it moves, and a stepper's beam runs up to the current step |
 
 ### Transitions
@@ -221,7 +223,7 @@ The holo material is themed with custom properties on the stage: `--loom-void`, 
 - A stage on the page is an opaque rectangle: its cut corners are painted in `--loom-void`, so put stages on a background of that colour. Overlay stages are transparent.
 - All stages of a page share one GPU device. Still, use a few stages per page (one per panel), not one per control: each has its own canvas and capture.
 - Top-layer content (an open modal `<dialog>`, an open popover) is not drawn into the canvas of the page's stages: give it its own `<loom-stage overlay>` (domloom/dialog, domloom/popover).
-- Select popups, date pickers and other native pickers open with the browser's own look.
+- Date and colour pickers open with the browser's own look; so does a select's popup when opened from the keyboard or a screen reader (on purpose: it is fully accessible).
 - Opening or closing a `<details>` changes the height of the stage at once (the canvas must have the size of its content); the content inside slides. In a multi-column layout only the column of the `<details>` slides.
 - A press in the first moments of a flight (rows sorting) can reach nothing on Chrome's own HTML-in-Canvas: the press is mapped with the frame the browser captured for it, which may still show the row leaving. It never reaches another row.
 

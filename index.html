@@ -138,9 +138,12 @@ hull.value -= 18;</code></pre>
 
     <loom-stage id="ops" class="panel panel--ops" sound haptics>
       <div class="ops">
-        <header class="sheet-head">
-          <p class="loom-caption">Squad 04 · live feed</p>
-          <h2>Ops</h2>
+        <header class="sheet-head ops-head">
+          <div>
+            <p class="loom-caption">Squad 04 · live feed</p>
+            <h2>Ops</h2>
+          </div>
+          <button type="button" popovertarget="ops-menu" aria-haspopup="menu" id="ops-actions">Actions</button>
         </header>
 
         <div role="tablist" aria-label="Ops views">
@@ -374,6 +377,16 @@ table.addEventListener('<b>loom-sorted</b>', (e) =&gt; …);</code></pre>
         </div>
 
         <label class="field">
+          <span class="loom-caption">Transport</span>
+          <select name="transport" id="transport">
+            <option>Helicopter</option>
+            <option>Boat</option>
+            <option>Armoured truck</option>
+            <option>On foot</option>
+          </select>
+        </label>
+
+        <label class="field">
           <span class="loom-caption">Extraction point</span>
           <input name="exfil" list="exfil-points" placeholder="Start typing: ramp, roof, pier…">
         </label>
@@ -567,6 +580,24 @@ toasts.append(Object.assign(document.createElement('li'),
     </loom-stage>
   </section>
   </main>
+
+  <div popover id="ops-menu">
+    <loom-stage overlay sound>
+      <div role="menu" aria-label="Actions">
+        <button type="button" role="menuitem" id="resupply">Request resupply</button>
+        <button type="button" role="menuitemcheckbox" aria-checked="true">Night vision</button>
+        <hr>
+        <p class="loom-caption" id="formation-label">Formation</p>
+        <div role="group" aria-labelledby="formation-label">
+          <button type="button" role="menuitemradio" aria-checked="true">Wedge</button>
+          <button type="button" role="menuitemradio" aria-checked="false">Line</button>
+          <button type="button" role="menuitemradio" aria-checked="false">File</button>
+        </div>
+        <hr>
+        <button type="button" role="menuitem" id="menu-abort">Abort mission…</button>
+      </div>
+    </loom-stage>
+  </div>
 
   <dialog id="abort-dialog" class="confirm-dialog" aria-labelledby="abort-title">
     <loom-stage overlay sound haptics>

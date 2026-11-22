@@ -320,6 +320,7 @@ async function run(path, browser, url) {
   await feedbackChecks(path, page);
   await surfaceChecks(path, page);
   await overlayChecks(path, page);
+  await menuChecks(path, page);
 
   await check(`${path}: no errors`, async () => {
     assert.deepEqual(session.errors, []);
@@ -1047,6 +1048,73 @@ async function overlayChecks(path, page) {
     assert.equal(await page.evaluate(() => document.querySelector('#crew-drawer').open), true, 'it is still shutting');
     await page.waitForTimeout(900);
     assert.equal(await page.evaluate(() => document.querySelector('#crew-drawer').open), false);
+  });
+}
+
+/** A menu in an anchored popover, and a select whose list opens in the stage. */
+async function menuChecks(path, page) {
+  const focused = () => page.evaluate(() => document.activeElement?.textContent.trim());
+  const menuOpen = () => page.evaluate(() => document.querySelector('#ops-menu').matches(':popover-open'));
+  await page.locator('#ops').scrollIntoViewIfNeeded();
+  await page.mouse.move(2, 2);
+  await page.waitForTimeout(900);
+
+  await check(`${path}: a menu opens under its button, and the keyboard drives it`, async () => {
+    await page.click('#ops-actions');
+    await page.waitForTimeout(700);
+    const place = await page.evaluate(() => {
+      const a = document.querySelector('#ops-actions').getBoundingClientRect();
+      const m = document.querySelector('#ops-menu').getBoundingClientRect();
+      return { gap: Math.round(m.top - a.bottom), left: Math.round(m.left - a.left) };
+    });
+    assert.deepEqual(place, { gap: 6, left: 0 }, 'anchored under its button');
+    assert.equal(await page.evaluate(() => document.querySelector('#ops-menu loom-stage').dataset.renderer), 'webgpu');
+    assert.equal(await focused(), 'Request resupply', 'the first item takes the focus');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await focused(), 'Line', 'arrows skip separators and captions');
+    await page.keyboard.press('a');
+    assert.equal(await focused(), 'Abort mission…', 'a letter moves to the next item starting with it');
+    await page.keyboard.press('End');
+    await page.keyboard.press('Home');
+    await page.keyboard.press('l');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    assert.equal(await menuOpen(), false, 'choosing closes the menu');
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('[role=menuitemradio]')].map((r) => r.getAttribute('aria-checked'))), ['false', 'true', 'false']);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'ops-actions', 'the focus goes back to the button');
+    await page.click('#ops-actions');
+    await page.waitForTimeout(600);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    assert.equal(await menuOpen(), false);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'ops-actions');
+  });
+
+  await check(`${path}: a select opens its list in the stage for the pointer`, async () => {
+    await page.locator('#req').scrollIntoViewIfNeeded();
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(1200);
+    await page.evaluate(() => {
+      window.__changes = 0;
+      document.querySelector('#transport').addEventListener('change', () => window.__changes++);
+    });
+    await page.click('#transport');
+    await page.waitForTimeout(500);
+    const list = page.locator('[data-for-select]');
+    assert.equal(await list.isVisible(), true, 'the stage shows the list');
+    assert.equal(await list.getAttribute('aria-hidden'), 'true', 'screen readers keep the select itself');
+    const third = await list.locator('[role=option]:nth-child(3)').boundingBox();
+    await page.mouse.click(third.x + 20, third.y + third.height / 2);
+    await page.waitForTimeout(600);
+    assert.deepEqual(await page.evaluate(() => [document.querySelector('#transport').value, window.__changes]), ['Armoured truck', 1]);
+    assert.equal(await list.isVisible(), false);
+    await page.click('#transport');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    assert.equal(await list.isVisible(), false, 'Escape closes it');
   });
 }
 
