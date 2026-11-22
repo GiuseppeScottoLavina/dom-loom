@@ -581,7 +581,10 @@ async function rosterChecks(path, page) {
     });
     const seen = [];
     // Sorting by hit rate and back by level keeps most rows of the page and moves them.
-    for (let attempt = 0; attempt < 10 && seen.filter((x) => x.clicks.length).length < 2; attempt++) {
+    for (let attempt = 0; attempt < 10 && seen.length < 3; attempt++) {
+      // The whole stage in view: a press outside the viewport goes to <html>, not to the page.
+      await page.evaluate(() => document.querySelector('#roster').scrollIntoView({ block: 'start' }));
+      await page.waitForTimeout(250);
       const before = await page.evaluate(() => [...document.querySelectorAll('#roster-table tbody tr')]
         .filter((r) => !r.hidden)
         .map((r) => {
@@ -601,23 +604,18 @@ async function rosterChecks(path, page) {
       // header click may have scrolled the page: the header has not moved in the table).
       const dy = (await headY()) - y0;
       const spot = before[(attempt * 2 + 1) % before.length];
+      const viewport = page.viewportSize();
+      if (spot.y + dy < 4 || spot.y + dy > viewport.height - 4) continue;
       await page.mouse.click(spot.x, spot.y + dy);
       await page.waitForTimeout(1200);
       const aim = await page.evaluate(() => window.__aim);
       if (aim?.shown && aim.shown !== aim.layout) seen.push({ ...aim, clicks: await page.evaluate(() => window.__rowClicks) });
     }
     assert.ok(seen.length >= 1, 'no press landed on a row in flight');
-    // A press reaches the row shown and nothing else (polyfill 1.0.3 re-targets any
-    // element). The host maps a gesture with the frame it captured at the press, which
-    // can be one frame from the one this check reads: there, the point may already be on
-    // a row that is crumbling away, and the press then reaches nothing, which is right.
-    for (const s of seen) {
-      assert.ok(s.clicks.every((c) => c === s.shown), `a click reached another row: shown ${s.shown}, clicks ${JSON.stringify(s.clicks)}`);
-      assert.ok(s.clicks.length <= 1, `more than one click: ${JSON.stringify(s.clicks)}`);
-    }
-    const reached = seen.filter((s) => s.clicks.length === 1).length;
-    assert.ok(reached >= 1, `no press reached the row shown: ${JSON.stringify(seen)}`);
-    console.log(`       ${reached}/${seen.length} presses on rows in flight reached the row shown, none another`);
+    // Every press on a row in flight reaches the row shown, and only it.
+    for (const s of seen) assert.deepEqual(s.clicks, [s.shown], `shown ${s.shown}, clicks ${JSON.stringify(s.clicks)}`);
+    assert.ok(seen.length >= 1, 'no press landed on a row in flight');
+    console.log(`       ${seen.length}/${seen.length} presses on rows in flight reached the row shown`);
   });
 
   await check(`${path}: pages and steps move their aria-current marker`, async () => {
