@@ -1,3 +1,5 @@
+// Keep framework-supplied controls and accessible names under the author's ownership.
+const automaticLabels = new WeakMap();
 
 /**
  * Elements with the `removable` attribute (tags, chips, list items) get a remove
@@ -5,6 +7,7 @@
  * fires first on the element (cancelable). New removable elements assemble.
  */
 export class Chips {
+  static textSelector = '[removable]';
   constructor(stage) {
     this.stage = stage;
     const root = stage.source;
@@ -33,13 +36,23 @@ export class Chips {
     this.sync();
   }
   sync() {
-    for (const chip of this.stage.source.querySelectorAll('[removable]')) {
-      if (chip.querySelector(':scope > button.loom-remove')) continue;
-      const button = document.createElement('button');
+    for (const chip of this.stage.source.querySelectorAll('[removable]')) this.syncControl(chip);
+  }
+  syncControl(chip) {
+    let button = chip.querySelector(':scope > button.loom-remove');
+    if (!button) {
+      button = document.createElement('button');
       button.type = 'button';
       button.className = 'loom-remove';
-      button.setAttribute('aria-label', chip.closest('[toasts]') ? 'Dismiss' : `Remove ${chip.textContent.trim()}`);
       chip.append(button);
+      automaticLabels.set(button, null);
+    }
+    const previous = automaticLabels.get(button);
+    if (previous === undefined || button.getAttribute('aria-label') !== previous) return;
+    const label = chip.closest('[toasts]') ? 'Dismiss' : `Remove ${chip.textContent.trim()}`;
+    if (previous !== label) {
+      button.setAttribute('aria-label', label);
+      automaticLabels.set(button, label);
     }
   }
   step() {

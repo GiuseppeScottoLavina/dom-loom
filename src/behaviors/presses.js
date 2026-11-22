@@ -15,9 +15,9 @@ export class Presses {
       if (e.button !== 0) return;
       const el = pressable(e.target, root);
       if (!el) return;
-      this.start(el, stage.pointOf(e), e.timeStamp);
+      this.start(el, stage.pointOf(e), e.timeStamp, e.pointerId);
     });
-    const release = (e) => this.release(e.timeStamp);
+    const release = (e) => this.release(e.timeStamp, e.pointerId);
     // A press can end anywhere, also outside the stage.
     stage.listenGlobal('pointerup', release);
     stage.listenGlobal('pointercancel', release);
@@ -25,15 +25,17 @@ export class Presses {
       if (e.repeat || (e.key !== ' ' && e.key !== 'Enter')) return;
       const el = e.target.closest?.('button, summary');
       if (!el || !root.contains(el) || el.disabled) return;
-      this.start(el, center(stage.rectOf(el)), e.timeStamp);
+      this.start(el, center(stage.rectOf(el)), e.timeStamp, e.key);
     });
-    stage.listen('keyup', (e) => {
-      if (e.key === ' ' || e.key === 'Enter') this.release(e.timeStamp);
+    stage.listenGlobal('keyup', (e) => {
+      if (e.key === ' ' || e.key === 'Enter') this.release(e.timeStamp, e.key);
     });
+    stage.listenGlobal('blur', (e) => this.release(e.timeStamp));
   }
-  start(el, point, now) {
+  start(el, point, now, owner) {
     const press = {
       el,
+      owner,
       point,
       depth: new Spring(0, { stiffness: 900, damping: 21, epsilon: 0.002 }),
       releasedAt: NaN,
@@ -43,25 +45,27 @@ export class Presses {
     if (this.stage.reduced) press.depth.snap();
     this.list.push(press);
     this.stage.play('press');
-    if (el.matches('button[hold]')) this.startHold(el, now);
+    if (el.matches('button[hold]') && !this.hold) this.startHold(el, now, owner);
     this.stage.wake();
   }
-  release(now) {
+  release(now, owner) {
+    let changed = false;
     for (const press of this.list) {
-      if (!Number.isNaN(press.releasedAt)) continue;
+      if (!Number.isNaN(press.releasedAt) || (owner !== undefined && press.owner !== owner)) continue;
+      changed = true;
       press.releasedAt = now;
       press.depth.set(0);
       if (this.stage.reduced) press.depth.snap();
       this.stage.play('release');
     }
-    if (this.hold && !this.hold.done) this.cancelHold();
-    this.stage.wake();
+    if (this.hold && (owner === undefined || this.hold.owner === owner)) this.cancelHold();
+    if (changed) this.stage.wake();
   }
   holding(el) {
     return this.hold?.el === el && !this.hold.done;
   }
-  startHold(el, now) {
-    this.hold = { el, start: now, ms: parseMs(el.getAttribute('hold'), 900), progress: 0, done: false };
+  startHold(el, now, owner) {
+    this.hold = { el, owner, start: now, ms: parseMs(el.getAttribute('hold'), 900), progress: 0, done: false };
     this.drain = null;
     this.stage.play('chargeStart', this.hold.ms);
   }
@@ -80,7 +84,7 @@ export class Presses {
     this.stage.play('burst');
     this.stage.buzz(35);
     // Outside the frame callback: the click may submit a form and start a transition.
-    setTimeout(() => this.stage.activate(el));
+    setTimeout(() => { if (this.stage.isConnected && this.stage.source.contains(el)) this.stage.activate(el); });
   }
   /** A blocked click on a hold button that is not being held: show that it needs a hold. */
   nudge(el, now) {
@@ -96,8 +100,9 @@ export class Presses {
       press.k = clamp01(k);
       press.done = !Number.isNaN(press.releasedAt) && k >= 1 && press.depth.settled;
     }
-    this.list = this.list.filter((p) => !p.done && p.el.isConnected);
-    if (this.list.length) active = true;
+    this.list = this.list.filter((p) => !p.done && this.stage.source.contains(p.el));
+    active = this.list.some((p) => !p.depth.settled || !Number.isNaN(p.releasedAt));
+    if (this.hold && !this.stage.source.contains(this.hold.el)) this.cancelHold();
     if (this.hold) {
       this.hold.progress = clamp01((now - this.hold.start) / this.hold.ms);
       if (!this.stage.gpu) this.hold.el.style.setProperty('--loom-charge', this.hold.progress.toFixed(3));

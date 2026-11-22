@@ -17,8 +17,8 @@ const NO_CTX = { uniforms: null, field: null };
  * Total displacement at (x, y): the source point shown there is (x + ox, y + oy).
  * ctx = { uniforms, field } is handed to every twin (the numbers of the presented frame).
  */
-export function offsetAt(x, y, items, count, out = { x: 0, y: 0 }, ctx = NO_CTX) {
-  const { offsets } = mapperTables();
+export function offsetAt(x, y, items, count, out = { x: 0, y: 0 }, ctx = NO_CTX, tables = mapperTables()) {
+  const { offsets } = tables;
   const acc = { x: 0, y: 0 };
   for (let i = 0; i < count; i++) {
     const b = i * ITEM_FLOATS;
@@ -44,10 +44,10 @@ function coveredBy(kind, x, y, items, count) {
  * where it shows no live element (the old page of a transition, the unbooted part).
  * `field` is the displacement field of that frame (a copy), or null where it is off.
  */
-export function mapThrough(x, y, uniforms, items, count, field = null) {
+export function mapThrough(x, y, uniforms, items, count, field = null, tables = mapperTables()) {
   if (uniforms[U.bootActive] > 0.5 && y > uniforms[U.bootLine]) return null;
   // What a post primitive hides (an overlay that is still opening) takes no input.
-  for (const def of mapperTables().posts) {
+  for (const def of tables.posts) {
     for (let i = 0; i < count; i++) {
       const b = i * ITEM_FLOATS;
       if (Math.round(items[b]) === def.kind && def.post.js(x, y, items, b) === false) return null;
@@ -77,7 +77,7 @@ export function mapThrough(x, y, uniforms, items, count, field = null) {
       const lx = uniforms[U.wipeDir] < 0 ? sw - (x - sx) : x - sx;
       const s = (lx + (y - sy) * slant) / (sw + sh * slant);
       const front = uniforms[U.wipeFront];
-      const style = mapperTables().cuts[Math.round(uniforms[U.wipeStyle])];
+      const style = tables.cuts[Math.round(uniforms[U.wipeStyle])];
       if (style) {
         // A registered style decides: null shows the old page, anything else the live one.
         if (style(x, y, [sx, sy, sw, sh], s, front, uniforms[U.wipeDir] < 0 ? -1 : 1, uniforms) === null) return null;
@@ -86,7 +86,7 @@ export function mapThrough(x, y, uniforms, items, count, field = null) {
   } else {
     // Pictures that replace the live one, in the shader's order, then ghosts.
     let moved = false;
-    for (const def of mapperTables().pictures) {
+    for (const def of tables.pictures) {
       for (let i = 0; i < count && !moved; i++) {
         const b = i * ITEM_FLOATS;
         if (Math.round(items[b]) !== def.kind) continue;
@@ -102,7 +102,7 @@ export function mapThrough(x, y, uniforms, items, count, field = null) {
     }
     if (!moved && coveredBy(GHOST, x, y, items, count)) return null;
   }
-  const o = offsetAt(x, y, items, count, undefined, { uniforms, field });
+  const o = offsetAt(x, y, items, count, undefined, { uniforms, field }, tables);
   const sx = x + o.x;
   const sy = y + o.y;
   // Content moved in from beyond the edges is empty space.

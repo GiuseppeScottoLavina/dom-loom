@@ -4,15 +4,86 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DomLoom</title>
+  <meta name="theme-color" content="#0a0e24">
+  <style>
+    html { background: #0a0e24; color: #e8f4ff; color-scheme: dark; }
+    #demo-loader:not([hidden]) {
+      position: fixed; inset: 0; z-index: 2147483647; display: grid; place-content: center;
+      justify-items: center; gap: 14px; font-family: system-ui, sans-serif;
+      background: radial-gradient(ellipse at center, #15203d 0, #0a0e24 58%);
+    }
+    .boot-glyph { position: relative; width: 82px; height: 64px; margin-bottom: 6px; }
+    .boot-glyph i {
+      position: absolute; left: 22px; top: 12px; width: 38px; height: 38px;
+      box-sizing: border-box; border: 2px solid #7ff0ff; transform: translateX(var(--offset)) rotate(45deg);
+      animation: boot-weave 1.8s ease-in-out infinite alternate;
+    }
+    .boot-glyph i:first-child { --offset: -13px; border-color: #ff5180; }
+    .boot-glyph i:nth-child(2) { --offset: 0px; border-color: #ebfaff; }
+    .boot-glyph i:last-child { --offset: 13px; }
+    @keyframes boot-weave { to { transform: translateX(calc(var(--offset) * .35)) rotate(135deg); } }
+    .boot-name { font-size: 26px; font-weight: 750; letter-spacing: -.055em; line-height: 1; }
+    .boot-label { color: #b0bddf; font: 11px/1.4 ui-monospace, monospace; letter-spacing: .12em; }
+    @media (prefers-reduced-motion: reduce) { .boot-glyph i { animation: none; } }
+  </style>
+  <script>
+    (() => {
+      let parsed = false;
+      function start() {
+        if (!parsed || document.querySelector('link[data-demo-css]')) return;
+        document.removeEventListener('load', settleStyle, true);
+        document.removeEventListener('error', settleStyle, true);
+        const entry = document.querySelector('link[data-demo-entry]');
+        // The production module is already fetching. Upgrade the controls once their CSS applies.
+        if (entry) import(entry.href).then(reveal, error => { console.error(error); reveal(); });
+        else reveal(); // Vite's dev modules apply their styles before DOMContentLoaded.
+      }
+      function reveal() {
+        const loader = document.getElementById('demo-loader');
+        document.getElementById('demo-page').inert = false;
+        loader.style.pointerEvents = 'none';
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches || !loader.animate) {
+          loader.remove();
+          return;
+        }
+        const fade = loader.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: 'ease-out', fill: 'forwards' });
+        fade.finished.then(() => loader.remove(), () => loader.remove());
+      }
+      function settleStyle(event) {
+        const link = event.target;
+        if (!link.matches?.('link[data-demo-css]')) return;
+        if (event.type === 'load' && link.rel === 'preload') {
+          link.rel = 'stylesheet';
+          return;
+        }
+        link.removeAttribute('data-demo-css');
+        start();
+      }
+      document.addEventListener('load', settleStyle, true);
+      document.addEventListener('error', settleStyle, true);
+      document.addEventListener('DOMContentLoaded', () => { parsed = true; start(); }, { once: true });
+    })();
+  </script>
+  <link rel="preload" as="font" type="font/woff2" media="(min-width: 921px)" crossorigin href="/node_modules/@fontsource-variable/big-shoulders-display/files/big-shoulders-display-latin-wght-normal.woff2">
   <meta name="description" content="Plain HTML controls drawn through a WebGPU compositor, with game-grade motion and light.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0e24'/%3E%3Cpath d='M16 5 27 16 16 27 5 16z' fill='none' stroke='%237ff0ff' stroke-width='3'/%3E%3C/svg%3E">
   <script type="module" src="/demo/demo.js"></script>
 </head>
 <body>
+  <div id="demo-loader" role="status" hidden>
+    <span class="boot-glyph" aria-hidden="true"><i></i><i></i><i></i></span>
+    <strong class="boot-name">DomLoom</strong>
+    <span class="boot-label">Loading interface…</span>
+  </div>
+  <div id="demo-page">
+  <script>
+    document.getElementById('demo-loader').hidden = false;
+    document.getElementById('demo-page').inert = true;
+  </script>
   <header class="bar">
     <span class="mark">DomLoom</span>
     <span class="status" id="status" aria-live="polite">Starting the compositor…</span>
-    <button type="button" class="sound" id="sound" aria-pressed="true">Sound on</button>
+    <button type="button" class="sound" id="sound" aria-pressed="false">Sound off</button>
   </header>
 
   <main>
@@ -47,7 +118,7 @@ await stage.<b>transition</b>(() =&gt; showReceipt());</code></pre>
       </figure>
     </section>
 
-    <loom-stage id="loadout" class="panel" sound haptics>
+    <loom-stage id="loadout" class="panel" haptics>
       <div class="views">
         <form id="loadout-form" class="view loadout" data-view="form">
           <header class="sheet-head">
@@ -136,7 +207,7 @@ hull.value -= 18;</code></pre>
       </figure>
     </div>
 
-    <loom-stage id="ops" class="panel panel--ops" sound haptics>
+    <loom-stage id="ops" class="panel panel--ops" haptics loading="lazy">
       <div class="ops">
         <header class="sheet-head ops-head">
           <div>
@@ -246,7 +317,7 @@ table.addEventListener('<b>loom-sorted</b>', (e) =&gt; …);</code></pre>
       </figure>
     </div>
 
-    <loom-stage id="roster" class="panel panel--roster" sound haptics>
+    <loom-stage id="roster" class="panel panel--roster" haptics loading="lazy">
       <div class="roster">
         <nav aria-label="breadcrumb">
           <ol>
@@ -348,7 +419,7 @@ table.addEventListener('<b>loom-sorted</b>', (e) =&gt; …);</code></pre>
       </figure>
     </div>
 
-    <loom-stage id="req" class="panel panel--req" sound haptics>
+    <loom-stage id="req" class="panel panel--req" haptics loading="lazy">
       <form class="req" id="req-form">
         <header class="sheet-head">
           <p class="loom-caption">Quartermaster · requisition 7-B</p>
@@ -451,7 +522,7 @@ toasts.append(Object.assign(document.createElement('li'),
       </figure>
     </div>
 
-    <loom-stage id="comms" class="panel panel--comms" sound haptics>
+    <loom-stage id="comms" class="panel panel--comms" haptics loading="lazy">
       <div class="comms">
         <header class="sheet-head">
           <p class="loom-caption">Squad 04 · channel 7</p>
@@ -509,7 +580,7 @@ toasts.append(Object.assign(document.createElement('li'),
       </figure>
     </div>
 
-    <loom-stage id="archive" class="panel panel--archive" sound haptics>
+    <loom-stage id="archive" class="panel panel--archive" haptics loading="lazy">
       <div class="archive">
         <header class="sheet-head archive-head">
           <div>
@@ -582,7 +653,7 @@ toasts.append(Object.assign(document.createElement('li'),
   </main>
 
   <div popover id="ops-menu">
-    <loom-stage overlay sound>
+    <loom-stage overlay loading="lazy">
       <div role="menu" aria-label="Actions">
         <button type="button" role="menuitem" id="resupply">Request resupply</button>
         <button type="button" role="menuitemcheckbox" aria-checked="true">Night vision</button>
@@ -600,7 +671,7 @@ toasts.append(Object.assign(document.createElement('li'),
   </div>
 
   <dialog id="abort-dialog" class="confirm-dialog" aria-labelledby="abort-title">
-    <loom-stage overlay sound haptics>
+    <loom-stage overlay haptics loading="lazy">
       <form method="dialog" class="confirm">
         <p class="loom-caption">Squad 04 · mission control</p>
         <h2 id="abort-title">Abort mission?</h2>
@@ -614,7 +685,7 @@ toasts.append(Object.assign(document.createElement('li'),
   </dialog>
 
   <dialog id="crew-drawer" class="crew-drawer" aria-labelledby="crew-title">
-    <loom-stage overlay="right" sound>
+    <loom-stage overlay="right" loading="lazy">
       <div class="sheet">
         <p class="loom-caption">Squad 04 · crew sheet</p>
         <h2 id="crew-title">Crew</h2>
@@ -628,5 +699,6 @@ toasts.append(Object.assign(document.createElement('li'),
       </div>
     </loom-stage>
   </dialog>
+  </div>
 </body>
 </html>

@@ -16,32 +16,39 @@ export class Splits {
     const root = stage.source;
     stage.listen('pointerdown', (e) => {
       const hr = e.target.closest?.('[split] > hr');
-      if (!hr || e.button !== 0 || !root.contains(hr)) return;
+      if (!hr || e.button !== 0 || this.drag || !root.contains(hr)) return;
+      if (!this.states.has(hr.parentElement)) this.sync();
       e.preventDefault();
       hr.focus({ preventScroll: true });
-      this.drag = hr.parentElement;
+      this.drag = { el: hr.parentElement, pointerId: e.pointerId };
       this.stage.play('press');
     });
     stage.listenGlobal('pointermove', (e) => {
-      if (!this.drag) return;
-      const s = this.states.get(this.drag);
-      const [x, , w] = stage.rectOf(this.drag);
-      this.moveTo(this.drag, ((stage.pointOf(e)[0] - x) / w) * 100, true);
+      if (!this.drag || this.drag.pointerId !== e.pointerId) return;
+      const { el } = this.drag;
+      const s = this.states.get(el);
+      if (!s || !root.contains(el)) return;
+      const [x, , w] = stage.rectOf(el);
+      if (!w) return;
+      this.moveTo(el, ((stage.pointOf(e)[0] - x) / w) * 100, true);
       s.dragging = true;
     });
-    const release = () => {
-      if (!this.drag) return;
-      const s = this.states.get(this.drag);
+    const release = (e) => {
+      if (!this.drag || (e.type !== 'blur' && this.drag.pointerId !== e.pointerId)) return;
+      const s = this.states.get(this.drag.el);
+      this.drag = null;
+      if (!s) return;
       s.dragging = false;
       s.raw = s.value;
-      this.drag = null;
       stage.wake();
     };
     stage.listenGlobal('pointerup', release);
     stage.listenGlobal('pointercancel', release);
+    stage.listenGlobal('blur', release);
     stage.listen('keydown', (e) => {
       const hr = e.target.closest?.('[split] > hr');
       if (!hr || !root.contains(hr)) return;
+      if (!this.states.has(hr.parentElement)) this.sync();
       const s = this.states.get(hr.parentElement);
       const by = { ArrowLeft: -2, ArrowRight: 2, ArrowUp: 2, ArrowDown: -2 }[e.key];
       if (by) this.moveTo(hr.parentElement, s.value + by, false);
@@ -55,7 +62,7 @@ export class Splits {
   sync() {
     for (const el of this.stage.source.querySelectorAll('[split]')) {
       const hr = el.querySelector(':scope > hr');
-      if (!hr || this.states.has(el)) continue;
+      if (!hr || this.states.get(el)?.hr === hr) continue;
       const first = hr.previousElementSibling;
       if (first && !first.id) first.id = `loom-pane-${++splitIds}`;
       const min = Number(hr.getAttribute('aria-valuemin') ?? 10);
@@ -90,7 +97,8 @@ export class Splits {
   step(now, dt) {
     let active = false;
     for (const [el, s] of this.states) {
-      if (!el.isConnected) {
+      if (!this.stage.source.contains(el) || !el.hasAttribute('split') || s.hr.parentElement !== el) {
+        if (this.drag?.el === el) this.drag = null;
         this.states.delete(el);
         continue;
       }

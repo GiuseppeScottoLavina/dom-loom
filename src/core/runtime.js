@@ -19,7 +19,10 @@ export function loadRuntime() {
       definePlugin: effects.definePlugin,
       NO_TARGET: effects.NO_TARGET,
     };
-  })();
+  })().catch((error) => {
+    pending = null;
+    throw error;
+  });
   return pending;
 }
 
@@ -41,8 +44,9 @@ export function sharedDevice() {
       if (device === next) device = null;
     });
     device = next;
-    requesting = null;
     return next;
-  })();
+  })().finally(() => {
+    requesting = null;
+  });
   return requesting;
 }

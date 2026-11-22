@@ -3,7 +3,7 @@
 // input mapper read the same numbers.
 
 export const ITEM_FLOATS = 16; // header, rect, p, q: 4 x vec4f
-export const MAX_ITEMS = 128;
+export const INITIAL_ITEM_CAPACITY = 128;
 export const UNIFORM_FLOATS = 60; // 15 x vec4f
 
 // The displacement field: a grid of vec2 displacements (CSS px) over the whole canvas.
@@ -39,11 +39,11 @@ export const U = {
 
 const ZERO = [0, 0, 0, 0];
 
-/** Fixed-size scene buffer that behaviours fill every frame. */
+/** Reusable scene buffer that grows as behaviours emit more primitives. */
 export class Scene {
-  constructor(max = MAX_ITEMS) {
-    this.data = new Float32Array(max * ITEM_FLOATS);
-    this.max = max;
+  constructor(capacity = INITIAL_ITEM_CAPACITY) {
+    this.data = new Float32Array(capacity * ITEM_FLOATS);
+    this.max = capacity;
     this.count = 0;
     this.mask = 0;
   }
@@ -52,7 +52,14 @@ export class Scene {
     this.mask = 0;
   }
   push(kind, rect, p = ZERO, q = ZERO, h1 = 0, h2 = 0, h3 = 0) {
-    if (this.count >= this.max || !kind) return;
+    if (!kind) return;
+    if (this.count === this.max) {
+      const capacity = Math.max(1, this.max * 2);
+      const grown = new Float32Array(capacity * ITEM_FLOATS);
+      grown.set(this.data);
+      this.data = grown;
+      this.max = capacity;
+    }
     const b = this.count++ * ITEM_FLOATS;
     const d = this.data;
     this.mask |= 1 << kind;

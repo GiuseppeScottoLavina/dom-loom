@@ -1,3 +1,4 @@
+import { createListElement } from '../core/list-elements.js';
 import { RectSpring, Spring } from '../core/spring.js';
 
 let comboIds = 0;
@@ -66,7 +67,7 @@ export class Combos {
       // The browser's popup is not drawn into a canvas: the stage shows its own.
       input.dataset.loomList = input.getAttribute('list');
       input.removeAttribute('list');
-      const list = document.createElement('ul');
+      const list = createListElement('ul');
       list.className = 'loom-listbox';
       list.id = `loom-listbox-${++comboIds}`;
       list.setAttribute('role', 'listbox');
@@ -90,8 +91,9 @@ export class Combos {
       return;
     }
     c.list.replaceChildren(...values.map((value, i) => {
-      const li = document.createElement('li');
+      const li = createListElement('li');
       li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
       li.id = `${c.list.id}-${i}`;
       li.textContent = value;
       return li;
@@ -142,10 +144,11 @@ export class Combos {
     }, 'fold');
   }
   highlight(c, index) {
-    for (const [i, o] of c.options.entries()) o.setAttribute('aria-selected', String(i === index));
-    c.index = index;
     const option = c.options[index];
-    if (!option) return;
+    if (!option || c.index === index) return;
+    c.options[c.index]?.setAttribute('aria-selected', 'false');
+    option.setAttribute('aria-selected', 'true');
+    c.index = index;
     c.input.setAttribute('aria-activedescendant', option.id);
     const to = this.stage.rectOf(option);
     if (this.marker.alpha.x < 0.05 || this.marker.el?.parentElement !== c.list) this.marker.rect.snap(to);

@@ -32,7 +32,8 @@ export class Spring {
       this.v = 0;
       return false;
     }
-    let remaining = dt;
+    // A resumed tab may have missed minutes. Bound physics work on its first frame.
+    let remaining = Math.min(dt, 0.1);
     while (remaining > 1e-6) {
       const h = Math.min(STEP, remaining);
       const a = -this.stiffness * (this.x - this.target) - this.damping * this.v;

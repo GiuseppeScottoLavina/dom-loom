@@ -4,13 +4,29 @@
 
 const registry = new Map();
 
-export function defineBehavior(name, Class, order = 50) {
+let sorted;
+
+function register(name, Class, order, component) {
   if (registry.get(name)?.Class === Class) return;
-  registry.set(name, { Class, order });
-  globalThis.document?.dispatchEvent(new CustomEvent('loom-behaviors'));
+  const definition = { Class, order, component };
+  registry.set(name, definition);
+  sorted = null;
+  if (globalThis.document) {
+    const index = behaviorList().findIndex(([key]) => key === name);
+    document.dispatchEvent(new CustomEvent('loom-behaviors', { detail: { name, definition, index } }));
+  }
 }
 
-/** [name, { Class, order }] in paint order. */
+export function defineBehavior(name, Class, order = 50) {
+  register(name, Class, order, false);
+}
+
+/** Built-in components discover their controls in their constructors. */
+export function defineComponent(name, Class, order) {
+  register(name, Class, order, true);
+}
+
+/** [name, definition] in paint order. */
 export function behaviorList() {
-  return [...registry.entries()].sort((a, b) => a[1].order - b[1].order);
+  return sorted ??= [...registry.entries()].sort((a, b) => a[1].order - b[1].order);
 }

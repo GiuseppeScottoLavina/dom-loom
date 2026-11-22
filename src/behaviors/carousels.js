@@ -34,11 +34,11 @@ export class Carousels {
     stage.listen('pointerdown', (e) => {
       const el = e.target.closest?.('[carousel]');
       if (!el || e.pointerType !== 'mouse' || e.button !== 0 || !root.contains(el)) return;
-      this.drag = { el, x: e.clientX, scroll: el.scrollLeft, moved: false };
+      this.drag = { el, pointerId: e.pointerId, x: e.clientX, scroll: el.scrollLeft, moved: false };
     });
     stage.listenGlobal('pointermove', (e) => {
       const d = this.drag;
-      if (!d) return;
+      if (!d || d.pointerId !== e.pointerId || !root.contains(d.el)) return;
       const dx = e.clientX - d.x;
       if (!d.moved && Math.abs(dx) < 5) return;
       if (!d.moved) {
@@ -50,8 +50,9 @@ export class Carousels {
       }
       d.el.scrollLeft = d.scroll - dx;
     });
-    const release = () => {
+    const release = (event) => {
       const d = this.drag;
+      if (!d || (event.type !== 'blur' && d.pointerId !== event.pointerId)) return;
       this.drag = null;
       if (!d?.moved) return;
       d.el.removeAttribute('data-dragging');
@@ -69,6 +70,7 @@ export class Carousels {
     };
     stage.listenGlobal('pointerup', release);
     stage.listenGlobal('pointercancel', release);
+    stage.listenGlobal('blur', release);
     stage.listen('click', (e) => {
       const button = e.target.closest?.('button[data-step][aria-controls]');
       if (!button || !root.contains(button)) return;
@@ -84,7 +86,11 @@ export class Carousels {
   step(now, dt) {
     let active = false;
     const t = performance.now();
-    for (const s of this.states.values()) {
+    for (const [el, s] of this.states) {
+      if (!this.stage.source.contains(el) || !el.hasAttribute('carousel')) {
+        this.states.delete(el);
+        continue;
+      }
       // No scroll for a moment: it has stopped.
       if (t - s.at > 70) s.speed.set(0);
       if (s.speed.step(dt) || Math.abs(s.speed.x) > 0.002) active = true;

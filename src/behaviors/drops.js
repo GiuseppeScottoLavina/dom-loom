@@ -69,9 +69,18 @@ export class Drops {
   }
   step(now, dt) {
     let active = false;
-    for (const s of this.states.values()) {
+    for (const [zone, s] of this.states) {
+      if (!this.stage.source.contains(zone) || !zone.hasAttribute('dropzone')) {
+        zone.removeAttribute('data-over');
+        this.states.delete(zone);
+        continue;
+      }
       // While files hover, the vortex keeps turning.
-      active = s.pull.step(dt) || s.pull.x > 0.002 || now - s.droppedAt < this.stage.skin.durations.burst || active;
+      const moving = s.pull.step(dt);
+      const hovering = s.pull.target > 0;
+      const bursting = now - s.droppedAt < this.stage.skin.durations.burst;
+      if (moving || ((hovering || bursting) && this.stage.gpu && !this.stage.reduced)) active = true;
+      if (!moving && !hovering && (!bursting || !this.stage.gpu || this.stage.reduced)) this.states.delete(zone);
     }
     return active;
   }

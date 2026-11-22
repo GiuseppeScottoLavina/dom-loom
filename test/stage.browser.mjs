@@ -5,6 +5,7 @@
 //   CHROME_PATH=/path/to/chrome            another browser build
 import assert from 'node:assert/strict';
 import { launch, startServer } from './harness.mjs';
+import { checkDemoLoader } from './demo-loader.browser.mjs';
 
 const only = process.argv.includes('--native') ? ['native'] : ['native', 'polyfill'];
 const results = [];
@@ -73,9 +74,9 @@ async function holdDeploy(page, ms) {
   await page.mouse.up();
 }
 
-/** Green channel of a viewport screenshot, indexed in CSS px (DPR 1). */
-async function greens(page) {
-  const png = await page.screenshot();
+/** Green channel of a screenshot, indexed from its top left in CSS px (DPR 1). */
+async function greens(page, clip) {
+  const png = await page.screenshot({ clip });
   return page.evaluate(async (b64) => {
     const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${b64}`)).blob());
     const c = new OffscreenCanvas(bitmap.width, bitmap.height);
@@ -90,6 +91,108 @@ async function greens(page) {
 
 async function run(path, browser, url) {
   console.log(`\n${path}`);
+  await check(`${path}: a growing stage paints the last of 96 slider thumbs and routes its input`, async () => {
+    const context = await browser.newContext({ viewport: { width: 660, height: 430 }, reducedMotion: 'reduce' });
+    try {
+      const panelPage = await context.newPage();
+      await panelPage.goto(`${url}test/fixtures/density.html`);
+      const panel = panelPage.locator('#panel');
+      assert.equal(await panel.evaluate(stage => stage.ready), 'webgpu');
+      assert.equal(await panel.getAttribute('data-mode'), path);
+      await panel.evaluate(stage => {
+        const inputs = document.createDocumentFragment();
+        for (let i = 1; i < 96; i++) {
+          const range = document.createElement('input');
+          range.type = 'range';
+          range.setAttribute('aria-label', `Slider ${i + 1}`);
+          inputs.append(range);
+        }
+        stage.source.append(inputs);
+      });
+      const last = panelPage.getByRole('slider', { name: 'Slider 96', exact: true });
+      const box = await last.boundingBox();
+      const x = Math.round(box.x + box.width / 2), y = Math.round(box.y + box.height / 2);
+      // The unadorned track crosses only a few rows. The Holo thumb fills the centre.
+      let lit = 0;
+      for (let attempt = 0; attempt < 12 && lit < 100; attempt++) {
+        const { g } = await greens(panelPage, { x: x - 10, y: y - 10, width: 21, height: 21 });
+        lit = g.filter(value => value > 155).length;
+        if (lit < 100) await panelPage.waitForTimeout(100);
+      }
+      assert.ok(lit >= 100, `last slider thumb is missing (${lit} lit pixels)`);
+      await panelPage.mouse.click(box.x + box.width * 0.75, box.y + box.height / 2);
+      const clicked = Number(await last.inputValue());
+      assert.ok(clicked > 50 && clicked < 100);
+      await panelPage.keyboard.press('ArrowRight');
+      assert.equal(Number(await last.inputValue()), clicked + 1);
+    } finally {
+      await context.close();
+    }
+  });
+  await check(`${path}: lazy stages start near the viewport or on focus, keeping the editable selection`, async () => {
+    const context = await browser.newContext({ viewport: { width: 1365, height: 900 } });
+    try {
+      const page = await context.newPage();
+      await page.goto(url);
+      await page.evaluate(() => document.querySelector('#loadout').ready);
+      assert.equal(await page.locator('#archive canvas').count(), 0);
+      await page.locator('#archive').scrollIntoViewIfNeeded();
+      await page.waitForFunction(() => document.querySelector('#archive').dataset.renderer === 'webgpu');
+      const focus = await page.evaluate(async () => {
+        const stage = document.createElement('loom-stage');
+        stage.setAttribute('loading', 'lazy');
+        stage.style.cssText = 'position:absolute;top:20000px;width:250px';
+        const input = document.createElement('input');
+        input.value = 'Nightjar';
+        stage.append(input);
+        document.body.append(stage);
+        input.focus({ preventScroll: true });
+        input.setSelectionRange(2, 5);
+        const renderer = await stage.ready;
+        return [renderer, document.activeElement === input, input.selectionStart, input.selectionEnd];
+      });
+      assert.deepEqual(focus, ['webgpu', true, 2, 5]);
+      const nested = await page.evaluate(async () => {
+        const stage = document.createElement('loom-stage');
+        stage.setAttribute('loading', 'lazy');
+        stage.style.cssText = 'position:absolute;top:20000px;width:250px';
+        const widget = document.createElement('span');
+        const shadow = widget.attachShadow({ mode: 'open' });
+        const input = document.createElement('input');
+        shadow.append(input);
+        stage.append(widget);
+        document.body.append(stage);
+        input.focus({ preventScroll: true });
+        await stage.ready;
+        const enhanced = shadow.activeElement === input;
+        stage.querySelector('canvas').dispatchEvent(new CustomEvent('effecterror'));
+        return [enhanced, stage.dataset.renderer, shadow.activeElement === input];
+      });
+      assert.deepEqual(nested, [true, 'dom', true]);
+      const moved = await page.evaluate(async () => {
+        const stage = document.createElement('loom-stage');
+        stage.setAttribute('loading', 'lazy');
+        stage.style.cssText = 'position:absolute;top:20000px;width:250px';
+        const input = document.createElement('input');
+        const outside = document.createElement('button');
+        stage.append(input);
+        document.body.append(stage, outside);
+        const observer = new MutationObserver(() => {
+          if (stage.dataset.renderer === 'loading') {
+            observer.disconnect();
+            outside.focus({ preventScroll: true });
+          }
+        });
+        observer.observe(stage, { attributes: true, attributeFilter: ['data-renderer'] });
+        input.focus({ preventScroll: true });
+        const renderer = await stage.ready;
+        return [renderer, document.activeElement === outside];
+      });
+      assert.deepEqual(moved, ['webgpu', true]);
+    } finally {
+      await context.close();
+    }
+  });
   let session = await open(browser, url);
   const { page } = session;
 
@@ -1123,6 +1226,7 @@ try {
   for (const path of only) {
     const browser = await launch({ polyfill: path === 'polyfill' });
     try {
+      if (path === 'native') await check('the production loader covers delayed styles and releases the form', () => checkDemoLoader(browser));
       await run(path, browser, url);
     } finally {
       await browser.close();

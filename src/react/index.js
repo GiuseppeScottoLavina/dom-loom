@@ -22,9 +22,13 @@ export const LoomStage = forwardRef(function LoomStage(
   useLoomEvent(stage, 'loom-fallback', onFallback ? (event) => onFallback(event.detail.error) : null);
   const ready = useRef(onReady);
   ready.current = onReady;
+  const observesReady = Boolean(onReady);
   useEffect(() => {
-    stage.current?.ready.then((renderer) => ready.current?.(renderer));
-  }, []);
+    if (!observesReady) return;
+    let mounted = true;
+    stage.current?.ready.then((renderer) => { if (mounted) ready.current?.(renderer); });
+    return () => { mounted = false; };
+  }, [observesReady]);
   return createElement(
     'loom-stage',
     {

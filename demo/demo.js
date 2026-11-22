@@ -7,6 +7,7 @@ import '@fontsource-variable/jetbrains-mono';
 import '../src/loom.css';
 import './demo.css';
 import '../src/index.js';
+import { audio } from '../src/core/audio.js';
 
 const stage = document.querySelector('#loadout');
 const form = document.querySelector('#loadout-form');
@@ -15,7 +16,7 @@ const altitude = form.elements.altitude;
 const altitudeOut = document.querySelector('#altitude-out');
 const status = document.querySelector('#status');
 const soundButton = document.querySelector('#sound');
-const clock = document.querySelector('#clock');
+const clockText = document.querySelector('#clock').firstChild;
 
 const metres = (value) => `${Number(value).toLocaleString('en-US')} m`;
 altitude.addEventListener('input', () => {
@@ -27,7 +28,8 @@ form.addEventListener('reset', () => {
 
 soundButton.addEventListener('click', () => {
   const on = !stage.hasAttribute('sound');
-  stage.toggleAttribute('sound', on);
+  for (const panel of document.querySelectorAll('loom-stage')) panel.toggleAttribute('sound', on);
+  if (on) audio();
   soundButton.setAttribute('aria-pressed', String(on));
   soundButton.textContent = on ? 'Sound on' : 'Sound off';
 });
@@ -40,21 +42,36 @@ stage.ready.then((renderer) => {
 });
 
 let ticking = 0;
-function startClock() {
-  const start = performance.now();
-  clearInterval(ticking);
-  ticking = setInterval(() => {
-    const t = (performance.now() - start) / 1000;
-    const m = String(Math.floor(t / 60)).padStart(2, '0');
-    const s = (t % 60).toFixed(1).padStart(4, '0');
-    clock.textContent = `T+${m}:${s}`;
-  }, 100);
+let startedAt = null;
+const canObserveClock = typeof IntersectionObserver === 'function';
+let clockVisible = !canObserveClock;
+function updateClock() {
+  const tenths = Math.floor((performance.now() - startedAt) / 100);
+  const minutes = String(Math.floor(tenths / 600)).padStart(2, '0');
+  const seconds = String(Math.floor(tenths / 10) % 60).padStart(2, '0');
+  clockText.data = `T+${minutes}:${seconds}.${tenths % 10}`;
 }
+function syncClock() {
+  clearInterval(ticking);
+  if (startedAt !== null && clockVisible && !document.hidden) {
+    updateClock();
+    ticking = setInterval(updateClock, 100);
+  }
+}
+if (canObserveClock) {
+  new IntersectionObserver(([entry]) => {
+    clockVisible = entry.isIntersecting;
+    syncClock();
+  }).observe(stage);
+}
+document.addEventListener('visibilitychange', syncClock);
 
 function show(view) {
   const toReceipt = view === receipt;
   form.inert = toReceipt;
   receipt.inert = !toReceipt;
+  startedAt = toReceipt ? performance.now() : null;
+  syncClock();
 }
 
 form.addEventListener('submit', async (event) => {
@@ -70,19 +87,16 @@ form.addEventListener('submit', async (event) => {
   for (const label of form.querySelectorAll('.segments label')) {
     label.style.viewTransitionName = label.querySelector('input').checked ? 'role' : '';
   }
-  startClock();
   await stage.transition(() => show(receipt));
-  receipt.querySelector('#receipt-title').focus({ preventScroll: true });
+  if (!receipt.inert) receipt.querySelector('#receipt-title').focus({ preventScroll: true });
 });
 
 document.querySelector('#edit').addEventListener('click', async () => {
   await stage.transition(() => show(form));
-  clearInterval(ticking);
-  form.elements.callsign.focus({ preventScroll: true });
+  if (!form.inert) form.elements.callsign.focus({ preventScroll: true });
 });
 
 /* ------------------------------------------------------------- ops panel */
-const ops = document.querySelector('#ops');
 const hull = document.querySelector('#hull');
 const shield = document.querySelector('#shield');
 const uplink = document.querySelector('#uplink');
@@ -132,9 +146,6 @@ linkButton.addEventListener('click', () => {
   }, 1100);
 });
 
-ops.toggleAttribute('sound', stage.hasAttribute('sound'));
-soundButton.addEventListener('click', () => ops.toggleAttribute('sound', stage.hasAttribute('sound')));
-
 /* ---------------------------------------------------------- roster panel */
 const roster = document.querySelector('#roster');
 const table = document.querySelector('#roster-table');
@@ -173,11 +184,7 @@ document.querySelector('#advance').addEventListener('click', () => {
   steps[(i + 1) % steps.length].setAttribute('aria-current', 'step');
 });
 
-for (const s of [ops, roster]) s.toggleAttribute('sound', stage.hasAttribute('sound'));
-soundButton.addEventListener('click', () => roster.toggleAttribute('sound', stage.hasAttribute('sound')));
-
 /* ----------------------------------------------------- requisition panel */
-const req = document.querySelector('#req');
 const reqForm = document.querySelector('#req-form');
 const windowOut = document.querySelector('#window-out');
 const hour = (h) => `${String(h).padStart(2, '0')}:00`;
@@ -207,9 +214,6 @@ reqForm.elements.intel.addEventListener('change', (event) => {
   const files = [...event.target.files];
   filesOut.value = files.length ? `${files.length} file${files.length > 1 ? 's' : ''}: ${files.map((f) => f.name).join(', ')}` : 'No files yet';
 });
-
-req.toggleAttribute('sound', stage.hasAttribute('sound'));
-soundButton.addEventListener('click', () => req.toggleAttribute('sound', stage.hasAttribute('sound')));
 
 /* ----------------------------------------------------------- comms panel */
 const comms = document.querySelector('#comms');
@@ -271,9 +275,6 @@ decryptButton.addEventListener('click', () => {
   }, 1600);
 });
 
-comms.toggleAttribute('sound', stage.hasAttribute('sound'));
-soundButton.addEventListener('click', () => comms.toggleAttribute('sound', stage.hasAttribute('sound')));
-
 /* --------------------------------------------------------- archive panel */
 const archive = document.querySelector('#archive');
 const replayOut = document.querySelector('#replay-out');
@@ -281,8 +282,6 @@ archive.addEventListener('click', (event) => {
   const button = event.target.closest('.replay');
   if (button) replayOut.value = `Replaying Op ${button.dataset.op}…`;
 });
-archive.toggleAttribute('sound', stage.hasAttribute('sound'));
-soundButton.addEventListener('click', () => archive.toggleAttribute('sound', stage.hasAttribute('sound')));
 
 /* -------------------------------------------------------------- overlays */
 const abortDialog = document.querySelector('#abort-dialog');
@@ -293,10 +292,6 @@ abortDialog.addEventListener('close', () => {
 });
 const crewDrawer = document.querySelector('#crew-drawer');
 document.querySelector('#crew').addEventListener('click', () => crewDrawer.showModal());
-for (const s of document.querySelectorAll('dialog loom-stage')) {
-  s.toggleAttribute('sound', stage.hasAttribute('sound'));
-  soundButton.addEventListener('click', () => s.toggleAttribute('sound', stage.hasAttribute('sound')));
-}
 
 /* ------------------------------------------------------------------ menu */
 document.querySelector('#resupply').addEventListener('click', () => {
@@ -305,7 +300,3 @@ document.querySelector('#resupply').addEventListener('click', () => {
   showVitals();
 });
 document.querySelector('#menu-abort').addEventListener('click', () => setTimeout(() => abortDialog.showModal(), 60));
-for (const s of document.querySelectorAll('[popover] loom-stage')) {
-  s.toggleAttribute('sound', stage.hasAttribute('sound'));
-  soundButton.addEventListener('click', () => s.toggleAttribute('sound', stage.hasAttribute('sound')));
-}

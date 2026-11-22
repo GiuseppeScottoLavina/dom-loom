@@ -38,6 +38,8 @@ export const sounds = {
     g.gain.linearRampToValueAtTime(0.11, t + 0.08);
     osc.connect(f).connect(g).connect(output());
     osc.start(t);
+    // The stage may disappear, or the user may mute it, during the hold.
+    osc.stop(t + Math.max(0, durationMs / 1000) + 0.14);
     charge = { osc, g, a };
   },
   chargeStop() {

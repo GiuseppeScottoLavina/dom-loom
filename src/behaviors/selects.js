@@ -1,3 +1,4 @@
+import { createListElement } from '../core/list-elements.js';
 import { RectSpring, Spring } from '../core/spring.js';
 
 let selectIds = 0;
@@ -63,7 +64,7 @@ export class Selects {
   sync() {
     for (const select of this.stage.source.querySelectorAll('select:not([multiple])')) {
       if (this.lists.has(select) || select.size > 1) continue;
-      const list = document.createElement('ul');
+      const list = createListElement('ul');
       list.className = 'loom-listbox';
       list.id = `loom-select-${++selectIds}`;
       list.dataset.forSelect = '';
@@ -77,7 +78,7 @@ export class Selects {
   }
   render(s) {
     s.list.replaceChildren(...[...s.select.options].map((o) => {
-      const li = document.createElement('li');
+      const li = createListElement('li');
       li.setAttribute('role', 'option');
       li.textContent = o.label;
       li.dataset.value = o.value;

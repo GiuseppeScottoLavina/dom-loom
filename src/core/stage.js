@@ -1,3 +1,5 @@
+import { isListMutation } from './list-elements.js';
+import { scheduleLazyStage } from './lazy-stage.js';
 import { behaviorList } from './behaviors.js';
 import { createCompositor } from './compositor.js';
 import { GHOST } from '../primitives/ghost.js';
@@ -14,7 +16,16 @@ import { clamp01, easeInOutCubic, easeOutBack, easeOutCubic } from './spring.js'
 
 const ElementBase = globalThis.HTMLElement ?? class {};
 const BELOW = 1e5;
+const VALUE_ATTRIBUTES = new Set(['value', 'max', 'min', 'low', 'high', 'optimum']);
 const ZERO4 = [0, 0, 0, 0];
+
+function changesControls(record) {
+  if (record.type === 'attributes') return !VALUE_ATTRIBUTES.has(record.attributeName);
+  if (record.type !== 'childList') return false;
+  for (const node of record.addedNodes) if (node.nodeType === 1) return true;
+  for (const node of record.removedNodes) if (node.nodeType === 1) return true;
+  return false;
+}
 
 function union(rects) {
   if (!rects.length) return null;
@@ -51,11 +62,39 @@ function flight(a, b, index, ms) {
   return r;
 }
 
-const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+async function painted(compositor, version, signal) {
+  if (!(await compositor.waitForSource(version, 600, signal)) || signal.aborted) return false;
+  // Give the polyfill one more frame to present the new picture.
+  return new Promise((resolve) => {
+    const id = requestAnimationFrame(() => {
+      signal.removeEventListener('abort', abort);
+      resolve(true);
+    });
+    const abort = () => {
+      cancelAnimationFrame(id);
+      resolve(false);
+    };
+    signal.addEventListener('abort', abort, { once: true });
+  });
+}
 
 function parseRgb(value) {
   const m = value.match(/[\d.]+/g);
   return m ? m.slice(0, 3).map((n) => Number(n) / 255) : [1, 1, 1];
+}
+
+function moveSource(parent, source, before = null) {
+  const root = source.getRootNode();
+  if (parent.moveBefore && source.isConnected && parent.isConnected && root === parent.getRootNode()) {
+    parent.moveBefore(source, before);
+    return;
+  }
+  let active = root.activeElement;
+  if (!active || !source.contains(active)) active = null;
+  while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+  parent.insertBefore(source, before);
+  const doc = source.ownerDocument;
+  if (active?.isConnected && (!doc.activeElement || doc.activeElement === doc.body)) active.focus({ preventScroll: true });
 }
 
 /**
@@ -75,7 +114,10 @@ export class LoomStage extends ElementBase {
   #uniforms = new Float32Array(UNIFORM_FLOATS);
   #animating = false;
   #domFrame = 0;
+  #lastDomFrame = null;
   #transition = null;
+  #visual = null;
+  #queuedUpdates = 0;
   #reflow = null;
   #armed = null;
   #changes = []; // rolls and overlay unfolds: pictures from before a change, animated
@@ -89,8 +131,14 @@ export class LoomStage extends ElementBase {
   #observers = [];
   #generation = 0;
   #audio = false;
-  #syncQueued = false;
+  #syncFrame = 0;
+  #fullSync = false;
+  #registryWake = null;
+  #customSync = [];
+  #contentSync = [];
+  #dirtyControls = new Map();
   #ready = Promise.resolve('dom');
+  #startEnhancement = null;
   #motion = null;
 
   /**
@@ -111,11 +159,12 @@ export class LoomStage extends ElementBase {
   };
 
   static get observedAttributes() {
-    return ['skin'];
+    return ['skin', 'loading'];
   }
 
   attributeChangedCallback(name) {
     if (name === 'skin' && this.#source) this.#restyle();
+    if (name === 'loading' && this.getAttribute('loading') !== 'lazy') this.#startEnhancement?.();
   }
 
   /** A stage in a dialog or a popover: transparent around its panel (the `overlay` attribute). */
@@ -126,6 +175,13 @@ export class LoomStage extends ElementBase {
   /** Adds a listener on another element that is removed with the stage. */
   listenOn(target, type, listener, options = {}) {
     target.addEventListener(type, listener, { ...options, signal: this.#listeners.signal });
+  }
+
+  /** @internal Observe a component's host for the lifetime of this connection. */
+  observe(target, options, callback) {
+    const observer = new MutationObserver(callback);
+    observer.observe(target, options);
+    this.#observers.push(observer);
   }
 
   /** The skin that draws this stage: its `skin` attribute, or the default one. */
@@ -139,6 +195,7 @@ export class LoomStage extends ElementBase {
   }
   /** Resolves with 'webgpu' once the compositor draws the stage, or 'dom'. */
   get ready() {
+    this.#startEnhancement?.();
     return this.#ready;
   }
   get gpu() {
@@ -162,36 +219,59 @@ export class LoomStage extends ElementBase {
     this.#motion = matchMedia('(prefers-reduced-motion: reduce)');
     this.#listeners = new AbortController();
     this.#readColors();
+    this.listenOn(this.#motion, 'change', () => this.wake());
 
     // A skin registered later, or redefined, applies at once.
     document.addEventListener('loom-skin', (e) => {
-      if (e.detail?.name === this.skin?.name) this.#restyle();
+      if (e.detail?.name !== this.skin?.name) return;
+      if (e.detail.hooksOnly) this.#wakeAfterRegistration();
+      else this.#restyle();
     }, { signal: this.#listeners.signal });
     this.listen('pointerdown', () => this.#unlockAudio(), { capture: true });
     this.listen('keydown', () => this.#unlockAudio(), { capture: true });
     this.listen('click', (e) => this.#guardHold(e), { capture: true });
-    this.listen('reset', () => setTimeout(() => this.#sync()), { capture: true });
+    const connection = this.#listeners.signal;
+    this.listen('reset', () => setTimeout(() => {
+      if (!connection.aborted) this.#sync();
+    }), { capture: true });
 
     this.#instances = new Map();
-    this.#adoptBehaviors();
+    this.#behaviors = [];
+    this.#customSync = [];
+    this.#contentSync = [];
+    for (const [name, definition] of behaviorList()) this.#installBehavior(name, definition, this.#behaviors.length);
     // A component imported later (a lazy chunk) joins the stages already running.
-    document.addEventListener('loom-behaviors', () => {
-      this.#adoptBehaviors();
-      this.#sync();
+    document.addEventListener('loom-behaviors', ({ detail }) => {
+      this.#installBehavior(detail.name, detail.definition, detail.index, true);
+      this.#wakeAfterRegistration();
     }, { signal: this.#listeners.signal });
 
     for (const button of this.#source.querySelectorAll('button[hold]')) this.#describeHold(button);
     this.#observe();
     const generation = ++this.#generation;
-    this.#ready = this.#enhance(generation);
+    if (this.getAttribute('loading') === 'lazy' && typeof this.ownerDocument?.defaultView?.IntersectionObserver === 'function') {
+      this.#startEnhancement = scheduleLazyStage(this, () => {
+        this.#startEnhancement = null;
+        this.#ready = this.#enhance(generation);
+      }, connection);
+    } else {
+      this.#ready = this.#enhance(generation);
+    }
   }
 
   disconnectedCallback() {
     ++this.#generation;
+    this.#startEnhancement = null;
     this.#listeners?.abort();
     for (const o of this.#observers) o.disconnect();
     this.#observers = [];
+    cancelAnimationFrame(this.#syncFrame);
+    this.#syncFrame = 0;
+    this.#fullSync = false;
+    this.#dirtyControls.clear();
     cancelAnimationFrame(this.#domFrame);
+    this.#domFrame = 0;
+    this.#lastDomFrame = null;
     this.#release();
   }
 
@@ -251,7 +331,7 @@ export class LoomStage extends ElementBase {
     // While a transition waits for the new picture, the old one is shown: lights of
     // elements that are about to fly would sit at their new places over it.
     const t = this.#transition;
-    if (t?.pending && t.movers && state.el && t.movers.some((m) => m === state.el || m.contains(state.el))) return;
+    if (t?.ghosted && t.pending && t.movers && state.el && t.movers.some((m) => m === state.el || m.contains(state.el))) return;
     this.skin?.draw[name]?.(scene, state, this.#ctx);
   }
 
@@ -296,64 +376,56 @@ export class LoomStage extends ElementBase {
    * - sound: the skin's sound to play.
    */
   async transition(update, { scope = null, direction = 1, morph = null, cut = true, sound = null, style = null } = {}) {
-    if (!this.#compositor || this.reduced) {
-      await update?.();
+    const compositor = this.#compositor;
+    this.#finishVisual();
+    if (!this.#canPresent()) {
+      await this.#withoutVisual(update);
       return;
     }
-    this.#finishTransition();
-    this.#endReflow();
     const scopes = scope ? [scope].flat().filter(Boolean) : null;
     const movers = morph ? [...morph] : null;
     const measure = () => (movers ? this.#measured(movers) : scopes ? new Map() : this.#keyed());
     const before = measure();
     const scopeBefore = scopes ? this.#rectsOf(scopes) : [];
     const transition = {
-      start: NaN, pending: true, pairs: [], exits: [], movers, resolve: null, cut: cut !== false,
+      start: NaN, pending: true, ghosted: false, pairs: [], exits: [], movers, resolve: null, cut: cut !== false,
       scope: null, direction: direction < 0 ? -1 : 1,
       style: style ? (primitives.all().find((d) => d.name === style && d.cut)?.kind ?? 0) : 0,
       ms: scopes ? this.skin.transition.scopedMs : this.skin.transition.ms,
       band: this.skin.transition.band, slant: this.skin.transition.slant,
     };
     const done = new Promise((resolve) => (transition.resolve = resolve));
-    await this.#compositor.captureGhost();
-    if (!this.#compositor) {
-      await update?.();
-      return;
-    }
+    const signal = this.#watchVisual();
     this.#transition = transition;
-    const version = this.#compositor.sourceVersion;
     try {
+      const captured = await compositor.captureGhost(signal);
+      transition.ghosted = captured && !signal.aborted;
+      const version = compositor.sourceVersion;
+      if (!transition.ghosted) this.#finishVisual(signal);
       await update?.();
-    } catch (error) {
-      this.#finishTransition();
-      throw error;
+      if (signal.aborted) return;
+      if (scopes) {
+        const r = union([...scopeBefore, ...this.#rectsOf(scopes)]);
+        transition.scope = r ? [r[0] - 2, r[1] - 2, r[2] + 4, r[3] + 4] : null;
+      }
+      // Map presses to where the moving elements are shown, even while the new
+      // picture is in flight.
+      const after = measure();
+      const most = movers ? MAX_MOVERS : MAX_KEYED;
+      for (const [key, a] of before) {
+        const b = after.get(key);
+        if (b && transition.pairs.length < most) transition.pairs.push({ a: a.rect, b: b.rect, el: b.el });
+        else if (!b && movers) transition.exits.push(a.rect);
+      }
+      this.play(sound ?? (!transition.cut ? 'shuffle' : scopes ? 'swipe' : 'whoosh'));
+      if (!(await painted(compositor, version, signal)) || signal.aborted) return;
+      transition.pending = false;
+      this.#sync();
+      this.wake();
+      await done;
+    } finally {
+      this.#finishVisual(signal);
     }
-    if (scopes) {
-      // The region is measured before and after: the cut covers both.
-      const r = union([...scopeBefore, ...this.#rectsOf(scopes)]);
-      transition.scope = r ? [r[0] - 2, r[1] - 2, r[2] + 4, r[3] + 4] : null;
-    }
-    // Where everything goes is known as soon as the DOM has changed: the flights are
-    // set now, so that while the new picture is on its way each element is drawn where
-    // it was (from the old picture, so nothing changes on screen) and a press on it
-    // already reaches it.
-    const after = measure();
-    const most = movers ? MAX_MOVERS : MAX_KEYED;
-    for (const [key, a] of before) {
-      const b = after.get(key);
-      if (b && transition.pairs.length < most) transition.pairs.push({ a: a.rect, b: b.rect, el: b.el });
-      // A moved element that is no longer shown crumbles where it was.
-      else if (!b && movers) transition.exits.push(a.rect);
-    }
-    this.play(sound ?? (!transition.cut ? 'shuffle' : scopes ? 'swipe' : 'whoosh'));
-    await this.#compositor?.waitForSource(version, 600);
-    // Give the polyfill one more frame to settle the new picture.
-    await frame();
-    if (this.#transition !== transition) return done;
-    this.#sync();
-    transition.pending = false;
-    this.wake();
-    return done;
   }
 
   /**
@@ -364,8 +436,8 @@ export class LoomStage extends ElementBase {
    */
   async discard(el, update = () => el.remove()) {
     if (!el?.isConnected) return;
-    if (!this.#compositor || this.reduced || !this.visible(el)) {
-      await update();
+    if (!this.#canPresent() || !this.visible(el)) {
+      await this.#withoutVisual(update);
       return;
     }
     // What can move: its siblings, and what follows each of its ancestors.
@@ -378,7 +450,7 @@ export class LoomStage extends ElementBase {
 
   /** Has an element (just added) assemble block by block. */
   reveal(el) {
-    if (!this.#compositor || this.reduced || !el?.isConnected) return;
+    if (!el?.isConnected || !this.#canPresent()) return;
     this.#arrivals.push({ el, start: NaN });
     this.play('appear');
     this.wake();
@@ -391,35 +463,31 @@ export class LoomStage extends ElementBase {
    */
   async _change(el, update, kind, direction = 1) {
     const compositor = this.#compositor;
-    if (!compositor || this.reduced || this.#transition || this.#reflow) {
-      update();
-      return true;
-    }
+    if (this.#transition || this.#reflow) return update() !== false;
     // One picture of the past at a time: earlier changes end now.
-    this.#changes = [];
+    this.#finishVisual();
+    if (!this.#canPresent()) {
+      return (await this.#withoutVisual(update)) !== false;
+    }
+    const signal = this.#watchVisual();
     const change = { el, kind, direction, rect: null, pending: true, ghosted: false, start: NaN };
     this.#changes.push(change);
-    await compositor.captureGhost();
-    if (!this.#changes.includes(change) || !this.#compositor) {
-      update();
+    try {
+      if (!(await compositor.captureGhost(signal)) || signal.aborted) return update() !== false;
+      const version = compositor.sourceVersion;
+      const before = kind === 'fold' ? this.#layoutRect(el) : null;
+      if (update() === false) return false;
+      if (signal.aborted) return true;
+      change.rect = before ?? this.#layoutRect(el);
+      change.ghosted = true;
+      this.wake();
+      if (!(await painted(compositor, version, signal)) || signal.aborted) return true;
+      change.pending = false;
+      this.wake();
       return true;
+    } finally {
+      if (change.pending) this.#finishVisual(signal);
     }
-    const version = compositor.sourceVersion;
-    const before = kind === 'fold' ? this.#layoutRect(el) : null;
-    const changed = update();
-    if (changed === false) {
-      this.#changes = this.#changes.filter((c) => c !== change);
-      return false;
-    }
-    change.rect = before ?? this.#layoutRect(el);
-    change.ghosted = true;
-    this.wake();
-    await compositor.waitForSource(version, 600);
-    await frame();
-    if (!this.#changes.includes(change)) return true;
-    change.pending = false;
-    this.wake();
-    return true;
   }
 
   /**
@@ -428,45 +496,54 @@ export class LoomStage extends ElementBase {
    */
   async _disclose(details) {
     const compositor = this.#compositor;
-    const open = !details.open;
-    if (!compositor || this.#transition) {
-      details.open = open;
+    const toggle = () => (details.open = !details.open);
+    if (this.#transition) {
+      toggle();
       return;
     }
-    this.#endReflow();
+    const open = !(this.#reflow?.details === details ? this.#reflow.open : details.open);
+    this.#finishVisual();
+    if (!this.#canPresent()) {
+      await this.#withoutVisual(toggle);
+      return;
+    }
     // An exclusive accordion closes another one at the same time: cut the group.
     const group = details.name && open
       ? [...this.#source.querySelectorAll('details[open]')].find((d) => d !== details && d.name === details.name)
       : null;
     if (group) {
       this.play('open');
-      await this.transition(() => (details.open = true), { scope: [details, group], sound: 'swipe' });
+      await this.transition(toggle, { scope: [details, group], sound: 'swipe' });
       return;
     }
-    const summary = details.querySelector(':scope > summary');
     const reflow = { details, open, pending: true, ghosted: false, start: NaN, line: 0, column: null, height: 0 };
+    const signal = this.#watchVisual();
     this.#reflow = reflow;
-    this.wake();
-    await compositor.captureGhost();
-    if (this.#reflow !== reflow || !this.#compositor) {
-      details.open = open;
-      return;
+    try {
+      if (!(await compositor.captureGhost(signal)) || signal.aborted) {
+        toggle();
+        return;
+      }
+      const summary = details.querySelector(':scope > summary');
+      if (!summary) {
+        toggle();
+        return;
+      }
+      const s = this.#source.getBoundingClientRect();
+      reflow.line = summary.getBoundingClientRect().bottom - s.top;
+      reflow.column = this.#columnOf(details);
+      reflow.ghosted = true;
+      const version = compositor.sourceVersion;
+      const before = details.getBoundingClientRect().height;
+      reflow.open = toggle();
+      reflow.height = Math.abs(details.getBoundingClientRect().height - before);
+      this.play(reflow.open ? 'open' : 'close');
+      if (!(await painted(compositor, version, signal)) || signal.aborted) return;
+      reflow.pending = false;
+      this.wake();
+    } finally {
+      if (reflow.pending) this.#finishVisual(signal);
     }
-    const s = this.#source.getBoundingClientRect();
-    reflow.line = summary.getBoundingClientRect().bottom - s.top;
-    reflow.column = this.#columnOf(details);
-    reflow.ghosted = true;
-    const version = compositor.sourceVersion;
-    const before = details.getBoundingClientRect().height;
-    details.open = open;
-    reflow.height = Math.abs(details.getBoundingClientRect().height - before);
-    this.play(open ? 'open' : 'close');
-    await compositor.waitForSource(version, 600);
-    await frame();
-    if (this.#reflow !== reflow) return;
-    this.#sync();
-    reflow.pending = false;
-    this.wake();
   }
 
   // ---------------------------------------------------------------- internals
@@ -519,15 +596,17 @@ export class LoomStage extends ElementBase {
   }
 
   #readColors() {
-    const probe = document.createElement('span');
-    probe.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;';
-    this.#source.append(probe);
-    const colors = {};
-    for (const [name, [property, fallback]] of Object.entries(this.skin?.tokens ?? {})) {
+    const probes = Object.entries(this.skin?.tokens ?? {}).map(([name, [property, fallback]]) => {
+      const probe = document.createElement('span');
+      probe.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;';
       probe.style.color = `var(${property}, ${fallback})`;
-      colors[name] = parseRgb(getComputedStyle(probe).color);
-    }
-    probe.remove();
+      return [name, probe];
+    });
+    // Resolve every token against the same stage, with no style writes between reads.
+    this.#source.append(...probes.map(([, probe]) => probe));
+    const colors = {};
+    for (const [name, probe] of probes) colors[name] = parseRgb(getComputedStyle(probe).color);
+    for (const [, probe] of probes) probe.remove();
     this.#colors = colors;
   }
 
@@ -557,18 +636,50 @@ export class LoomStage extends ElementBase {
         }
       }
       for (const behavior of this.#behaviors) behavior.mutated?.(records);
-      if (this.#syncQueued) return;
-      this.#syncQueued = true;
-      requestAnimationFrame(() => {
-        this.#syncQueued = false;
-        this.#sync();
-      });
+      this.#queueSync(records);
     });
     content.observe(this.#source, {
       childList: true, subtree: true, attributes: true, characterData: true,
-      attributeFilter: ['hidden', 'class', 'hold', 'open', 'value', 'max', 'min', 'low', 'high', 'optimum', 'aria-selected', 'aria-current', 'segments', 'sortable', 'removable', 'list', 'aria-busy', 'ring'],
+      attributeFilter: ['hidden', 'class', 'hold', 'open', 'value', 'max', 'min', 'low', 'high', 'optimum', 'aria-selected', 'aria-current', 'segments', 'sortable', 'removable', 'list', 'aria-busy', 'ring', 'role', 'type', 'checked', 'name', 'rating', 'badge', 'toasts', 'split', 'multiple', 'size', 'nosort'],
     });
     this.#observers.push(adopt, content);
+  }
+
+  // Text and reflected values can change every frame. Only structural changes
+  // need discovery. Custom behaviours retain their full sync() notification.
+  #queueSync(records) {
+    for (const record of records) {
+      if (this.#fullSync) break;
+      if (isListMutation(record)) continue;
+      if (changesControls(record)) {
+        this.#fullSync = true;
+        break;
+      }
+      const node = record.target.nodeType === 1 ? record.target : record.target.parentElement;
+      const kind = record.type === 'attributes' ? 'valueSelector' : 'textSelector';
+      for (const behavior of this.#contentSync) {
+        const selector = behavior.constructor[kind];
+        const control = selector && node?.closest(selector);
+        if (!control) continue;
+        let dirty = this.#dirtyControls.get(behavior);
+        if (!dirty) this.#dirtyControls.set(behavior, dirty = new Set());
+        dirty.add(control);
+      }
+    }
+    if (this.#syncFrame || !(this.#fullSync || this.#dirtyControls.size || this.#customSync.length)) return;
+    this.#syncFrame = requestAnimationFrame(() => {
+      this.#syncFrame = 0;
+      if (this.#fullSync) this.#sync();
+      else {
+        for (const [behavior, controls] of this.#dirtyControls) {
+          for (const el of controls) if (this.#source.contains(el)) behavior.syncControl(el);
+        }
+        for (const behavior of this.#customSync) behavior.sync();
+        this.wake();
+      }
+      this.#fullSync = false;
+      this.#dirtyControls.clear();
+    });
   }
 
   #sync() {
@@ -578,12 +689,31 @@ export class LoomStage extends ElementBase {
     this.wake();
   }
 
-  /** Creates the registered behaviours this stage does not have yet, in paint order. */
-  #adoptBehaviors() {
-    for (const [name, { Class }] of behaviorList()) {
-      if (!this.#instances.has(name)) this.#instances.set(name, new Class(this));
+  #wakeAfterRegistration() {
+    const signal = this.#listeners.signal;
+    if (this.#registryWake === signal) return;
+    this.#registryWake = signal;
+    queueMicrotask(() => {
+      if (this.#registryWake !== signal) return;
+      this.#registryWake = null;
+      if (!signal.aborted) this.wake();
+    });
+  }
+
+  #installBehavior(name, { Class, component }, index, late = false) {
+    let behavior = this.#instances.get(name);
+    if (behavior) {
+      this.#behaviors.splice(this.#behaviors.indexOf(behavior), 1);
+    } else {
+      behavior = new Class(this);
+      this.#instances.set(name, behavior);
+      if (component && behavior.syncControl) this.#contentSync.push(behavior);
+      if (!component && behavior.sync) {
+        this.#customSync.push(behavior);
+        if (late) behavior.sync();
+      }
     }
-    this.#behaviors = behaviorList().map(([name]) => this.#instances.get(name));
+    this.#behaviors.splice(index, 0, behavior);
   }
 
   /** The instance of a registered behaviour (for tests and tools). */
@@ -616,19 +746,82 @@ export class LoomStage extends ElementBase {
     return [0, this.#source.getBoundingClientRect().width];
   }
 
-  #endReflow() {
+  #canPresent() {
+    const target = this.#canvas ?? this;
+    if (!this.#compositor || this.reduced || !this.isConnected || this.ownerDocument.hidden || !this.visible(target)) return false;
+    const box = target.getBoundingClientRect();
+    const view = this.ownerDocument.defaultView;
+    return box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0
+      && box.top < view.innerHeight && box.left < view.innerWidth;
+  }
+
+  // Normally a DOM-only change is synchronous. If a cancelled capture still
+  // has its update queued, later changes start in the same microtask order.
+  #withoutVisual(update) {
+    if (!this.#queuedUpdates) return update?.();
+    this.#queuedUpdates++;
+    return Promise.resolve().then(() => {
+      this.#queuedUpdates--;
+      return update?.();
+    });
+  }
+
+  // A stage shares one ghost texture across cuts, rolls, folds and disclosures.
+  // Keep its ownership from the capture request through the last displayed frame.
+  #watchVisual() {
+    const controller = new AbortController();
+    const { signal } = controller;
+    this.#visual = controller;
+    const doc = this.ownerDocument;
+    doc.addEventListener('visibilitychange', () => {
+      if (doc.hidden) this.#finishVisual(signal);
+    }, { signal });
+    this.#motion?.addEventListener('change', () => {
+      if (this.reduced) this.#finishVisual(signal);
+    }, { signal });
+    const Observer = doc.defaultView.IntersectionObserver;
+    if (Observer) {
+      const observer = new Observer((entries) => {
+        if (entries.at(-1)?.isIntersecting === false) this.#finishVisual(signal);
+      });
+      observer.observe(this.#canvas ?? this);
+      signal.addEventListener('abort', () => observer.disconnect(), { once: true });
+    }
+    return signal;
+  }
+
+  #finishVisual(signal = this.#visual?.signal, repaint = true) {
+    if (!this.#visual || this.#visual.signal !== signal) return;
+    const controller = this.#visual;
+    this.#visual = null;
+    const capturing = this.#transition?.ghosted === false || this.#reflow?.ghosted === false
+      || this.#changes.some(c => !c.ghosted);
+    // A paint received while waiting for the new source could have left the
+    // held ghost onscreen. Present the live source when that wait is cancelled.
+    if (repaint && (this.#transition?.ghosted || this.#reflow?.ghosted || this.#changes.some(c => c.ghosted))) {
+      this.#compositor?.requestRender();
+    }
+    this.#transition?.resolve();
+    this.#transition = null;
     this.#reflow = null;
     this.#changes = [];
+    this.#flights = [];
+    controller.abort();
+    if (capturing) {
+      this.#queuedUpdates++;
+      queueMicrotask(() => this.#queuedUpdates--);
+    }
   }
 
   #keyed() {
     const map = new Map();
-    this.#sourceRect = null;
+    let origin;
     for (const el of this.#source.querySelectorAll('*')) {
       const name = el.dataset.morph || getComputedStyle(el).viewTransitionName;
       if (!name || name === 'none' || map.has(name)) continue;
       if (!this.visible(el)) continue;
-      const rect = this.#layoutRect(el);
+      origin ??= this.#source.getBoundingClientRect();
+      const rect = this.#layoutRect(el, origin);
       if (rect[2] < 1 || rect[3] < 1) continue;
       map.set(name, { el, rect });
     }
@@ -638,35 +831,39 @@ export class LoomStage extends ElementBase {
   /** Elements keyed by themselves, with their layout rects. */
   #measured(elements) {
     const map = new Map();
-    this.#sourceRect = null;
+    let origin;
     for (const el of elements) {
       if (!this.visible(el)) continue;
-      const rect = this.#layoutRect(el);
+      origin ??= this.#source.getBoundingClientRect();
+      const rect = this.#layoutRect(el, origin);
       if (rect[2] >= 1 && rect[3] >= 1) map.set(el, { el, rect });
     }
     return map;
   }
 
   /** Where an element is in the layout, ignoring any flight it is on. */
-  #layoutRect(el) {
-    const s = this.#sourceRect ?? this.#source.getBoundingClientRect();
+  #layoutRect(el, s = this.#sourceRect ?? this.#source.getBoundingClientRect()) {
     const r = el.getBoundingClientRect();
     return [r.left - s.left, r.top - s.top, r.width, r.height];
   }
 
-  #finishTransition() {
-    const t = this.#transition;
-    if (!t) return;
-    this.#transition = null;
-    t.resolve?.();
-  }
-
   #domTick = (now) => {
     this.#domFrame = 0;
-    if (this.#compositor) return;
-    this.#step(now, 1 / 60);
-    if (this.#animating) this.#domFrame = requestAnimationFrame(this.#domTick);
+    if (this.#compositor || !this.isConnected) {
+      this.#lastDomFrame = null;
+      return;
+    }
+    const dt = this.#lastDomFrame === null ? 0 : Math.max(0, (now - this.#lastDomFrame) / 1000);
+    this.#animating = this.#stepBehaviors(now, dt);
+    this.#lastDomFrame = this.#animating ? now : null;
+    if (this.#animating && !this.#domFrame) this.#domFrame = requestAnimationFrame(this.#domTick);
   };
+
+  #stepBehaviors(now, dt) {
+    let active = false;
+    for (const behavior of this.#behaviors) active = behavior.step(now, dt) || active;
+    return active;
+  }
 
   /** @internal Called by the compositor once per frame. */
   _step(now, dt) {
@@ -681,8 +878,7 @@ export class LoomStage extends ElementBase {
     const sourceRect = this.#source.getBoundingClientRect();
     this.#sourceRect = sourceRect;
     this.#flights = [];
-    let active = false;
-    for (const behavior of this.#behaviors) active = behavior.step(now, dt) || active;
+    let active = this.#stepBehaviors(now, dt);
 
     const skin = this.skin;
     const colors = this.#colors;
@@ -709,11 +905,13 @@ export class LoomStage extends ElementBase {
     }
 
     const t = this.#transition;
-    if (t) {
+    if (t?.ghosted) {
       u[U.wipeActive] = 1;
       u[U.wipeBand] = t.band;
       u[U.wipeSlant] = t.slant;
-      active = true;
+      // Pending visuals hold a still picture. Source paints and the callback
+      // settling will wake the compositor when there is something new to draw.
+      if (!t.pending) active = true;
       u[U.wipeDir] = t.direction;
       u[U.wipeStyle] = t.style;
       if (t.scope) u.set(t.scope, U.scope);
@@ -760,14 +958,14 @@ export class LoomStage extends ElementBase {
           scene.reset();
           this.#flights = [];
           u[U.wipeActive] = 0;
-          this.#finishTransition();
+          this.#finishVisual(this.#visual.signal, false);
         }
       }
     }
 
     if (!t) {
       for (const c of this.#changes) {
-        active = true;
+        if (!c.pending) active = true;
         const rect = c.kind === 'roll' && c.rect ? [c.rect[0] + 1, c.rect[1] + 1, c.rect[2] - 2, c.rect[3] - 2] : c.rect;
         if (!rect) continue;
         if (c.pending) {
@@ -803,7 +1001,7 @@ export class LoomStage extends ElementBase {
 
     const r = this.#reflow;
     if (r && !t) {
-      active = true;
+      if (!r.pending) active = true;
       const [cx, cw] = r.column ?? [0, 0];
       if (r.pending) {
         // Until the new picture is on the GPU, below the summary shows the old one.
@@ -826,6 +1024,7 @@ export class LoomStage extends ElementBase {
       }
     }
 
+    if (!this.#transition && !this.#reflow && !this.#changes.length) this.#finishVisual();
     for (const behavior of this.#behaviors) behavior.emit(scene, now);
     this.#sourceRect = null;
     this.#animating = active;
@@ -834,17 +1033,20 @@ export class LoomStage extends ElementBase {
 
   /** @internal */
   _needsFrames() {
-    return Boolean(this.#animating || this.#transition || this.#boot || this.#reflow || this.#changes.length || this.#arrivals.length);
+    return Boolean(this.#animating || this.#boot || this.#arrivals.length);
   }
 
   /** @internal */
-  _attachCompositor(compositor) {
-    this.#compositor = compositor;
+  _attachCompositor(compositor, canvas = this.#canvas) {
+    if (canvas === this.#canvas) this.#compositor = compositor;
   }
 
   /** @internal */
   _detachCompositor(compositor) {
-    if (this.#compositor === compositor) this.#compositor = null;
+    if (this.#compositor === compositor) {
+      this.#compositor = null;
+      this.#finishVisual();
+    }
   }
 
   async #enhance(generation) {
@@ -856,14 +1058,16 @@ export class LoomStage extends ElementBase {
 
       const source = this.#source;
       const canvas = document.createElement('canvas');
-      canvas.setAttribute('content', 'drawable');
       canvas.className = 'loom-canvas';
       const height = source.offsetHeight;
       canvas.style.height = `${height}px`;
       source.style.width = `${this.clientWidth}px`;
       source.setAttribute('drawable', '');
       this.insertBefore(canvas, source);
-      canvas.append(source);
+      // On a connected canvas this mounts the polyfill's empty live layer
+      // synchronously, so the focused subtree moves directly to its final parent.
+      canvas.setAttribute('content', 'drawable');
+      moveSource(canvas, source);
       this.#canvas = canvas;
       this.dataset.renderer = 'loading';
 
@@ -918,16 +1122,15 @@ export class LoomStage extends ElementBase {
     this.#host?.destroy();
     this.#host = null;
     this.#compositor = null;
-    this.#finishTransition();
-    this.#endReflow();
+    this.#finishVisual();
+    this.#arrivals = [];
     this.#boot = null;
     const canvas = this.#canvas;
     this.#canvas = null;
     if (canvas && this.#source) {
       this.#source.removeAttribute('drawable');
       this.#source.style.width = '';
-      if (canvas.parentNode === this) this.insertBefore(this.#source, canvas);
-      else this.append(this.#source);
+      moveSource(this, this.#source, canvas.parentNode === this ? canvas : null);
       canvas.remove();
     }
     if (this.isConnected) this.dataset.renderer = 'dom';

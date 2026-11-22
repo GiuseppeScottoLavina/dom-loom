@@ -6,6 +6,8 @@ DomLoom is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and
 
 ## Use it
 
+For AI agents building a screen, the [DomLoom skill](skills/domloom/SKILL.md) includes a runnable form, component markup, framework recipes and browser checks.
+
 ```html
 <link rel="stylesheet" href="domloom/style.css">
 <script type="module">import 'domloom';</script>
@@ -104,7 +106,8 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | `sound` | Procedural interface sounds (WebAudio, no files), after the first gesture in the stage |
 | `haptics` | Short vibrations on toggles and on a completed hold, where the device has them |
 | `static` | Never start the compositor; plain DOM styling only |
-| `stage.ready` | Resolves with `'webgpu'` or `'dom'` |
+| `loading="lazy"` | Keeps the HTML interactive and starts the GPU within 240 CSS pixels of the viewport once scrolling settles. Focus, a pointer press or switching to `eager` starts it immediately. The default is eager. |
+| `stage.ready` | Resolves with `'webgpu'` or `'dom'`. Reading it explicitly starts a lazy stage, as does supplying React's `onReady`. |
 | `stage.transition(update, {scope, direction, morph, cut})` | See above; resolves when the transition has ended |
 | `skin` | The skin that draws the stage (default `holo`) |
 | `stage.discard(el, update?)` | Removes an element with motion: it crumbles, and what follows it flies into the space it leaves. A framework passes `update`, which removes it from its state |

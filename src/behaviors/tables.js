@@ -12,6 +12,7 @@ const asNumber = (text) => (/^[^\p{L}]*\d[^\p{L}]*$/u.test(text) ? parseFloat(te
  * the rows are in their new order.
  */
 export class Tables {
+  static textSelector = 'table[sortable] > thead > tr:first-child > :is(th, td)';
   constructor(stage) {
     this.stage = stage;
     this.sorted = [];
@@ -25,21 +26,22 @@ export class Tables {
     for (const table of this.stage.source.querySelectorAll('table[sortable]')) {
       const row = table.tHead?.rows[0];
       if (!row) continue;
-      for (const th of row.cells) {
-        if (th.hasAttribute('nosort')) continue;
-        // Sortable headers get a button laid over them: focusable, announced, activated
-        // by keyboard. The header's own content stays where it is (a framework owns it).
-        let button = th.querySelector(':scope > button.loom-sort');
-        if (!button) {
-          button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'loom-sort';
-          th.append(button);
-        }
-        const label = `Sort by ${th.textContent.trim()}`;
-        if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
-      }
+      for (const th of row.cells) this.syncControl(th);
     }
+  }
+  syncControl(th) {
+    if (th.hasAttribute('nosort')) return;
+    // Sortable headers get a button laid over them: focusable, announced, activated
+    // by keyboard. The header's own content stays where it is (a framework owns it).
+    let button = th.querySelector(':scope > button.loom-sort');
+    if (!button) {
+      button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'loom-sort';
+      th.append(button);
+    }
+    const label = `Sort by ${th.textContent.trim()}`;
+    if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
   }
   sort(th) {
     const table = th?.closest('table');

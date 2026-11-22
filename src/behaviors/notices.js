@@ -14,7 +14,7 @@ export class Notices {
     this.stage = stage;
     this.impacts = [];
     this.pings = [];
-    this.badges = new Map();
+    this.badges = new WeakMap();
     this.busy = new Set();
     this.sync();
   }
@@ -30,6 +30,7 @@ export class Notices {
   /** @internal The stage hands over the mutations of its content. */
   mutated(records) {
     const touched = new Set();
+    let changed = false;
     for (const record of records) {
       const node = record.target.nodeType === 1 ? record.target : record.target.parentElement;
       if (!node) continue;
@@ -43,6 +44,7 @@ export class Notices {
         const before = this.badges.get(badge);
         const now = badge.textContent.trim();
         if (before !== undefined && before !== now) {
+          changed = true;
           const up = parseFloat(now) > parseFloat(before);
           this.pings.push({ el: badge, start: NaN, up: Number.isNaN(parseFloat(now)) ? true : up });
           this.stage.play(up ? 'ping' : 'tick');
@@ -52,11 +54,12 @@ export class Notices {
     }
     for (const alert of touched) {
       if (!this.stage.visible(alert) || !alert.textContent.trim()) continue;
+      changed = true;
       this.impacts.push({ el: alert, start: NaN });
       this.stage.play('alarm', toneOf(alert));
       this.stage.buzz(40);
     }
-    this.stage.wake();
+    if (changed) this.stage.wake();
   }
   step(now) {
     const { burst, ring } = this.stage.skin.durations;
@@ -64,7 +67,7 @@ export class Notices {
     this.impacts = this.impacts.filter((x) => now - x.start < burst && x.el.isConnected);
     this.pings = this.pings.filter((x) => now - x.start < ring && x.el.isConnected);
     // A busy region shimmers: it needs frames while it is shown.
-    const shimmering = [...this.busy].some((r) => this.stage.visible(r));
+    const shimmering = this.stage.gpu && !this.stage.reduced && [...this.busy].some((r) => this.stage.visible(r));
     return this.impacts.length > 0 || this.pings.length > 0 || shimmering;
   }
   emit(scene, now) {

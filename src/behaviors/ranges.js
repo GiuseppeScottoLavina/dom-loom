@@ -1,6 +1,7 @@
 import { Spring, clamp01 } from '../core/spring.js';
 
 export class Ranges {
+  static valueSelector = 'input[type=range]';
   constructor(stage) {
     this.stage = stage;
     this.states = new Map();
@@ -55,29 +56,32 @@ export class Ranges {
   }
   sync() {
     const seen = new Set(this.stage.source.querySelectorAll('input[type=range]'));
-    for (const el of seen) {
-      if (!this.stage.gpu) el.style.setProperty('--loom-fill', `${(this.fraction(el) * 100).toFixed(2)}%`);
-      const s = this.state(el);
-      if (s.val.target !== this.fraction(el)) s.val.set(this.fraction(el));
-    }
+    for (const el of seen) this.syncControl(el);
     for (const el of this.states.keys()) if (!seen.has(el)) this.states.delete(el);
     this.stage.wake();
   }
-  changed(el) {
+  syncControl(el) {
     const s = this.state(el);
     if (!s) return;
-    if (!this.stage.gpu) el.style.setProperty('--loom-fill', `${(this.fraction(el) * 100).toFixed(2)}%`);
-    s.val.set(this.fraction(el));
+    const f = this.fraction(el);
+    if (!this.stage.gpu) el.style.setProperty('--loom-fill', `${(f * 100).toFixed(2)}%`);
+    if (s.val.target !== f) s.val.set(f);
     if (this.stage.reduced) s.val.snap();
+  }
+  changed(el) {
+    this.syncControl(el);
     this.stage.wake();
   }
   step(now, dt) {
     let active = false;
     for (const [el, s] of this.states) {
       const moving = s.val.step(dt);
-      const r = el.isConnected ? this.stage.rectOf(el) : [0, 0, 100, 0];
-      const speed = Math.abs(s.val.v) * (r[2] - 18);
-      s.amp.set(this.stage.reduced ? 0 : Math.min(speed * 0.012, 5));
+      let slosh = 0;
+      if (s.val.v && !this.stage.reduced && el.isConnected) {
+        const track = Math.max(0, this.stage.rectOf(el)[2] - 18);
+        slosh = Math.min(Math.abs(s.val.v) * track * 0.012, 5);
+      }
+      s.amp.set(slosh);
       active = moving | s.drag.step(dt) | s.amp.step(dt) || active;
     }
     return active;

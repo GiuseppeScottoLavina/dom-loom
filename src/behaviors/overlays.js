@@ -40,9 +40,9 @@ export class Overlays {
       stage.listenGlobal('resize', follow);
     }
     stage.listenOn(host, 'toggle', (e) => (e.newState === 'open' ? this.opened() : this.closed()));
-    // A dialog shown with showModal() or show(): the open attribute appears.
-    new MutationObserver(() => (this.isOpen() ? this.opened() : this.closed())).observe(host, { attributes: true, attributeFilter: ['open'] });
     if (host.localName !== 'dialog') return;
+    // A dialog shown with showModal() or show(): the open attribute appears.
+    stage.observe(host, { attributes: true, attributeFilter: ['open'] }, () => this.isOpen() ? this.opened() : this.closed());
     stage.listenOn(host, 'cancel', (e) => {
       e.preventDefault();
       this.close('');

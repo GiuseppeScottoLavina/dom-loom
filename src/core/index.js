@@ -4,12 +4,12 @@
 import { Presses } from '../behaviors/presses.js';
 import { Reticle } from '../behaviors/reticle.js';
 import '../skins/holo/index.js';
-import { defineBehavior } from './behaviors.js';
+import { defineComponent } from './behaviors.js';
 import { LoomStage } from './stage.js';
 
 // Focus must stay visible on the GPU path (the outline is off there): the reticle is core.
-defineBehavior('presses', Presses, 50);
-defineBehavior('reticle', Reticle, 100);
+defineComponent('presses', Presses, 50);
+defineComponent('reticle', Reticle, 100);
 
 if (globalThis.customElements && !customElements.get('loom-stage')) {
   customElements.define('loom-stage', LoomStage);

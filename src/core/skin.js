@@ -24,6 +24,7 @@ const DURATIONS = {
 };
 
 const registry = new Map();
+const extended = new Set();
 const pending = new Map(); // draw hooks for skins not defined yet
 
 /**
@@ -76,7 +77,12 @@ export function extendSkin(name, draw, sounds = null) {
     if (sounds) Object.assign(p.sounds, sounds);
     pending.set(name, p);
   }
-  globalThis.document?.dispatchEvent(new CustomEvent('loom-skin', { detail: { name } }));
+  if (!skin || !globalThis.document || extended.has(name)) return;
+  extended.add(name);
+  queueMicrotask(() => {
+    extended.delete(name);
+    document.dispatchEvent(new CustomEvent('loom-skin', { detail: { name, hooksOnly: true } }));
+  });
 }
 
 /** The skin of that name, or the default one. */

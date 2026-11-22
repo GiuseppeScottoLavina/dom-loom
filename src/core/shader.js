@@ -177,6 +177,11 @@ fn morphTrail(p: vec2f) -> vec4f {
     if (u32(it.h.x + 0.5) != 4u) { continue; }
     let v = it.h.zw;
     if (length(v) < 3.0) { continue; }
+    // All samples p + v*f lie on the segment f ∈ [0, 1]. Keep one CSS pixel
+    // of slack at the edges for floating-point rounding.
+    let lo = it.r.xy - max(v, vec2f(0.0)) - 1.0;
+    let hi = it.r.xy + it.r.zw - min(v, vec2f(0.0)) + 1.0;
+    if (any(p < lo) || any(p > hi)) { continue; }
     // Dithered samples along the motion: a smooth smear, not a stack of copies.
     let jitter = hash01(u32(p.x) * 1973u + u32(p.y) * 9277u);
     for (var k = 0u; k < 12u; k++) {
