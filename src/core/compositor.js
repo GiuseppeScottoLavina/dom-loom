@@ -116,8 +116,19 @@ export function createCompositor(runtime, stage) {
       let groups = new WeakMap();
       const blitGroups = new WeakMap();
       let attemptedVersion = shader.version;
+      // The scene shader built for the ghost's format: the ghost can then be the picture as
+      // presented (with what the primitives draw over the page), not the bare page.
+      let ghostScene = null;
+      const buildGhostScene = () => {
+        const entry = scenePipeline(device, resources, 'rgba8unorm');
+        entry.ready.then((compiled) => {
+          if (!destroyed && entry.version === primitives.version) ghostScene = { compiled, version: entry.version };
+        }, () => {});
+      };
+      buildGhostScene();
       const rebuild = () => {
         if (attemptedVersion === primitives.version) return;
+        buildGhostScene();
         const next = scenePipeline(device, resources, format);
         attemptedVersion = next.version;
         next.ready.then((compiled) => {
@@ -149,8 +160,35 @@ export function createCompositor(runtime, stage) {
         return group;
       }
 
+      let pictureGroups = new WeakMap();
+      function pictureGroupFor(sourceView) {
+        let group = pictureGroups.get(sourceView);
+        if (!group) {
+          group = device.createBindGroup({
+            layout: bindLayout,
+            entries: [
+              { binding: 0, resource: { buffer: uniformBuffer } },
+              { binding: 1, resource: sampler },
+              { binding: 2, resource: sourceView },
+              { binding: 3, resource: { buffer: itemBuffer } },
+              { binding: 4, resource: blankView },
+              { binding: 5, resource: { buffer: fieldBuffer } },
+            ],
+          });
+          pictureGroups.set(sourceView, group);
+        }
+        return group;
+      }
+
       function captureGhost(frame) {
-        const { width, height } = frame.sourceTexture;
+        // The buffers still hold the last presented frame. When it was a resting, opaque
+        // frame, the ghost is that frame drawn again: what leaves keeps the gauges, rings
+        // and marks the primitives drew over it. Otherwise it is the bare page.
+        const u = presented?.uniforms;
+        const asShown = ghostScene && ghostScene.version === shader.version && u
+          && u[U.wipeActive] < 0.5 && u[U.alpha] < 0.5;
+        const width = asShown ? u[U.viewport] : frame.sourceTexture.width;
+        const height = asShown ? u[U.viewport + 1] : frame.sourceTexture.height;
         if (!ghost || ghost.texture.width !== width || ghost.texture.height !== height) {
           ghost?.texture.destroy();
           const texture = device.createTexture({
@@ -162,8 +200,18 @@ export function createCompositor(runtime, stage) {
           ghost = { texture, view: texture.createView(), cssW: 0, cssH: 0 };
           groups = new WeakMap();
         }
-        ghost.cssW = frame.cssWidth;
-        ghost.cssH = frame.cssHeight;
+        ghost.cssW = asShown ? u[U.viewport + 2] : frame.cssWidth;
+        ghost.cssH = asShown ? u[U.viewport + 3] : frame.cssHeight;
+        if (asShown) {
+          const pass = frame.encoder.beginRenderPass({
+            colorAttachments: [{ view: ghost.view, loadOp: 'clear', storeOp: 'store', clearValue: { r: u[U.bg], g: u[U.bg + 1], b: u[U.bg + 2], a: 1 } }],
+          });
+          pass.setPipeline(ghostScene.compiled);
+          pass.setBindGroup(0, pictureGroupFor(frame.sourceView));
+          pass.draw(3);
+          pass.end();
+          return;
+        }
         let group = blitGroups.get(frame.sourceView);
         if (!group) {
           group = device.createBindGroup({
@@ -251,6 +299,7 @@ export function createCompositor(runtime, stage) {
             const previous = itemBuffer;
             itemBuffer = createItemBuffer(Math.min(scene.data.length / ITEM_FLOATS, maxItems));
             groups = new WeakMap();
+            pictureGroups = new WeakMap();
             // Earlier frames have been submitted. WebGPU keeps their storage alive until completion.
             previous.destroy();
           }

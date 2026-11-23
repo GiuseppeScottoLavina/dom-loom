@@ -74,7 +74,7 @@ async function pure() {
     assert.ok(start.rect[0] >= 0 && start.rect[1] >= 0 && start.rect[0] + start.rect[2] <= 640 && start.rect[1] + start.rect[3] <= 460, 'clipped to the stage');
     const [tau, gx, gy] = start.h;
     assert.equal(tau, 0);
-    assert.equal(primitives.get(27).exit.item(rect, 1100, { seed: 7, whole }), null, 'gone');
+    assert.equal(primitives.get(27).exit.item(rect, 1400, { seed: 7, whole }), null, 'gone');
     const pressed = primitives.get(27).exit.item(rect, 0, { origin: [10, 400], seed: 7, whole });
     assert.deepEqual(pressed.q.slice(0, 2), [10, 400]);
     // Before anything breaks loose the shards tile the whole rect, none of it takes input.
@@ -244,7 +244,7 @@ async function run(path, browser, url) {
     const centre = await page.evaluate(([x, y]) => document.querySelector('#fx').mapPoint({ x, y }), [empty[0] + empty[2] / 2, empty[1] + empty[3] / 2]);
     assert.equal(centre, null, 'under the cracked picture there is no input');
     // The picture and the mapper agree on where the shards are.
-    await showAt(page, t0 + 560);
+    await showAt(page, t0 + 800);
     const shot = await page.screenshot({ clip });
     const points = probePoints(clip);
     const mapped = await page.evaluate(({ points, clip }) => {
@@ -254,7 +254,7 @@ async function run(path, browser, url) {
     }, { points, clip });
     // The empty stage, once everything has finished.
     await thaw(page);
-    await page.waitForTimeout(1900);
+    await page.waitForTimeout(2200);
     const reference = await page.screenshot({ clip });
     const drawn = await differing(page, shot, reference, points);
     let covered = 0;
@@ -297,10 +297,10 @@ async function run(path, browser, url) {
         await page.mouse.click(button.x + button.width / 2, button.y + button.height / 2);
       });
       await showAt(page, t0 + 10); // the transition starts when the new picture has arrived
-      await showAt(page, t0 + 560);
+      await showAt(page, t0 + 800);
       const shot = await page.screenshot({ clip });
       await thaw(page);
-      await page.waitForTimeout(1800);
+      await page.waitForTimeout(2100);
       const after = await page.screenshot({ clip });
       const drawn = (await differing(page, shot, after, probePoints(clip))).filter(Boolean).length;
       return drawn;

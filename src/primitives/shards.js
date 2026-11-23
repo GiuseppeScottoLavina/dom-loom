@@ -15,7 +15,7 @@ import { pcg } from '../core/math.js';
 // among the seeds around it; each shard moves as a pure function of (id, seed, time).
 
 const MAX_SHARDS = 48;
-const TOTAL = 1.05; // seconds
+const TOTAL = 1.35; // seconds: a beat cracked, then the fall
 const GRAVITY = 1400;
 
 const G = {
@@ -77,11 +77,12 @@ fn shardsPicture(p: vec2f, light: ptr<function, vec3f>) -> vec4f {
       if (l > 1.0) { dir = away / l; }
       let sway = (ha - 0.5) * 0.8;
       dir = vec2f(dir.x * cos(sway) - dir.y * sin(sway), dir.x * sin(sway) + dir.y * cos(sway));
-      let speed = burst * (0.45 + 0.9 * shHash(k, 2u, sd));
-      // The crack runs outward from the origin: nearer shards break loose first.
-      let tk = max(tau - (0.03 + min(l, 600.0) / 2600.0), 0.0);
+      let speed = burst * (0.22 + 0.42 * shHash(k, 2u, sd));
+      // The element cracks and holds for a beat, then the crack runs outward from the
+      // origin: nearer shards break loose first, and gravity takes them down.
+      let tk = max(tau - (0.24 + min(l, 600.0) / 2600.0), 0.0);
       let pos = s + dir * speed * (1.0 - exp(-3.0 * tk)) / 3.0
-        + vec2f(0.0, 0.5 * 1400.0 * tk * tk - (90.0 + 240.0 * shHash(k, 3u, sd)) * tk);
+        + vec2f(0.0, 0.5 * 1400.0 * tk * tk - (30.0 + 110.0 * shHash(k, 3u, sd)) * tk);
       let theta = (shHash(k, 4u, sd) - 0.5) * 7.0 * tk;
       let he = shHash(k, 5u, sd);
       var flip = 0.0;
@@ -110,7 +111,7 @@ fn shardsPicture(p: vec2f, light: ptr<function, vec3f>) -> vec4f {
         }
       }
       if (de <= 0.0) { continue; }
-      let fade = 1.0 - smoothstep(0.48 + 0.22 * shHash(k, 6u, sd), 0.78 + 0.22 * shHash(k, 6u, sd), tau);
+      let fade = 1.0 - smoothstep(0.72 + 0.3 * shHash(k, 6u, sd), 1.02 + 0.3 * shHash(k, 6u, sd), tau);
       if (fade <= 0.003) { continue; }
       let z = shHash(k, 7u, sd);
       let nearness = 1.0 - z;
@@ -165,11 +166,11 @@ function covers(x, y, d, b) {
     const sway = (ha - 0.5) * 0.8;
     const cw0 = Math.cos(sway), sw0 = Math.sin(sway);
     [dx, dy] = [dx * cw0 - dy * sw0, dx * sw0 + dy * cw0];
-    const speed = burst * (0.45 + 0.9 * G.hash(k, 2, sd));
-    const tk = Math.max(tau - (0.03 + Math.min(l, 600) / 2600), 0);
+    const speed = burst * (0.22 + 0.42 * G.hash(k, 2, sd));
+    const tk = Math.max(tau - (0.24 + Math.min(l, 600) / 2600), 0);
     const along = (speed * (1 - Math.exp(-3 * tk))) / 3;
     const px = sx0 + dx * along;
-    const py = sy0 + dy * along + 0.5 * GRAVITY * tk * tk - (90 + 240 * G.hash(k, 3, sd)) * tk;
+    const py = sy0 + dy * along + 0.5 * GRAVITY * tk * tk - (30 + 110 * G.hash(k, 3, sd)) * tk;
     const theta = (G.hash(k, 4, sd) - 0.5) * 7 * tk;
     const he = G.hash(k, 5, sd);
     const flip = he > 0.5 ? (2 + he * 4) * tk : 0;
@@ -194,7 +195,7 @@ function covers(x, y, d, b) {
       }
     }
     if (de <= 0) continue;
-    const f0 = 0.48 + 0.22 * G.hash(k, 6, sd);
+    const f0 = 0.72 + 0.3 * G.hash(k, 6, sd);
     if (1 - smooth((tau - f0) / 0.3) <= 0.003) continue;
     return true;
   }

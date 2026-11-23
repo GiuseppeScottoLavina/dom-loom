@@ -86,7 +86,8 @@ test('compatible stages share compilation, and a stable source reuses its bind g
 
   const other = gpu();
   const recovered = await mount(other);
-  assert.equal(other.log.pipelines.length, 2);
+  // The scene for the canvas, the ghost blit, and the scene again for the ghost's format.
+  assert.deepEqual(other.log.pipelines, [['domloom', 'bgra8unorm'], ['domloom-ghost', 'rgba8unorm'], ['domloom', 'rgba8unorm']]);
   for (const stage of [...stages, rgba, recovered]) stage.instance.destroy();
 });
 
@@ -185,7 +186,11 @@ test('presented and gesture mappers keep the twins used by the presented shader 
   a.draw();
   assert.equal(a.instance.captureInputMapper()(point).x, 15);
   assert.equal(first(point).x, 12);
-  assert.deepEqual(device.log.pipelines.map(([label]) => label), ['domloom', 'domloom-ghost', 'domloom']);
+  // A plugin update rebuilds the scene for the canvas and for the ghost (drawn as presented).
+  assert.deepEqual(device.log.pipelines, [
+    ['domloom', 'bgra8unorm'], ['domloom-ghost', 'rgba8unorm'], ['domloom', 'rgba8unorm'],
+    ['domloom', 'rgba8unorm'], ['domloom', 'bgra8unorm'],
+  ]);
   a.draw(2, false);
   assert.equal(a.instance.captureInputMapper()(point), NO_TARGET);
   a.instance.destroy();
