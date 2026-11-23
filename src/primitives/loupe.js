@@ -1,25 +1,42 @@
 import { definePrimitive } from '../core/primitives.js';
 import { smoothstep } from '../core/math.js';
 
+// Inside the flat core (up to this share of the radius) the magnification is uniform.
+const CORE = 0.85;
+
+/**
+ * Where, as a share of the radius, the glass looks at a point that is r of the radius
+ * from its centre (twin of loupeProfile in WGSL). Up to CORE it is r / m: a clean,
+ * uniform enlargement. Between CORE and the rim a cubic Hermite curve carries it on to
+ * the rim (1), leaving the core with the core's slope and meeting the picture outside
+ * with its own slope (1): the thin band squeezes the surroundings in (barrel,
+ * refraction) and the picture is continuous at the rim.
+ */
+export function loupeProfile(r, m) {
+  if (r <= CORE) return r / m;
+  const w = 1 - CORE;
+  const t = (r - CORE) / w;
+  const t2 = t * t, t3 = t2 * t;
+  return (2 * t3 - 3 * t2 + 1) * (CORE / m) + (t3 - 2 * t2 + t) * (w / m) + (-2 * t3 + 3 * t2) + (t3 - t2) * w;
+}
+
 /**
  * Where a point of the glass looks, from the glass centre (twin of loupeMap in WGSL).
  * (dx, dy) is the point from the centre; the answer is the source offset, from the
- * glass's focus. Magnification is highest in the middle and falls toward the rim
- * (barrel distortion); right at the rim a band of the surroundings is squeezed in,
- * which is the glass edge refracting. At the rim itself the picture is continuous.
+ * glass's focus.
  */
 export function loupeMap(dx, dy, radius, mag, open, out = { x: 0, y: 0 }) {
-  const r = Math.hypot(dx, dy) / radius;
+  const dist = Math.hypot(dx, dy);
+  const r = dist / radius;
   if (r >= 1) {
     out.x = dx;
     out.y = dy;
     return out;
   }
   const m = 1 + (mag - 1) * open;
-  const g = 1 / m + (1 - 1 / m) * r * r * r;
-  const bulge = 1 + 0.1 * open * Math.sin(Math.PI * smoothstep(0.8, 1, r));
-  out.x = dx * g * bulge;
-  out.y = dy * g * bulge;
+  const k = r <= CORE ? 1 / m : loupeProfile(r, m) / r;
+  out.x = dx * k;
+  out.y = dy * k;
   return out;
 }
 
@@ -39,13 +56,30 @@ export const LOUPE = definePrimitive({
   kind: 24,
   name: 'loupe',
   functions: /* wgsl */ `
+fn loupeProfile(r: f32, m: f32) -> f32 {
+  let core = 0.85;
+  if (r <= core) { return r / m; }
+  let w = 1.0 - core;
+  let t = (r - core) / w;
+  let t2 = t * t;
+  let t3 = t2 * t;
+  return (2.0 * t3 - 3.0 * t2 + 1.0) * (core / m) + (t3 - 2.0 * t2 + t) * (w / m) + (-2.0 * t3 + 3.0 * t2) + (t3 - t2) * w;
+}
 fn loupeMap(d: vec2f, radius: f32, mag: f32, open: f32) -> vec2f {
   let r = length(d) / radius;
   if (r >= 1.0) { return d; }
   let m = 1.0 + (mag - 1.0) * open;
-  let g = 1.0 / m + (1.0 - 1.0 / m) * r * r * r;
-  let bulge = 1.0 + 0.1 * open * sin(3.14159265358979 * smoothstep(0.8, 1.0, r));
-  return d * g * bulge;
+  if (r <= 0.85) { return d / m; }
+  return d * (loupeProfile(r, m) / r);
+}
+// Five taps along the radial direction, spread over what one pixel of the glass covers
+// there: the squeezed band is averaged, not aliased.
+fn loupeBand(focus: vec2f, dir: vec2f, reach: f32, spread: f32) -> vec3f {
+  var acc = vec3f(0.0);
+  for (var k = -2; k <= 2; k++) {
+    acc += loupeSrc(focus + dir * (reach + f32(k) * spread * 0.5));
+  }
+  return acc * 0.2;
 }
 fn loupeSrc(q: vec2f) -> vec3f {
   return sampleSrc(clamp(q, vec2f(0.0), u.view.zw));
@@ -87,13 +121,22 @@ fn loupeSrc(q: vec2f) -> vec3f {
         } else {
           let focus = it.p.xy + it.q.xy;
           let s = loupeMap(gd, gr, it.p.w, gopen);
-          // Dispersion: red and blue look from a little nearer and farther, most at the rim.
-          let rimBand = smoothstep(0.84, 1.0, r);
-          let disp = gopen * (0.012 * r * r + 0.035 * rimBand);
-          base.r = loupeSrc(focus + s * (1.0 - disp)).r;
-          base.b = loupeSrc(focus + s * (1.0 + disp)).b;
+          // The refracting band: averaged (it squeezes the picture), with a faint dispersion
+          // of red and blue that is zero in the flat core and under a pixel at the rim.
+          let rimBand = smoothstep(0.85, 1.0, r);
+          if (r > 0.85) {
+            let m = 1.0 + (it.p.w - 1.0) * gopen;
+            let slope = (loupeProfile(min(r + 0.01, 1.0), m) - loupeProfile(r - 0.01, m)) / (min(r + 0.01, 1.0) - r + 0.01);
+            let reach = length(s);
+            let sdir = s / max(reach, 0.001);
+            let spread = max(slope - 1.0, 0.0);
+            let disp = gopen * 0.007 * rimBand * rimBand;
+            base.g = loupeBand(focus, sdir, reach, spread).g;
+            base.r = loupeBand(focus, sdir, reach * (1.0 - disp), spread).r;
+            base.b = loupeBand(focus, sdir, reach * (1.0 + disp), spread).b;
+          }
           // Glass: a little dark toward the edge, a faint cool haze.
-          base *= 1.0 - 0.2 * gopen * r * r * r;
+          base *= 1.0 - 0.16 * gopen * r * r * r * r;
           light += u.holo.rgb * 0.025 * gopen;
           // The thin rim: bright toward the light, signal red on the far side.
           let rw = (gdist - (gr - 1.3)) / 1.5;

@@ -1,6 +1,6 @@
 import { Spring, clamp01 } from '../core/spring.js';
 
-const RADIUS = 104; // CSS px
+const RADIUS = 120; // CSS px: the default radius, `loupe-size` (the diameter) overrides it
 const HOLD_MS = 300; // a touch must rest this long before the glass shows
 const SLOP = 10; // px a finger may drift during that time
 const LIFT = 36; // px between a finger and the glass held above it
@@ -10,6 +10,12 @@ const SUPPRESS_MS = 700; // a click right after a peek is not a tap
 function magnification(el) {
   const m = parseFloat(el.getAttribute('loupe'));
   return Number.isFinite(m) ? Math.min(Math.max(m, 1.2), 8) : 2;
+}
+
+/** The glass's radius for an element: `loupe-size="160"` is its diameter. */
+function radiusOf(el) {
+  const d = parseFloat(el.getAttribute('loupe-size'));
+  return Number.isFinite(d) ? Math.min(Math.max(d, 80), 400) / 2 : RADIUS;
 }
 
 /**
@@ -58,6 +64,7 @@ export class Loupes {
         open: new Spring(0, { stiffness: 260, damping: 26, epsilon: 0.004 }),
         focus: [0, 0],
         mag: 2,
+        radius: RADIUS,
       };
       this.states.set(el, s);
     }
@@ -83,14 +90,15 @@ export class Loupes {
     const s = this.state(el);
     const wasShown = s.open.target > 0;
     s.mag = magnification(el);
+    const radius = (s.radius = radiusOf(el));
     let cx = px;
     let cy = py;
     s.focus = [0, 0];
     if (touch) {
       const [, , sw] = stage.rectOf(stage.source);
-      cx = Math.min(Math.max(px, RADIUS * 0.6), Math.max(sw - RADIUS * 0.6, RADIUS * 0.6));
-      cy = py - RADIUS - LIFT;
-      if (cy - RADIUS < 4) cy = py + RADIUS + LIFT;
+      cx = Math.min(Math.max(px, radius * 0.6), Math.max(sw - radius * 0.6, radius * 0.6));
+      cy = py - radius - LIFT;
+      if (cy - radius < 4) cy = py + radius + LIFT;
       s.focus = [px - cx, py - cy];
     }
     const still = stage.reduced;
@@ -171,7 +179,7 @@ export class Loupes {
   snapshot() {
     const s = this.current && this.states.get(this.current);
     if (!s) return null;
-    return { x: s.x.x, y: s.y.x, open: s.open.x, focus: [...s.focus], mag: s.mag, touch: this.touchId !== null };
+    return { x: s.x.x, y: s.y.x, open: s.open.x, focus: [...s.focus], mag: s.mag, radius: s.radius, touch: this.touchId !== null };
   }
 
   step(now, dt) {
@@ -189,7 +197,7 @@ export class Loupes {
     for (const [el, s] of this.states) {
       if (s.open.x < 0.003 || !stage.visible(el)) continue;
       const open = Math.min(Math.max(s.open.x, 0), 1.06);
-      const radius = RADIUS * (0.55 + 0.45 * clamp01(open));
+      const radius = s.radius * (0.55 + 0.45 * clamp01(open));
       const [cx, cy] = [s.x.x, s.y.x];
       const pad = radius + 34;
       stage.draw('loupe', scene, {
@@ -201,7 +209,7 @@ export class Loupes {
         mag: s.mag,
         open,
         // The reticle ring turns as the glass travels.
-        phase: (cx + cy * 0.6) / RADIUS * 0.9,
+        phase: (cx + cy * 0.6) / s.radius * 0.9,
       });
     }
   }

@@ -80,7 +80,7 @@ async function run(path, browser, url) {
   const stage = await boxOf(page, '#ab');
   const table = await boxOf(page, '#loupe-area table');
   const outside = { x: 850, y: 600 };
-  const R = 104;
+  const R = 120;
   // The glass sits over the Fuel column, rows 2 and 3.
   const P = { x: table.x + 440, y: table.y + 78 };
   let rest;
@@ -214,8 +214,8 @@ async function run(path, browser, url) {
     };
     const three = await probe();
     assert.equal((await snapshot(page, 'loupes')).mag, 3);
-    // 40 px from the centre shows a point about 40 / 3 (a little more: the barrel) from it.
-    assert.ok(three > 10 && three < 24, `source offset at 40 px: ${three.toFixed(1)}`);
+    // The core is a clean enlargement: 40 px from the centre shows the point 40 / 3 from it.
+    assert.ok(Math.abs(three - 40 / 3) < 0.6, `source offset at 40 px: ${three.toFixed(1)}`);
     await page.mouse.move(outside.x, outside.y);
     await page.waitForTimeout(700);
     await page.mouse.move(table.x + 300, table.y + 40, { steps: 4 });
@@ -225,6 +225,7 @@ async function run(path, browser, url) {
       return el.mapPoint({ x: x - ox + 40, y: y - oy }).x - (x - ox);
     }, { ox: stage.x, oy: stage.y, x: table.x + 300, y: table.y + 40 });
     assert.equal((await snapshot(page, 'loupes')).mag, 2);
+    assert.ok(Math.abs(two - 20) < 0.6, `the default is a clean ×2: ${two.toFixed(1)}`);
     assert.ok(two > three + 3, `the default (${two.toFixed(1)}) shows farther than ×3 (${three.toFixed(1)})`);
     await page.mouse.move(outside.x, outside.y);
     await page.waitForTimeout(800);
@@ -252,6 +253,7 @@ async function run(path, browser, url) {
     if (shots) await page.screenshot({ path: `${shots}/lit-${path}.png`, clip: { x: stage.x, y: litBox.y - 24, width: 760, height: litBox.height + 48 } });
     const lx = Math.round(L.x - litBox.x), ly = Math.round(L.y - litBox.y);
     let edgeSum = 0, edgeN = 0, flatSum = 0, flatN = 0, far = 0;
+    const edges = [];
     for (let y = 2; y < lit.h - 2; y++) {
       for (let x = 2; x < lit.w - 2; x++) {
         const dist = Math.hypot(x - lx, y - ly);
@@ -261,14 +263,20 @@ async function run(path, browser, url) {
         // The relief of the picture at rest: its slope.
         const gx = grey(litRest, x + 1, y) - grey(litRest, x - 1, y);
         const gy = grey(litRest, x, y + 1) - grey(litRest, x, y - 1);
-        if (Math.hypot(gx, gy) > 40) { edgeSum += delta; edgeN++; } else if (Math.hypot(gx, gy) < 3) { flatSum += delta; flatN++; }
+        if (Math.hypot(gx, gy) > 40) { edgeSum += delta; edgeN++; edges.push(grey(lit, x, y) - grey(litRest, x, y)); } else if (Math.hypot(gx, gy) < 3) { flatSum += delta; flatN++; }
       }
     }
     assert.ok(edgeN > 200 && flatN > 500, `samples ${edgeN}/${flatN}`);
     const edge = edgeSum / edgeN, flat = flatSum / flatN;
     console.log(`       lit: mean change on edges ${edge.toFixed(1)}, on flat ${flat.toFixed(1)}, far px changed ${far}`);
-    assert.ok(edge > flat * 1.8, `text and borders take the light more than flat paper (${edge.toFixed(1)} vs ${flat.toFixed(1)})`);
-    assert.ok(edge > 15, 'the relief is visible');
+    // The pool lifts the flat paper; the relief goes both ways around that: edges toward the
+    // light catch it (brighter than the pool), edges away from it sink (darker than the pool).
+    const lifted = flatSum / flatN;
+    const brighter = edges.filter((d) => d > lifted + 20).length;
+    const darker = edges.filter((d) => d < lifted - 20).length;
+    console.log(`       lit relief: ${brighter} edge px brighter than the pool, ${darker} darker (pool ${lifted.toFixed(1)})`);
+    assert.ok(lifted > 8, 'the pool lights the paper');
+    assert.ok(brighter > 60 && darker > 30, 'edges catch the light on one side and sink on the other');
     assert.ok(far < 10, `nothing changes beyond the light's reach (${far})`);
     // The neighbouring surface is not lit.
     const other = await pixels(page, around(litBoxB));

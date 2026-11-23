@@ -117,7 +117,7 @@ export class Lits {
         open: Math.min(Math.max(s.open.x, 0), 1),
         power: s.power,
         // The light reaches farther over a bigger surface.
-        reach: Math.min(Math.max(Math.hypot(rect[2], rect[3]) * 0.32, 130), 280),
+        reach: Math.min(Math.max(Math.hypot(rect[2], rect[3]) * 0.55, 200), 300),
       });
     }
   }
