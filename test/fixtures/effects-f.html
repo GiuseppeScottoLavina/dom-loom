@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Effect F: curl</title>
+  <link rel="stylesheet" href="/src/loom.css">
+  <script type="module">
+    import '/src/index.js';
+    import '/src/components/curl.js';
+    window.__log = [];
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest?.('button');
+      if (b?.id) window.__log.push(b.id);
+    });
+    const flip = (stage, ids, to) => () => ids.forEach((id) => (stage.querySelector(`#${id}`).hidden = id !== to));
+    // Full stage: two sheets that replace one another. direction: 1 curls from the left, -1 from the right.
+    window.turnFull = (to, direction = 1, style = 'curl') =>
+      document.querySelector('#whole').transition(flip(document.querySelector('#whole'), ['sheet-a', 'sheet-b'], to), { direction, style });
+    // Scoped: the two panels of #panels.
+    window.turnPanel = (to, direction = 1, style = 'curl') => {
+      const stage = document.querySelector('#panels');
+      return stage.transition(flip(stage, ['panel-a', 'panel-b'], to), {
+        scope: [stage.querySelector('#panel-a'), stage.querySelector('#panel-b')], direction, style,
+      });
+    };
+    window.plainPanel = (to) => {
+      const stage = document.querySelector('#panels');
+      return stage.transition(flip(stage, ['panel-a', 'panel-b'], to), { scope: [stage.querySelector('#panel-a'), stage.querySelector('#panel-b')] });
+    };
+  </script>
+  <style>
+    body { margin: 0; background: #0a0e24; }
+    [hidden] { display: none !important; }
+    #whole { width: 760px; margin: 20px 20px 0; }
+    #panels { width: 760px; margin: 24px 20px 40px; }
+    h2 { margin: 0 0 6px; font-size: 30px; letter-spacing: 0.02em; }
+    p { margin: 0 0 12px; max-width: 60ch; line-height: 1.5; }
+    .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 12px; }
+    .grid button { padding: 8px 0; }
+    .bars { display: flex; gap: 6px; align-items: flex-end; height: 70px; margin: 44px 0 14px; }
+    .bars i { flex: 1; background: linear-gradient(#7ff0ff, #3a58c8); border-radius: 2px; }
+    #panel-a, #panel-b { padding: 14px 4px; }
+  </style>
+</head>
+<body>
+  <loom-stage id="whole">
+    <section id="sheet-a">
+      <h2>Dispatch A</h2>
+      <p>The first sheet of the pair. Every button in it is live until the page peels away.</p>
+      <div class="bars"><i style="height:30%"></i><i style="height:55%"></i><i style="height:80%"></i><i style="height:45%"></i><i style="height:95%"></i><i style="height:60%"></i><i style="height:35%"></i><i style="height:70%"></i></div>
+      <div class="grid"><button type="button" id="a1">A1</button><button type="button" id="a2">A2</button><button type="button" id="a3">A3</button><button type="button" id="a4">A4</button><button type="button" id="a5">A5</button><button type="button" id="a6">A6</button></div>
+    </section>
+    <section id="sheet-b" hidden>
+      <h2>Dispatch B</h2>
+      <p>The second sheet, waiting underneath. Its buttons take input where the first has peeled away.</p>
+      <div class="bars"><i style="height:80%"></i><i style="height:40%"></i><i style="height:65%"></i><i style="height:90%"></i><i style="height:30%"></i><i style="height:75%"></i><i style="height:50%"></i><i style="height:25%"></i></div>
+      <div class="grid"><button type="button" id="b1">B1</button><button type="button" id="b2">B2</button><button type="button" id="b3">B3</button><button type="button" id="b4">B4</button><button type="button" id="b5">B5</button><button type="button" id="b6">B6</button></div>
+    </section>
+  </loom-stage>
+
+  <loom-stage id="panels">
+    <h2>Panels</h2>
+    <p>Only the panel below turns; the heading stays put.</p>
+    <section id="panel-a">
+      <h2>Panel A</h2>
+      <div class="grid"><button type="button" id="pa1">PA1</button><button type="button" id="pa2">PA2</button><button type="button" id="pa3">PA3</button><button type="button" id="pa4">PA4</button><button type="button" id="pa5">PA5</button><button type="button" id="pa6">PA6</button></div>
+      <div class="bars"><i style="height:30%"></i><i style="height:55%"></i><i style="height:80%"></i><i style="height:45%"></i><i style="height:95%"></i><i style="height:60%"></i></div>
+    </section>
+    <section id="panel-b" hidden>
+      <h2>Panel B</h2>
+      <div class="grid"><button type="button" id="pb1">PB1</button><button type="button" id="pb2">PB2</button><button type="button" id="pb3">PB3</button><button type="button" id="pb4">PB4</button><button type="button" id="pb5">PB5</button><button type="button" id="pb6">PB6</button></div>
+      <div class="bars"><i style="height:80%"></i><i style="height:40%"></i><i style="height:65%"></i><i style="height:90%"></i><i style="height:30%"></i><i style="height:75%"></i></div>
+    </section>
+    <p>A footer line below the panels, outside the cut.</p>
+  </loom-stage>
+</body>
+</html>
