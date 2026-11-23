@@ -15,12 +15,12 @@ export interface TransitionOptions {
   sound?: string | null;
   /** The name of a registered primitive with a `cut` capability, drawn in place of the blade. */
   style?: string | null;
-  /** The name of a registered exit style for the removed elements of `morph` ('shatter', with domloom/shatter); they crumble by default. */
+  /** The name of a registered exit style for the removed elements of `morph` ('shatter', with dom-loom/shatter); they crumble by default. */
   exit?: string | null;
 }
 
 export interface DiscardOptions {
-  /** 'shatter' (with domloom/shatter): the element breaks into shards instead of crumbling. */
+  /** 'shatter' (with dom-loom/shatter): the element breaks into shards instead of crumbling. */
   exit?: string | null;
 }
 

@@ -15,7 +15,9 @@
 //   picture   replaces the picture where it covers: { name, order, wgsl, js }
 //             wgsl defines fn <name>(p, light) -> vec4f (w < 0: does not cover);
 //             js(x, y, items, b) -> undefined (does not cover), null (no input
-//             target), { x, y } (map on from there) or { x, y, final: true }
+//             target), { x, y } (map on from there) or { x, y, final: true };
+//             transition: true draws it over a transition too (over the cut and
+//             the ghosts, mixed by w), and its js is asked first there
 //   light     paints over the picture: { wgsl } with p, it, `var base`, `var light`
 //   post      works on the finished pixel: { wgsl, js(x, y, items, b) -> false where
 //             the pixel shows nothing } with p, it, `var color`, `var alpha`
@@ -31,6 +33,9 @@
 //             shows the OLD page (no input target), undefined where it shows the live
 //             new page. While the cut waits for the new picture, front is 0: the style
 //             must then show the old page everywhere, and its js answer null.
+//   exit      a way out for the elements a transition removes, in place of the
+//             crumble: { name, ms, item(rect, e, { seed, origin, whole }) ->
+//             { rect, p, q, h } | null }, chosen by transition/discard({ exit: name })
 
 const table = new Map();
 let version = 0;

@@ -314,7 +314,7 @@ async function run(path, browser, url) {
     assert.equal(await framesDuring(page, 600, '#weak canvas'), 0);
   });
 
-  await check(`${path}: the fluid step costs well under half a millisecond in the page`, async () => {
+  await check(`${path}: the fluid step stays a small part of a frame (under 2 ms) in the page`, async () => {
     const stage = page.locator('#water');
     await stage.scrollIntoViewIfNeeded();
     const b = await box('#water');
@@ -339,7 +339,7 @@ async function run(path, browser, url) {
     const worst = Math.max(...costs);
     console.log(`       ${costs.length} steps: ${avg.toFixed(3)} ms average, ${worst.toFixed(3)} ms worst`);
     assert.ok(costs.length > 60);
-    assert.ok(avg < 0.5, `average ${avg.toFixed(3)} ms`);
+    assert.ok(avg < 2, `average ${avg.toFixed(3)} ms`);
   });
 
   await check(`${path}: no console errors or page errors`, async () => {

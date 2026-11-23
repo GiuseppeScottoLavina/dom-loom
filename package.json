@@ -43,6 +43,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test test/*.test.mjs",
     "test:browser": "node test/stage.browser.mjs",
+    "test:effects": "node test/effects.browser.mjs",
     "test:types": "tsc -p test/types",
     "test:visual": "node test/visual.mjs"
   },

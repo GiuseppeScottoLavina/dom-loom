@@ -31,6 +31,11 @@ interface DomLoomAttributes {
   badge?: '' | 'badge';
   tilt?: '' | 'tilt';
   carousel?: '' | 'carousel';
+  loupe?: string;
+  'loupe-size'?: string;
+  lit?: string;
+  fluid?: string;
+  exit?: 'shatter' | string;
   split?: '' | 'split';
   ring?: '' | 'ring';
   segments?: number | string;
