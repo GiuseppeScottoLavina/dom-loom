@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Effects A and B</title>
+  <link rel="stylesheet" href="/src/loom.css">
+  <link rel="stylesheet" href="/src/skins/holo/loupe.css">
+  <link rel="stylesheet" href="/src/skins/holo/lit.css">
+  <script type="module">
+    import '/src/index.js';
+    import '/src/components/loupe.js';
+    import '/src/components/lit.js';
+    window.__log = [];
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest?.('button');
+      if (b?.id) window.__log.push(`click:${b.id}`);
+    });
+  </script>
+  <style>
+    body { margin: 0; background: #0a0e24; }
+    #ab { width: 760px; }
+    #ab table { border-collapse: collapse; width: 100%; font: 400 13px/1.4 var(--loom-mono); }
+    #ab th, #ab td { padding: 5px 10px; border-bottom: 1px solid var(--loom-line); text-align: left; }
+    #ab th { color: var(--loom-holo); font-weight: 600; }
+    #strip { display: flex; gap: 10px; margin-top: 14px; padding: 10px 0; }
+    #strip button { width: 34px; height: 28px; padding: 0; font-size: 13px; }
+    #ab .tight { margin-top: 12px; font-size: 11px; line-height: 1.35; color: var(--loom-dim); }
+    #lits { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+    #lits h3 { font-size: 20px; margin: 0; }
+    #lits .head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    #lits p { font-size: 13px; margin: 0 0 10px; }
+    #lits button { margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <loom-stage id="ab">
+    <div loupe id="loupe-area">
+      <table>
+        <thead><tr><th>Unit</th><th>Callsign</th><th>Fuel</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>0412</td><td>Nightjar</td><td>82%</td><td>Armed</td></tr>
+          <tr><td>0418</td><td>Kestrel</td><td>47%</td><td>Holding</td></tr>
+          <tr><td>0507</td><td>Marlin</td><td>91%</td><td>Armed</td></tr>
+          <tr><td>0511</td><td>Osprey</td><td>13%</td><td>Returning</td></tr>
+          <tr><td>0623</td><td>Heron</td><td>66%</td><td>Standby</td></tr>
+        </tbody>
+      </table>
+      <div id="strip">
+        <button type="button" id="b0">A</button><button type="button" id="b1">B</button><button type="button" id="b2">C</button><button type="button" id="b3">D</button><button type="button" id="b4">E</button><button type="button" id="b5">F</button><button type="button" id="b6">G</button><button type="button" id="b7">H</button><button type="button" id="b8">I</button><button type="button" id="b9">J</button>
+      </div>
+    </div>
+    <p class="tight" loupe="3" id="dense">Fuel reserves are reported every six minutes. Callsigns are assigned at launch and never reused within a sortie. A unit that reports below fifteen percent is ordered home and drops out of the roster until it has been refuelled and rearmed by the ground crew on deck.</p>
+    <div id="lits">
+      <section lit id="lit-a">
+        <div class="head"><svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#e8f4ff" stroke-width="2" aria-hidden="true"><circle cx="17" cy="17" r="12"/><path d="M17 5v6M17 23v6M5 17h6M23 17h6"/><circle cx="17" cy="17" r="3"/></svg><h3>Sensors</h3></div>
+        <p>Radar, infrared and acoustic arrays report here. Contacts are fused every second.</p>
+        <button type="button" id="lit-btn">Run diagnostics</button>
+      </section>
+      <section lit="0.3" id="lit-b">
+        <div class="head"><svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#e8f4ff" stroke-width="2" aria-hidden="true"><circle cx="17" cy="17" r="12"/><path d="M17 5v6M17 23v6M5 17h6M23 17h6"/><circle cx="17" cy="17" r="3"/></svg><h3>Sensors</h3></div>
+        <p>Radar, infrared and acoustic arrays report here. Contacts are fused every second.</p>
+        <button type="button" id="lit-btn-b">Run diagnostics</button>
+      </section>
+    </div>
+  </loom-stage>
+</body>
+</html>

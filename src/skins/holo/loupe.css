@@ -1,0 +1,14 @@
+/* DomLoom skin "holo": loupe (see base.css for the scope and the rules). */
+/* Elements under a magnifying glass */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([loupe]) {
+  cursor: crosshair;
+}
+
+/* A finger resting on it shows the glass: no callout, no text selection, no lens menu. */
+@media (pointer: coarse) {
+  :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([loupe]) {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
