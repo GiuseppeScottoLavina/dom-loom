@@ -223,6 +223,7 @@ fn composeTransition(p: vec2f, light: ptr<function, vec3f>) -> vec3f {
   if (trail.w > 0.0) {
     c = mix(c, trail.rgb * 0.8 + u.holo.rgb * 0.18, trail.w);
   }
+/*TRANSITION*/
   return c;
 }
 
@@ -326,6 +327,8 @@ export function buildShader(defs) {
   const offsets = defs.filter((d) => d.offset);
   const whole = offsets.filter((d) => d.offset.whole);
   const pictures = defs.filter((d) => d.picture).sort((a, b) => a.picture.order - b.picture.order);
+  // Pictures that are also drawn over a transition, with their opacity (w).
+  const overCut = pictures.filter((d) => d.picture.transition);
   const lights = defs.filter((d) => d.light);
   const posts = defs.filter((d) => d.post);
   const spatial = maskOf(offsets);
@@ -360,7 +363,7 @@ ${chain(whole, (d) => d.offset.wgsl)}
 }
 `;
 
-  const pictureCalls = pictures.map((d) => /* wgsl */ `
+  const pictureCalls = pictures.filter((d) => !d.picture.transition).map((d) => /* wgsl */ `
     if (!done && present(${(1 << d.kind) >>> 0}u)) {
       let r = ${d.picture.name}(p, &light);
       if (r.w >= 0.0) {
@@ -413,7 +416,11 @@ ${cuts.map((d) => `    if (style == ${d.kind}u) { return ${d.cut.fn}(p, sc, s, f
     `const SPATIAL: u32 = ${spatial}u;`,
     functions,
     offsetAt,
-    CORE.replace('/*CUTS*/', cutChain),
+    CORE.replace('/*CUTS*/', cutChain).replace('/*TRANSITION*/', overCut.map((d) => /* wgsl */ `
+  if (present(${(1 << d.kind) >>> 0}u)) {
+    let over = ${d.picture.name}(p, light);
+    if (over.w >= 0.0) { c = mix(c, over.rgb, over.w); }
+  }`).join('')),
     pictureFns,
     fs + TAIL.replace('/*POST*/', posts.length ? /* wgsl */ `
   if (present(${maskOf(posts)}u)) {

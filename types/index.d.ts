@@ -15,6 +15,13 @@ export interface TransitionOptions {
   sound?: string | null;
   /** The name of a registered primitive with a `cut` capability, drawn in place of the blade. */
   style?: string | null;
+  /** The name of a registered exit style for the removed elements of `morph` ('shatter', with domloom/shatter); they crumble by default. */
+  exit?: string | null;
+}
+
+export interface DiscardOptions {
+  /** 'shatter' (with domloom/shatter): the element breaks into shards instead of crumbling. */
+  exit?: string | null;
 }
 
 /** A grid of displacements in CSS px over the whole canvas, written by behaviours. */
@@ -44,7 +51,7 @@ export declare class LoomStage extends HTMLElement {
   /** Like document.startViewTransition(update), drawn by the compositor and live while it plays. */
   transition(update?: () => unknown, options?: TransitionOptions): Promise<void>;
   /** Removes an element with motion; `update` removes it (default: el.remove()). */
-  discard(el: Element, update?: () => unknown): Promise<void>;
+  discard(el: Element, update?: () => unknown, options?: DiscardOptions): Promise<void>;
   /** Has an element that was just added assemble block by block. */
   reveal(el: Element): void;
   /** The point of the live content shown at a visible point of the stage (CSS px), null over no element. */

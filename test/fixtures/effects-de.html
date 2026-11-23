@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shatter and melt</title>
+  <link rel="stylesheet" href="/src/loom.css">
+  <script type="module">
+    import '/src/index.js';
+    import '/src/components/shatter.js';
+    import '/src/components/melt.js';
+    window.__log = [];
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest?.('button');
+      if (b?.id) window.__log.push(`click:${b.id}`);
+    });
+    const stage = document.querySelector('#view');
+    const swap = (to) => stage.transition(() => {
+      document.querySelector('#a').hidden = to !== 'a';
+      document.querySelector('#b').hidden = to !== 'b';
+    }, { style: window.__style ?? 'melt' });
+    document.querySelector('#to-b').addEventListener('click', () => void (window.__done = swap('b')));
+    document.querySelector('#to-a').addEventListener('click', () => void (window.__done = swap('a')));
+    // A plain update, with no cut style registered under this name.
+    window.__swap = swap;
+    document.querySelector('#kill').addEventListener('click', () => {
+      window.__gone = document.querySelector('#fx').discard(document.querySelector('#card'), undefined, { exit: 'shatter' });
+    });
+    document.querySelector('#kill-plain').addEventListener('click', () => {
+      window.__gone = document.querySelector('#fx').discard(document.querySelector('#plain'));
+    });
+  </script>
+  <style>
+    body { margin: 0; background: #0a0e24; }
+    #fx, #view { width: 640px; margin: 0 0 24px 0; }
+    #fx .loom-source { min-height: 460px; }
+    #view { height: 420px; }
+    #chips { margin: 14px 0; }
+    #card { display: block; width: 420px; min-height: 150px; padding: 18px; margin: 14px 0; border: 1px solid var(--loom-line); }
+    #card h3 { margin: 0 0 8px; }
+    .row { display: flex; gap: 10px; margin: 10px 0; }
+    #view section { min-height: 380px; }
+    #view [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <loom-stage id="fx">
+    <h2>Loadout</h2>
+    <ul id="chips">
+      <li removable exit="shatter" id="c1">Recon</li>
+      <li removable exit="shatter" id="c2">Medic</li>
+      <li removable exit="shatter" id="c3">Breacher</li>
+      <li removable id="c4">Plain crumble</li>
+    </ul>
+    <article id="card" removable exit="shatter">
+      <h3>Sector report</h3>
+      <p>Hull integrity holding at 71 percent. Reactor output nominal.</p>
+      <div class="row"><button type="button" id="card-b1">Acknowledge</button><button type="button" id="card-b2">Escalate</button></div>
+    </article>
+    <div class="row">
+      <button type="button" id="kill">Shatter card</button>
+      <button type="button" id="kill-plain">Remove plain</button>
+      <span id="plain" style="padding: 6px 10px; border: 1px solid var(--loom-line)">Plain item</span>
+    </div>
+  </loom-stage>
+
+  <loom-stage id="view">
+    <section id="a">
+      <h2>Mission board</h2>
+      <p>Three contracts are open. Pick one before the window closes.</p>
+      <div class="row">
+        <button type="button" id="to-b">Open the vault</button>
+        <button type="button" id="a-other">Decline</button>
+      </div>
+      <meter min="0" max="100" value="64" aria-label="Reputation"></meter>
+      <progress max="100" value="40" aria-label="Fuel"></progress>
+      <p>Reputation and fuel are shown above. Nothing else changes.</p>
+    </section>
+    <section id="b" hidden>
+      <h2>The vault</h2>
+      <p>Bay doors are open. Everything inside is yours.</p>
+      <div class="row">
+        <button type="button" id="to-a">Back to the board</button>
+        <button type="button" id="b-take">Take it all</button>
+      </div>
+      <input type="range" aria-label="Haul" min="0" max="100" value="55">
+    </section>
+  </loom-stage>
+</body>
+</html>

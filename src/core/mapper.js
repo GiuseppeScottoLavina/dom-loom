@@ -56,6 +56,14 @@ export function mapThrough(x, y, uniforms, items, count, field = null, tables = 
   const w = uniforms[U.viewport + 2];
   const h = uniforms[U.viewport + 3];
   if (uniforms[U.wipeActive] > 0.5) {
+    // Pictures drawn over the cut (shards) are on top of everything and take no input.
+    for (const def of tables.pictures) {
+      if (!def.picture.transition) continue;
+      for (let i = 0; i < count; i++) {
+        const b = i * ITEM_FLOATS;
+        if (Math.round(items[b]) === def.kind && def.picture.js(x, y, items, b) === null) return null;
+      }
+    }
     for (let i = 0; i < count; i++) {
       const b = i * ITEM_FLOATS;
       if (Math.round(items[b]) !== MORPH) continue;

@@ -139,6 +139,7 @@ export class LoomStage extends ElementBase {
   #dirtyControls = new Map();
   #ready = Promise.resolve('dom');
   #startEnhancement = null;
+  #press = null; // the last pointer press: where an exit bursts from
   #motion = null;
 
   /**
@@ -227,7 +228,10 @@ export class LoomStage extends ElementBase {
       if (e.detail.hooksOnly) this.#wakeAfterRegistration();
       else this.#restyle();
     }, { signal: this.#listeners.signal });
-    this.listen('pointerdown', () => this.#unlockAudio(), { capture: true });
+    this.listen('pointerdown', (e) => {
+      this.#unlockAudio();
+      this.#press = { point: this.pointOf(e), at: performance.now() };
+    }, { capture: true });
     this.listen('keydown', () => this.#unlockAudio(), { capture: true });
     this.listen('click', (e) => this.#guardHold(e), { capture: true });
     const connection = this.#listeners.signal;
@@ -373,9 +377,11 @@ export class LoomStage extends ElementBase {
    * - cut: false to have no blade: only the elements fly.
    * - style: the name of a registered primitive with a `cut` capability, drawn in place
    *   of the blade (an unknown name keeps the blade).
+   * - exit: the name of a registered exit style (a primitive with an `exit` capability:
+   *   'shatter') for the elements of `morph` that the update removes; they crumble by default.
    * - sound: the skin's sound to play.
    */
-  async transition(update, { scope = null, direction = 1, morph = null, cut = true, sound = null, style = null } = {}) {
+  async transition(update, { scope = null, direction = 1, morph = null, cut = true, sound = null, style = null, exit = null } = {}) {
     const compositor = this.#compositor;
     this.#finishVisual();
     if (!this.#canPresent()) {
@@ -389,6 +395,7 @@ export class LoomStage extends ElementBase {
     const scopeBefore = scopes ? this.#rectsOf(scopes) : [];
     const transition = {
       start: NaN, pending: true, ghosted: false, pairs: [], exits: [], movers, resolve: null, cut: cut !== false,
+      exit: exit ? primitives.all().find((d) => d.exit?.name === exit) ?? null : null, exitFx: [],
       scope: null, direction: direction < 0 ? -1 : 1,
       style: style ? (primitives.all().find((d) => d.name === style && d.cut)?.kind ?? 0) : 0,
       ms: scopes ? this.skin.transition.scopedMs : this.skin.transition.ms,
@@ -415,7 +422,12 @@ export class LoomStage extends ElementBase {
       for (const [key, a] of before) {
         const b = after.get(key);
         if (b && transition.pairs.length < most) transition.pairs.push({ a: a.rect, b: b.rect, el: b.el });
-        else if (!b && movers) transition.exits.push(a.rect);
+        else if (!b && movers) {
+          transition.exits.push(a.rect);
+          // An exit with its own picture breaks from where the pointer pressed, if it did just now.
+          const press = this.#press && performance.now() - this.#press.at < 3000 ? this.#press.point : null;
+          transition.exitFx.push({ seed: (Math.random() * 65536) | 0, origin: press });
+        }
       }
       this.play(sound ?? (!transition.cut ? 'shuffle' : scopes ? 'swipe' : 'whoosh'));
       if (!(await painted(compositor, version, signal)) || signal.aborted) return;
@@ -433,8 +445,9 @@ export class LoomStage extends ElementBase {
    * remove() takes the stage itself out): it crumbles where it was, and what comes
    * after it flies into the space it leaves. Resolves once it is gone. A framework that
    * owns the element passes its own `update` (which removes it from its state).
+   * `exit` names another way out ('shatter': it breaks into shards).
    */
-  async discard(el, update = () => el.remove()) {
+  async discard(el, update = () => el.remove(), { exit = null } = {}) {
     if (!el?.isConnected) return;
     if (!this.#canPresent() || !this.visible(el)) {
       await this.#withoutVisual(update);
@@ -445,7 +458,7 @@ export class LoomStage extends ElementBase {
     for (let node = el.parentElement; node && node !== this.#source; node = node.parentElement) {
       for (let next = node.nextElementSibling; next; next = next.nextElementSibling) movers.push(next);
     }
-    await this.transition(update, { morph: movers.slice(0, MAX_MOVERS - 1).concat(el), cut: false, sound: 'remove' });
+    await this.transition(update, { morph: movers.slice(0, MAX_MOVERS - 1).concat(el), cut: false, sound: 'remove', exit });
   }
 
   /** Has an element (just added) assemble block by block. */
@@ -929,12 +942,19 @@ export class LoomStage extends ElementBase {
         // Without a cut the whole new page is there at once; only the elements fly.
         u[U.wipeFront] = t.cut ? easeInOutCubic(clamp01(e / t.ms)) * (1 + t.band) : 1 + t.band;
         let end = t.cut ? t.ms : 0;
-        for (const rect of t.exits) {
+        t.exits.forEach((rect, i) => {
+          if (t.exit) {
+            // An exit of its own (core/primitives.js: `exit`): the shards of the old picture.
+            const it = t.exit.exit.item(rect, e, { ...t.exitFx[i], whole });
+            if (it) scene.push(t.exit.kind, it.rect, it.p, it.q, ...it.h);
+            end = Math.max(end, t.exit.exit.ms);
+            return;
+          }
           const k = clamp01(e / EXIT_MS);
           // Fast at first: what is removed starts to go at once.
           if (k < 1) scene.push(GHOST, rect, ZERO4, ZERO4, 0, Math.sqrt(k), 1);
           end = Math.max(end, EXIT_MS);
-        }
+        });
         t.pairs.forEach(({ a, b, el }, i) => {
           const delay = t.cut ? 40 + i * 35 : 20 + Math.min(i, 14) * 24;
           const r = flight(a, b, i, e - delay);
