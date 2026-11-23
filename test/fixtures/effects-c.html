@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Effects C: fluid</title>
+  <link rel="stylesheet" href="/src/loom.css">
+  <link rel="stylesheet" href="/src/skins/holo/fluid.css">
+  <script type="module">
+    import '/src/index.js';
+    import '/src/components/fluid.js';
+    window.__log = [];
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest?.('button');
+      if (b?.id) window.__log.push(b.id);
+    });
+  </script>
+  <style>
+    body { margin: 0; padding: 24px; background: #0a0e24; display: grid; gap: 24px; align-content: start; }
+    #water { width: 560px; }
+    #water [fluid] { display: grid; gap: 12px; }
+    #water h2 { margin: 0; font: 600 22px/1.1 var(--loom-display); letter-spacing: 0.04em; text-transform: uppercase; }
+    #water p { margin: 0; color: var(--loom-dim); }
+    #water .keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    #water .keys button { height: 46px; }
+    #water .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+    #water .grid i { height: 18px; border: 1px solid var(--loom-line); background: color-mix(in srgb, var(--loom-holo) 18%, transparent); }
+    #water .grid i:nth-child(3n) { background: color-mix(in srgb, var(--loom-signal) 40%, transparent); }
+    #twin { width: 560px; }
+    #twin [fluid] { display: flex; gap: 6px; }
+    #twin button { width: 200px; height: 60px; }
+    #plain { width: 560px; }
+    #weak { width: 560px; }
+  </style>
+</head>
+<body>
+  <!-- Strong stirring: one panel, a row of buttons and a lattice that shows the flow. -->
+  <loom-stage id="water">
+    <section fluid>
+      <h2>Coolant loop</h2>
+      <p>Drag across the panel: the readout swirls like water and settles.</p>
+      <div class="grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="keys">
+        <button type="button" id="alpha">Alpha</button>
+        <button type="button" id="bravo">Bravo</button>
+        <button type="button" id="charlie">Charlie</button>
+      </div>
+    </section>
+  </loom-stage>
+
+  <!-- Two buttons side by side: the one shown where the other lies must take the click. -->
+  <loom-stage id="twin">
+    <div fluid="1">
+      <button type="button" id="a">A</button>
+      <button type="button" id="b">B</button>
+    </div>
+  </loom-stage>
+
+  <!-- Two panels in one stage, with their own strengths, and one that is not water. -->
+  <loom-stage id="weak">
+    <div fluid="0.5" id="half"><button type="button" id="h">Half</button> half strength</div>
+    <div fluid id="full" style="margin-top: 12px"><button type="button" id="f">Full</button> full strength</div>
+    <div id="dry" style="margin-top: 12px"><button type="button" id="d">Dry</button> not water</div>
+  </loom-stage>
+
+  <!-- A stage without [fluid]: the behaviour must not wake it. -->
+  <loom-stage id="plain"><button type="button" id="p">Plain</button></loom-stage>
+</body>
+</html>

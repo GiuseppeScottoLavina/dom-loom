@@ -1,0 +1,13 @@
+/* DomLoom skin "holo": fluid (see base.css for the scope and the rules). */
+/* A panel that is water: a surface the picture is stirred under. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([fluid]) {
+  box-sizing: border-box;
+  /* A finger drags across it to stir; vertical swipes still scroll the page. */
+  touch-action: pan-y pinch-zoom;
+  padding: 16px;
+  border: 1px solid var(--loom-line);
+  background:
+    linear-gradient(135deg, var(--loom-holo) 0 6px, transparent 6px) no-repeat,
+    linear-gradient(180deg, color-mix(in srgb, var(--loom-holo) 9%, transparent), transparent 70%),
+    color-mix(in srgb, var(--loom-holo) 4%, var(--loom-panel));
+}
