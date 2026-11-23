@@ -327,3 +327,14 @@ document.querySelector('#resupply').addEventListener('click', () => {
   showVitals();
 });
 document.querySelector('#menu-abort').addEventListener('click', () => setTimeout(() => abortDialog.showModal(), 60));
+
+// Intel: a mark on the roof plan briefs that spot.
+const marks = [...document.querySelectorAll('.recon-map .mark')];
+const brief = document.querySelector('#recon-brief');
+for (const mark of marks) {
+  mark.addEventListener('click', () => {
+    for (const other of marks) other.setAttribute('aria-pressed', String(other === mark));
+    brief.firstElementChild.textContent = `${mark.textContent}.`;
+    brief.lastElementChild.textContent = mark.dataset.brief;
+  });
+}

@@ -227,6 +227,37 @@ body {
 .ops details p { color: var(--dim); max-width: 38em; }
 .ops .note { margin-top: 18px; max-width: 38em; }
 
+/* Intel: a roof plan too fine to read without the glass. */
+.intel { display: grid; gap: 16px; align-content: start; }
+.recon { display: grid; gap: 8px; margin: 0; }
+.recon-scale { color: var(--dim); font: 500 11px/1 'JetBrains Mono Variable', monospace; letter-spacing: 0.08em; }
+.recon-map { position: relative; border: 1px solid var(--line); background: #0d1230; }
+.recon-map svg { display: block; width: 100%; height: auto; }
+.recon-map .mark {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: transparent;
+  font-size: 0;
+}
+.recon-map .mark::before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border: 1.5px solid var(--holo);
+  transform: rotate(45deg);
+}
+.recon-map .mark[aria-pressed=true]::before { background: var(--holo); box-shadow: 0 0 0 3px #7ff0ff40; }
+.recon-map .mark:focus-visible { outline: 2px solid var(--holo); outline-offset: 2px; }
+.brief { min-height: 3.1em; margin: 0; max-width: 38em; color: var(--dim); }
+.brief strong { color: var(--ink); font-weight: 600; }
+
 /* ------------------------------------------------------ the requisition panel */
 .layout--req {
   grid-template-columns: minmax(0, 560px) minmax(0, 1fr);

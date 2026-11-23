@@ -1148,6 +1148,29 @@ async function overlayChecks(path, page) {
     ]), [false, true, 'abort']);
   });
 
+  await check(`${path}: the glass scopes the Intel map, and a mark briefs its spot`, async () => {
+    await page.click('#tab-intel');
+    await page.waitForTimeout(1200);
+    const map = await page.locator('.recon-map').boundingBox();
+    await page.mouse.move(map.x + map.width * 0.6, map.y + map.height * 0.3, { steps: 4 });
+    await page.waitForTimeout(700);
+    const glass = await page.evaluate(() => document.querySelector('#ops').behavior('loupes').snapshot());
+    assert.ok(glass && glass.open > 0.9 && glass.mag === 3, `the glass is open over the map (${JSON.stringify(glass)})`);
+    const lift = await page.locator('.recon-map .mark >> nth=2').boundingBox();
+    await page.mouse.move(lift.x + lift.width / 2, lift.y + lift.height / 2, { steps: 4 });
+    await page.waitForTimeout(500);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+    assert.deepEqual(await page.evaluate(() => [
+      document.querySelector('#recon-brief strong').textContent,
+      [...document.querySelectorAll('.recon-map .mark')].map((m) => m.getAttribute('aria-pressed')).join(),
+    ]), ['Freight lift.', 'false,false,true,false']);
+    await page.mouse.move(2, 2);
+    await page.click('#tab-vitals');
+    await page.waitForTimeout(1200);
+  });
+
   await check(`${path}: a drawer opens from its edge and closes with its form`, async () => {
     await page.locator('#archive').scrollIntoViewIfNeeded();
     await page.mouse.move(2, 2);

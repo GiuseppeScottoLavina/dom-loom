@@ -197,6 +197,7 @@ await stage.<b>transition</b>(() =&gt; showReceipt());</code></pre>
         <li><strong>Open the uplink.</strong> The bar sweeps until there is a value, then fills to a flash.</li>
         <li><strong>Switch tabs with the arrow keys.</strong> The cut runs the way you move and the old panel crumbles ahead of it.</li>
         <li><strong>Open an objective.</strong> What is below slides down, and a scan line uncovers the brief.</li>
+        <li><strong>Scope the map on Intel.</strong> The glass reads what is too small to see. Click a mark for its brief.</li>
       </ul>
       <figure class="code">
         <figcaption>The hull bar and the code that hits it</figcaption>
@@ -289,14 +290,92 @@ hull.value -= 18;</code></pre>
             </details>
           </section>
 
-          <section role="tabpanel" id="panel-intel" aria-labelledby="tab-intel" hidden>
+          <section role="tabpanel" id="panel-intel" aria-labelledby="tab-intel" class="intel" hidden>
+            <figure class="recon">
+              <figcaption class="field-row">
+                <span class="loom-caption">Relay roof · plan</span>
+                <span class="recon-scale">1:400 · rev C</span>
+              </figcaption>
+              <div class="recon-map" loupe="3" loupe-size="190">
+                <svg viewBox="0 0 480 250" role="img" aria-label="Roof plan of the relay station: the dish, the east stair where the drones come up, the freight lift to level −2 and the south ramp out" fill="none" font-family="'JetBrains Mono Variable', monospace" font-size="6.5" letter-spacing="0.3">
+                  <path stroke="#2b3766" stroke-width="0.5" d="M40 0V250M80 0V250M120 0V250M160 0V250M200 0V250M240 0V250M280 0V250M320 0V250M360 0V250M400 0V250M440 0V250M0 40H480M0 80H480M0 120H480M0 160H480M0 200H480"/>
+                  <g fill="#8d99c7" font-size="5.5" text-anchor="middle">
+                    <text x="20" y="7">A</text><text x="60" y="7">B</text><text x="100" y="7">C</text><text x="140" y="7">D</text><text x="180" y="7">E</text><text x="220" y="7">F</text><text x="260" y="7">G</text><text x="300" y="7">H</text><text x="340" y="7">J</text><text x="380" y="7">K</text><text x="420" y="7">L</text><text x="460" y="7">M</text>
+                    <text x="4" y="62">2</text><text x="4" y="102">3</text><text x="4" y="142">4</text><text x="4" y="182">5</text><text x="4" y="222">6</text>
+                  </g>
+
+                  <rect x="60" y="34" width="300" height="156" fill="#7ff0ff" fill-opacity="0.05" stroke="#7ff0ff" stroke-width="1.4"/>
+                  <rect x="65" y="39" width="290" height="146" stroke="#7ff0ff" stroke-opacity="0.45" stroke-width="0.5" stroke-dasharray="3 2"/>
+
+                  <g stroke="#7ff0ff" stroke-width="0.8">
+                    <circle cx="150" cy="100" r="30"/>
+                    <circle cx="150" cy="100" r="19" stroke-opacity="0.5"/>
+                    <circle cx="150" cy="100" r="5"/>
+                    <path stroke-opacity="0.35" d="M150 66V134M116 100H184"/>
+                    <path stroke-width="1.3" d="M150 100L171 79"/>
+                  </g>
+                  <text x="150" y="146" text-anchor="middle" fill="#e8f4ff">RELAY 7 · DISH Ø6 M</text>
+                  <text x="150" y="153.5" text-anchor="middle" fill="#8d99c7">38 GHZ · AZ 212° · PATCH 3 MIN</text>
+
+                  <rect x="316" y="46" width="34" height="56" fill="#111735" stroke="#7ff0ff"/>
+                  <path stroke="#7ff0ff" stroke-width="0.5" stroke-opacity="0.6" d="M333 46V102M316 53H333M316 60H333M316 67H333M316 74H333M316 81H333M316 88H333M316 95H333M333 53H350M333 60H350M333 67H350M333 74H350M333 81H350M333 88H350M333 95H350"/>
+                  <text x="311" y="56" text-anchor="end" fill="#e8f4ff">E STAIR</text>
+                  <text x="311" y="63.5" text-anchor="end" fill="#8d99c7">ROOF DOOR · STEEL</text>
+                  <text x="311" y="71" text-anchor="end" fill="#ff3d6e">DRONES COME UP</text>
+
+                  <rect x="236" y="122" width="36" height="36" stroke="#7ff0ff"/>
+                  <path stroke="#7ff0ff" stroke-width="0.6" stroke-opacity="0.7" d="M236 122L272 158M272 122L236 158"/>
+                  <text x="254" y="166" text-anchor="middle" fill="#e8f4ff">FREIGHT LIFT · TO LV −2</text>
+                  <text x="254" y="173.5" text-anchor="middle" fill="#8d99c7">COURIER + DRIVE · H ×5 BELOW</text>
+
+                  <rect x="282" y="128" width="13" height="8" fill="#7ff0ff" fill-opacity="0.25" stroke="#7ff0ff" stroke-width="0.7"/>
+                  <text x="299" y="133" fill="#e8f4ff">TERM</text>
+                  <text x="299" y="140.5" fill="#8d99c7">CAM LOGS 48 H</text>
+
+                  <path fill="#7ff0ff" fill-opacity="0.05" stroke="#7ff0ff" stroke-width="0.9" d="M182 190H218L232 246H168Z"/>
+                  <path stroke="#7ff0ff" stroke-width="0.7" stroke-opacity="0.7" d="M190 199L200 206L210 199M190 212L200 219L210 212M190 225L200 232L210 225"/>
+                  <text x="238" y="216" fill="#e8f4ff">S RAMP · EXFIL</text>
+                  <text x="238" y="223.5" fill="#8d99c7">ROOF → STREET 1:12</text>
+                  <text x="238" y="231" fill="#8d99c7">ON FOOT 72 S</text>
+
+                  <path stroke="#ff3d6e" stroke-width="0.9" stroke-dasharray="4 3" d="M374 74V30a10 10 0 0 0-10-10H56a10 10 0 0 0-10 10V194a10 10 0 0 0 10 10H364a10 10 0 0 0 10-10V74"/>
+                  <path stroke="#ff3d6e" stroke-width="0.9" d="M214 17L210 20L214 23M43 108L46 112L49 108M206 201L210 204L206 207M371 144L374 140L377 144"/>
+                  <g fill="#ff3d6e">
+                    <circle cx="374" cy="74" r="2.2"/><circle cx="46" cy="20" r="1.6"/><circle cx="46" cy="204" r="1.6"/><circle cx="374" cy="204" r="1.6"/>
+                  </g>
+                  <text x="381" y="72" fill="#ff3d6e">D1 UP 04:08:00</text>
+                  <text x="381" y="79.5" fill="#8d99c7">LOOP 90 S</text>
+                  <text x="381" y="87" fill="#8d99c7">NEXT 04:09:30</text>
+                  <text x="52" y="16" fill="#8d99c7">04:08:34</text>
+                  <text x="52" y="214" fill="#8d99c7">04:08:50</text>
+                  <text x="368" y="214" text-anchor="end" fill="#8d99c7">04:09:19</text>
+
+                  <path stroke="#ff3d6e" stroke-width="0.9" d="M404 116L410 122M410 116L404 122M96 220L102 226M102 220L96 226"/>
+                  <text x="414" y="121.5" fill="#ff3d6e">H ×4 · E YARD</text>
+                  <text x="106" y="225.5" fill="#ff3d6e">H ×3 · STREET</text>
+
+                  <path fill="#e8f4ff" d="M96 160L101.5 169H90.5Z"/>
+                  <text x="106" y="166" fill="#e8f4ff">SQ04 · 4 PAX</text>
+                  <text x="106" y="173.5" fill="#8d99c7">IN 04:06 · W VENT</text>
+
+                  <path stroke="#e8f4ff" stroke-width="0.8" d="M452 44V27M448 31L452 26L456 31"/>
+                  <text x="452" y="52" text-anchor="middle" fill="#e8f4ff">N</text>
+                  <path stroke="#8d99c7" stroke-width="0.8" d="M400 238H440M400 235V241M420 236V240M440 235V241"/>
+                  <text x="400" y="232" text-anchor="middle" fill="#8d99c7">0</text>
+                  <text x="440" y="232" text-anchor="middle" fill="#8d99c7">10 M</text>
+                  <text x="4" y="246" fill="#8d99c7" font-size="5.5">SHEET 3/7 · ROOF LV 0 · 04:02Z</text>
+                </svg>
+                <button type="button" class="mark" style="--x: 31.25%; --y: 40%" aria-pressed="false" data-brief="Engineer needs three minutes on the dish. Hold the roof until it is patched.">Relay dish</button>
+                <button type="button" class="mark" style="--x: 69.4%; --y: 29.6%" aria-pressed="true" data-brief="Drones come up here every 90 seconds. The last pass before the window is at 04:08.">East stair</button>
+                <button type="button" class="mark" style="--x: 52.9%; --y: 56%" aria-pressed="false" data-brief="The courier waits inside with the drive, two floors down. The camera logs terminal is next to the lift.">Freight lift</button>
+                <button type="button" class="mark" style="--x: 41.7%; --y: 87.2%" aria-pressed="false" data-brief="The way out: down the ramp to the street, 72 seconds on foot from the roof door.">South ramp</button>
+              </div>
+            </figure>
+            <p class="brief" id="recon-brief" aria-live="polite"><strong>East stair.</strong> <span>Drones come up here every 90 seconds. The last pass before the window is at 04:08.</span></p>
             <dl class="readout">
               <div><dt>Window</dt><dd>04:10–04:40</dd></div>
-              <div><dt>Hostiles</dt><dd>12 (est.)</dd></div>
               <div><dt>Weather</dt><dd>Rain · W 9 km/h</dd></div>
-              <div><dt>Exfil</dt><dd>South ramp</dd></div>
             </dl>
-            <p class="note">Drone patrols pass the relay roof every 90 seconds. The last pass before the window is at 04:08.</p>
           </section>
         </div>
       </div>
