@@ -393,12 +393,14 @@ export class LoomStage extends ElementBase {
     const measure = () => (movers ? this.#measured(movers) : scopes ? new Map() : this.#keyed());
     const before = measure();
     const scopeBefore = scopes ? this.#rectsOf(scopes) : [];
+    const cutStyle = style ? primitives.all().find((d) => d.name === style && d.cut) : null;
     const transition = {
       start: NaN, pending: true, ghosted: false, pairs: [], exits: [], movers, resolve: null, cut: cut !== false,
       exit: exit ? primitives.all().find((d) => d.exit?.name === exit) ?? null : null, exitFx: [],
       scope: null, direction: direction < 0 ? -1 : 1,
-      style: style ? (primitives.all().find((d) => d.name === style && d.cut)?.kind ?? 0) : 0,
-      ms: scopes ? this.skin.transition.scopedMs : this.skin.transition.ms,
+      style: cutStyle?.kind ?? 0,
+      // A style may run slower than the blade (a page turn needs time to be seen): its pace scales the skin's time.
+      ms: (scopes ? this.skin.transition.scopedMs : this.skin.transition.ms) * (cutStyle?.cut.pace ?? 1),
       band: this.skin.transition.band, slant: this.skin.transition.slant,
     };
     const done = new Promise((resolve) => (transition.resolve = resolve));

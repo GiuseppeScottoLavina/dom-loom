@@ -33,6 +33,7 @@
 //             shows the OLD page (no input target), undefined where it shows the live
 //             new page. While the cut waits for the new picture, front is 0: the style
 //             must then show the old page everywhere, and its js answer null.
+//             pace (optional, default 1) scales the skin's transition time for this style.
 //   exit      a way out for the elements a transition removes, in place of the
 //             crumble: { name, ms, item(rect, e, { seed, origin, whole }) ->
 //             { rect, p, q, h } | null }, chosen by transition/discard({ exit: name })

@@ -60,6 +60,8 @@ export const CURL = definePrimitive({
   kind: 29,
   name: 'curl',
   cut: {
+    // A page turn is read as a motion: about twice the blade's time (820 ms scoped, 1.2 s whole in holo).
+    pace: 1.9,
     fn: 'curlCut',
     wgsl: /* wgsl */ `
 const CURL_PI: f32 = 3.14159265;

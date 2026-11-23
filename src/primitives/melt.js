@@ -92,6 +92,8 @@ export const MELT = definePrimitive({
   kind: 28,
   name: 'melt',
   cut: {
+    // The drips need time to run: 1.6 times the blade's time.
+    pace: 1.6,
     wgsl: WGSL,
     fn: 'meltCut',
     // null where the old page still shows (below the front of its column), undefined above it.
