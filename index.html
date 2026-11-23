@@ -197,7 +197,6 @@ await stage.<b>transition</b>(() =&gt; showReceipt());</code></pre>
         <li><strong>Open the uplink.</strong> The bar sweeps until there is a value, then fills to a flash.</li>
         <li><strong>Switch tabs with the arrow keys.</strong> The cut runs the way you move and the old panel crumbles ahead of it.</li>
         <li><strong>Open an objective.</strong> What is below slides down, and a scan line uncovers the brief.</li>
-        <li><strong>Set the Cut in Actions.</strong> Curl peels the old page away, Melt drips it down. Deploy a loadout to see it.</li>
       </ul>
       <figure class="code">
         <figcaption>The hull bar and the code that hits it</figcaption>
@@ -307,13 +306,12 @@ hull.value -= 18;</code></pre>
       </p>
       <ul class="try">
         <li><strong>Sort by Health twice.</strong> The bars travel with their rows.</li>
-        <li><strong>Go to page 2.</strong> The marker stretches over and the page peels away.</li>
-        <li><strong>Hover the table.</strong> The scope magnifies; press through it and the click lands on the row.</li>
+        <li><strong>Go to page 2.</strong> The marker stretches over and the rows are cut in.</li>
         <li><strong>Tab to a column header and press Enter.</strong> Sorting is a real button.</li>
       </ul>
       <figure class="code">
         <figcaption>The whole API of the table</figcaption>
-<pre><code>&lt;<b>table sortable loupe="2.5"</b>&gt;…&lt;/table&gt;
+<pre><code>&lt;<b>table sortable</b>&gt;…&lt;/table&gt;
 
 table.addEventListener('<b>loom-sorted</b>', (e) =&gt; …);</code></pre>
       </figure>
@@ -330,7 +328,7 @@ table.addEventListener('<b>loom-sorted</b>', (e) =&gt; …);</code></pre>
         </nav>
         <h2>Roster</h2>
         <div class="table-wrap">
-          <table sortable id="roster-table" loupe="2.5" loupe-size="170">
+          <table sortable id="roster-table">
             <caption>Squad 04 · 12 operators</caption>
             <thead>
               <tr><th>Callsign</th><th>Role</th><th>Level</th><th>Hit rate</th><th>Health</th></tr>
@@ -403,19 +401,19 @@ table.addEventListener('<b>loom-sorted</b>', (e) =&gt; …);</code></pre>
       <h2 id="req-pitch" class="pitch">Every value <span>has weight.</span></h2>
       <p class="lede">
         A number field, a pair of ranges, a <code>&lt;datalist&gt;</code>, a file input, a radio group.
-        Their values roll over, files pull the panel into a vortex, and chips shatter when you remove them.
+        Their values roll over, files pull the panel into a vortex, and chips crumble when you remove them.
       </p>
       <ul class="try">
         <li><strong>Press + on Ammo crates.</strong> The digits roll over.</li>
         <li><strong>Drag a file from your desktop onto the drop zone.</strong> The panel twists toward it.</li>
-        <li><strong>Remove a tag, then add one.</strong> It breaks into shards; the new one assembles.</li>
+        <li><strong>Remove a tag, then add one.</strong> It crumbles; the new one assembles.</li>
         <li><strong>Type in Extraction point.</strong> The list unfolds inside the stage.</li>
       </ul>
       <figure class="code">
         <figcaption>What DomLoom adds to plain HTML here</figcaption>
 <pre><code>&lt;button <b>aria-controls</b>="crates" <b>data-step</b>="1"&gt;+&lt;/button&gt;
 &lt;div <b>interval</b>&gt;&lt;input type="range"&gt;&lt;input type="range"&gt;&lt;/div&gt;
-&lt;li <b>removable exit="shatter"</b>&gt;Night op&lt;/li&gt;
+&lt;li <b>removable</b>&gt;Night op&lt;/li&gt;
 &lt;label <b>dropzone</b>&gt;&lt;input type="file" multiple&gt;…&lt;/label&gt;
 &lt;fieldset <b>rating</b>&gt;…radios…&lt;/fieldset&gt;</code></pre>
       </figure>
@@ -475,10 +473,10 @@ table.addEventListener('<b>loom-sorted</b>', (e) =&gt; …);</code></pre>
         <div class="field">
           <label for="tag-input" class="loom-caption">Tags</label>
           <ul class="tags" id="tags" aria-label="Tags">
-            <li removable exit="shatter">Night op</li>
-            <li removable exit="shatter">Low profile</li>
-            <li removable exit="shatter">Drones</li>
-            <li removable exit="shatter">Rain</li>
+            <li removable>Night op</li>
+            <li removable>Low profile</li>
+            <li removable>Drones</li>
+            <li removable>Rain</li>
           </ul>
           <input id="tag-input" placeholder="Add a tag and press Enter" autocomplete="off">
         </div>
@@ -514,7 +512,6 @@ table.addEventListener('<b>loom-sorted</b>', (e) =&gt; …);</code></pre>
         <li><strong>Ping the squad.</strong> A toast counts down; point at it to hold it. The reply bumps the badge.</li>
         <li><strong>Trigger the alarm.</strong> It lands with a shock and the signal ring takes the hit.</li>
         <li><strong>Decrypt the intercept.</strong> The placeholder scans until the text assembles.</li>
-        <li><strong>Drag across the telemetry.</strong> The readout swirls like water and settles.</li>
       </ul>
       <figure class="code">
         <figcaption>A toast is any child of a toasts region</figcaption>
@@ -534,24 +531,22 @@ toasts.append(Object.assign(document.createElement('li'),
 
         <div role="alert" id="alarm" hidden></div>
 
-        <div class="telemetry" fluid="0.7">
-          <div class="rings">
-            <figure>
-              <progress ring id="decrypt-ring" max="100" value="0">Decryption</progress>
-              <figcaption>Decrypt <output id="decrypt-out">Idle</output></figcaption>
-            </figure>
-            <figure>
-              <meter ring id="signal" min="0" max="5" low="2" high="3" optimum="5" value="4" segments="5">4 of 5</meter>
-              <figcaption>Signal <output id="signal-out">4 / 5</output></figcaption>
-            </figure>
-          </div>
-
-          <article class="intercept" id="intercept">
-            <h3>Intercept 0412</h3>
-            <p>7F3A 91C0 22DE 0B4F 6A1D E930 5C77 18B2</p>
-            <p>Rail yard · 04:12 · encrypted</p>
-          </article>
+        <div class="rings">
+          <figure>
+            <progress ring id="decrypt-ring" max="100" value="0">Decryption</progress>
+            <figcaption>Decrypt <output id="decrypt-out">Idle</output></figcaption>
+          </figure>
+          <figure>
+            <meter ring id="signal" min="0" max="5" low="2" high="3" optimum="5" value="4" segments="5">4 of 5</meter>
+            <figcaption>Signal <output id="signal-out">4 / 5</output></figcaption>
+          </figure>
         </div>
+
+        <article class="intercept" id="intercept">
+          <h3>Intercept 0412</h3>
+          <p>7F3A 91C0 22DE 0B4F 6A1D E930 5C77 18B2</p>
+          <p>Rail yard · 04:12 · encrypted</p>
+        </article>
 
         <div class="actions">
           <button type="button" id="ping">Ping squad</button>
@@ -577,12 +572,11 @@ toasts.append(Object.assign(document.createElement('li'),
         <li><strong>Move over a card, then press Replay on it.</strong> The click lands on the turned card.</li>
         <li><strong>Drag the strip fast</strong>, or use the arrows.</li>
         <li><strong>Pull the splitter all the way to one side</strong> and let go.</li>
-        <li><strong>Sweep the pointer over the crew notes.</strong> It is a torch: the ink and the borders catch the light.</li>
       </ul>
       <figure class="code">
-        <figcaption>Four attributes</figcaption>
+        <figcaption>Three attributes</figcaption>
 <pre><code>&lt;div <b>carousel</b>&gt;&lt;article <b>tilt</b>&gt;…&lt;/article&gt;…&lt;/div&gt;
-&lt;div <b>split</b> <b>lit</b>&gt;&lt;nav&gt;…&lt;/nav&gt;&lt;hr&gt;&lt;section&gt;…&lt;/section&gt;&lt;/div&gt;</code></pre>
+&lt;div <b>split</b>&gt;&lt;nav&gt;…&lt;/nav&gt;&lt;hr&gt;&lt;section&gt;…&lt;/section&gt;&lt;/div&gt;</code></pre>
       </figure>
     </div>
 
@@ -640,7 +634,7 @@ toasts.append(Object.assign(document.createElement('li'),
           <button type="button" id="crew">Crew sheet</button>
         </div>
 
-        <div split lit class="split">
+        <div split class="split">
           <ul class="crew" aria-label="Crew">
             <li>Nightjar · Scout</li>
             <li>Kestrel · Breacher</li>
@@ -669,13 +663,6 @@ toasts.append(Object.assign(document.createElement('li'),
           <button type="button" role="menuitemradio" aria-checked="true">Wedge</button>
           <button type="button" role="menuitemradio" aria-checked="false">Line</button>
           <button type="button" role="menuitemradio" aria-checked="false">File</button>
-        </div>
-        <hr>
-        <p class="loom-caption" id="cut-label">Cut</p>
-        <div role="group" aria-labelledby="cut-label">
-          <button type="button" role="menuitemradio" aria-checked="true" data-cut="blade">Blade</button>
-          <button type="button" role="menuitemradio" aria-checked="false" data-cut="curl">Curl</button>
-          <button type="button" role="menuitemradio" aria-checked="false" data-cut="melt">Melt</button>
         </div>
         <hr>
         <button type="button" role="menuitem" id="menu-abort">Abort mission…</button>
