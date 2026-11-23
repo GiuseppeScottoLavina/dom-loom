@@ -28,6 +28,9 @@ export default defineConfig({
       },
     },
   }],
+  // Agents work in git worktrees under .claude/ (each with its own node_modules):
+  // watching them would make the dev server reload and re-optimize for every change there.
+  server: { watch: { ignored: ['**/.claude/**'] } },
   build: {
     target: 'es2022',
     assetsInlineLimit: (file) => file.endsWith('.woff2') ? false : undefined,
