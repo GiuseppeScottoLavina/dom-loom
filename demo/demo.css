@@ -247,6 +247,7 @@ body {
 }
 .panel--comms { position: static; }
 .comms { display: grid; gap: 22px; align-content: start; padding-bottom: 196px; } /* room for three toasts */
+.telemetry { display: grid; gap: 22px; padding: 0; border: 0; background: none; } /* the water: no panel of its own */
 .comms .actions button { white-space: nowrap; }
 .comms .actions .loom-primary { min-width: 0; }
 .comms h2 { display: flex; align-items: center; gap: 14px; }
@@ -277,7 +278,7 @@ body {
 #ops-strip .outcome { color: var(--holo); font: 500 12px/1.3 'JetBrains Mono Variable', monospace; letter-spacing: 0.06em; }
 #ops-strip .replay { justify-self: start; margin-top: 6px; padding: 10px 14px; }
 .replay-out { color: var(--dim); font: 500 12px/1 'JetBrains Mono Variable', monospace; }
-.split { min-height: 180px; border: 1px solid var(--line); }
+.split { min-height: 180px; padding: 0; border: 1px solid var(--line); background: none; }
 .crew { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; font: 500 13px/1.3 'Chakra Petch', sans-serif; white-space: nowrap; }
 .notes { display: grid; gap: 10px; align-content: start; }
 .notes p { font-size: 14px; }

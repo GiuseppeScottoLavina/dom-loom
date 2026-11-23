@@ -1185,7 +1185,7 @@ async function menuChecks(path, page) {
     await page.keyboard.press('Enter');
     await page.waitForTimeout(500);
     assert.equal(await menuOpen(), false, 'choosing closes the menu');
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('[role=menuitemradio]')].map((r) => r.getAttribute('aria-checked'))), ['false', 'true', 'false']);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll('[aria-labelledby=formation-label] [role=menuitemradio]')].map((r) => r.getAttribute('aria-checked'))), ['false', 'true', 'false']);
     assert.equal(await page.evaluate(() => document.activeElement.id), 'ops-actions', 'the focus goes back to the button');
     await page.click('#ops-actions');
     await page.waitForTimeout(600);

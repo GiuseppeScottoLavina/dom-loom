@@ -74,6 +74,12 @@ function show(view) {
   syncClock();
 }
 
+// The cut of the loadout is the blade; Actions can swap it for a curl or a melt.
+let cut = null;
+for (const item of document.querySelectorAll('[data-cut]')) {
+  item.addEventListener('click', () => (cut = item.dataset.cut === 'blade' ? null : { style: item.dataset.cut }));
+}
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
   const data = new FormData(form);
@@ -87,12 +93,12 @@ form.addEventListener('submit', async (event) => {
   for (const label of form.querySelectorAll('.segments label')) {
     label.style.viewTransitionName = label.querySelector('input').checked ? 'role' : '';
   }
-  await stage.transition(() => show(receipt));
+  await stage.transition(() => show(receipt), cut ?? {});
   if (!receipt.inert) receipt.querySelector('#receipt-title').focus({ preventScroll: true });
 });
 
 document.querySelector('#edit').addEventListener('click', async () => {
-  await stage.transition(() => show(form));
+  await stage.transition(() => show(form), cut ?? {});
   if (!form.inert) form.elements.callsign.focus({ preventScroll: true });
 });
 
@@ -173,7 +179,7 @@ pages.addEventListener('click', (event) => {
   if (next === page) return;
   const direction = next > page ? 1 : -1;
   page = next;
-  roster.transition(paginate, { scope: table.tBodies[0], direction });
+  roster.transition(paginate, { scope: table.tBodies[0], direction, style: 'curl' }); // a page of rows turns
 });
 
 /* The mission phase stepper in the ops panel. */
@@ -204,6 +210,7 @@ tagInput.addEventListener('keydown', (event) => {
   if (!text) return;
   const li = document.createElement('li');
   li.setAttribute('removable', '');
+  li.setAttribute('exit', 'shatter');
   li.textContent = text;
   tags.append(li);
   tagInput.value = '';

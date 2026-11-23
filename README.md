@@ -50,7 +50,7 @@ import 'dom-loom/tabs';
 | `dom-loom/forms` | 27 KB |
 | `dom-loom` (all) | 41 KB |
 
-Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, `popover`, `menu`, `select`, `gauge`, `tabs`, `details`, `table`, `current`, `rating`, `dropzone`, `removable`, `combobox`, `toast`, `alert`, `badge`, `busy`, `tilt`, `carousel`, `split`. A component imported later (a lazy chunk) joins the stages already running. The polyfill and the effects host are loaded by the first stage that starts, in their own chunks.
+Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, `popover`, `menu`, `select`, `gauge`, `tabs`, `details`, `table`, `current`, `rating`, `dropzone`, `removable`, `combobox`, `toast`, `alert`, `badge`, `busy`, `tilt`, `carousel`, `split`, `loupe`, `lit`, `fluid`. Cuts and exits: `curl`, `melt`, `shatter` (see Transitions). A component imported later (a lazy chunk) joins the stages already running. The polyfill and the effects host are loaded by the first stage that starts, in their own chunks.
 
 | You write | What happens |
 | --- | --- |
@@ -71,6 +71,7 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, 
 | `[interval]` holding two `<input type="range">` | One track with two thumbs that cannot cross; the liquid runs between them |
 | `<input list>` with its `<datalist>` | The browser's popup cannot be drawn into a canvas, so the stage opens its own listbox under the field (the ARIA combobox pattern: arrow keys, Enter, Escape). It unfolds and folds with a scan line |
 | `[removable]` (a tag, a chip, a list item) | Gets a remove button (also Delete or Backspace on it). Removing crumbles it and the rest flies into the gap; `loom-remove` fires first (cancelable). A removable element that is added assembles block by block |
+| `[removable][exit="shatter"]` (`dom-loom/shatter`) | The removed element breaks into Voronoi shards that fly off instead of crumbling; the rest still flies into the gap |
 | `[dropzone]` holding an `<input type="file">` | Files dragged over it pull the panel into a vortex at the pointer; dropped, they go to the input (its `change` fires) and the vortex collapses |
 | `[rating]` around a radio group | Stars: pointing previews, choosing lights them up one after another |
 | `[toasts]` (a list or a box) | Each child is a toast: it assembles, counts down (`data-timeout`, 5 s by default) with a bar of light, holds while pointed at or focused, and crumbles when the time is up or it is dismissed. `data-tone="good|warn|bad"`. The region is made a polite live region |
@@ -81,6 +82,9 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, 
 | `[tilt]` (a card) | Turns toward the pointer in perspective, with a shadow and a glare; in holo its foil lights up the edges of the content as it turns. Its content stays clickable where it is drawn |
 | `[carousel]` (a scroll container) | Scroll-snapping strip that the mouse can drag; buttons with `aria-controls` and `data-step` move it a slide. While it moves it curves like film, the more the faster |
 | `[split]` holding a pane, an `<hr>` and a pane | The `<hr>` is a window splitter: drag it, or focus it and use the arrow keys, Home and End (`aria-valuemin`, `aria-valuemax`, `aria-valuenow` in %). Pulled past a limit, the panes stretch like rubber and spring back |
+| `[loupe]` (a table, a block of small text; `dom-loom/loupe`) | A magnifying glass follows the mouse over the element: `loupe="3"` sets the magnification (default 2), `loupe-size="160"` its diameter. The glass really magnifies the picture, and a click inside it lands on the magnified element. On touch, press and hold shows the glass above the finger; a plain tap is left alone |
+| `[lit]` (a bordered panel; `dom-loom/lit`) | The pointer is a point light: text and borders emboss under it. `lit="0.6"` sets the intensity |
+| `[fluid]` (a readout panel; `dom-loom/fluid`) | Dragging the pointer across it stirs the content like water, and it settles. `fluid="0.5"` sets the strength. The holo skin sets `touch-action: pan-y` on it, so a finger stirs sideways and still scrolls the page; give the element the same in a custom skin |
 | `<dialog>` or `[popover]` holding `<loom-stage overlay>` | The stage is transparent around its panel (cut corners are cut out) and opens from a line of light; `overlay="left|right|top|bottom"` opens it from that edge (a drawer). A dialog closed by Escape, a `<form method="dialog">` or a `command="close"` button shuts first, then closes, with its `returnValue`. `dialog.close()` from a script closes at once, and so does a popover dismissed by a click outside |
 | `[role=menu]` in a popover's overlay stage | The ARIA menu pattern: the first item takes the focus; arrows, Home, End and a letter move it (a light follows); `menuitemcheckbox` and `menuitemradio` toggle; choosing closes the menu; Escape and Tab close it; the focus returns to the button. A popover opened by a `popovertarget` button is anchored under it (above if there is no room) and opens from that side |
 | `<select>` | A pointer opens its list inside the stage (the browser's popup cannot be drawn into a canvas). The keyboard and screen readers keep the select's own behaviour and popup |
@@ -99,6 +103,10 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 
 `stage.transition(update, { morph: elements, cut: false })` has no blade: the listed elements fly from where they were to where they are after `update` (a reorder, a move to another column), and those that are no longer shown crumble where they were.
 
+`stage.transition(update, { style: 'curl' })` (`dom-loom/curl`) swaps the blade for a page turn: the old page peels away from one side, over the new one, which is live underneath. `scope` and `direction` work as for the blade (`direction: -1` peels from the right). `{ style: 'melt' }` (`dom-loom/melt`) drips the old page down and reveals the new one from the top. Without the entry the style is not registered and the blade is used.
+
+`stage.transition(update, { morph: elements, exit: 'shatter' })` (`dom-loom/shatter`) breaks the elements that `update` removes into shards instead of crumbling them.
+
 ### Attributes and API
 
 | | |
@@ -108,9 +116,9 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | `static` | Never start the compositor; plain DOM styling only |
 | `loading="lazy"` | Keeps the HTML interactive and starts the GPU within 240 CSS pixels of the viewport once scrolling settles. Focus, a pointer press or switching to `eager` starts it immediately. The default is eager. |
 | `stage.ready` | Resolves with `'webgpu'` or `'dom'`. Reading it explicitly starts a lazy stage, as does supplying React's `onReady`. |
-| `stage.transition(update, {scope, direction, morph, cut})` | See above; resolves when the transition has ended |
+| `stage.transition(update, {scope, direction, morph, cut, style, exit})` | See above; `style` is `'curl'` or `'melt'` (a cut drawn in place of the blade), `exit` is `'shatter'`. Resolves when the transition has ended |
 | `skin` | The skin that draws the stage (default `holo`) |
-| `stage.discard(el, update?)` | Removes an element with motion: it crumbles, and what follows it flies into the space it leaves. A framework passes `update`, which removes it from its state |
+| `stage.discard(el, update?, {exit})` | Removes an element with motion: it crumbles (`exit: 'shatter'` breaks it into shards), and what follows it flies into the space it leaves. A framework passes `update`, which removes it from its state |
 | `stage.reveal(el)` | Has an element that was just added assemble block by block |
 | `stage.mapPoint({x, y})` | The point of the live content shown at a visible point of the stage (CSS px), `null` where no element is shown |
 | `data-renderer`, `data-mode` | `webgpu` / `loading` / `dom`, and `native` / `polyfill` |
@@ -205,6 +213,9 @@ Draw hooks receive `(scene, state, ctx)`; `ctx` holds `colors` (from `tokens`), 
 | `tilt` | `rect`, `rotX`, `rotY` (radians), `lift`, `glare` (the pointer) |
 | `bend` (carousel) | `rect`, `speed` (px per ms) |
 | `split` | `rect`, `laid` (the divider in the layout), `shown` (where it is drawn), `dragging`, `focused` |
+| `loupe` | `rect`, `center`, `focus`, `radius`, `mag`, `open`, `phase` |
+| `lit` | `rect`, `point`, `reach`, `power`, `open` |
+| `fluid` | `rect`, `strength` |
 | `gauge` with `ring` | as `gauge`, with `ring: true` |
 
 Every state also has `el`, the element. A skin's stylesheet styles the controls at rest; scope its rules to `loom-stage[skin="mine"]`, and load it next to `dom-loom/base.css`, which holds what every skin relies on. `dom-loom/style.css` is base plus holo.
@@ -245,8 +256,11 @@ npm install
 npm run dev              # the demo at http://127.0.0.1:5173
 npm test                 # unit tests of the mapper twins
 npm run test:browser     # Chrome with WebGPU, native path and polyfill path
+npm run test:effects     # the loupe, lit, fluid, shatter, melt and curl suites
 npm run test:types       # the public TypeScript types
 npm run build            # the demo site in dist/
 ```
 
 `npm run test:browser` uses `/Applications/Google Chrome.app` or `CHROME_PATH`. It checks that no frame renders at rest, compares pressed GPU pixels with the input mapper, and checks the hold guard, form validation, a click on an element in flight, the damage trail of a meter, the scoped cut of the tabs, a click on a sliding summary, sorting, the mapping of a press on a row in flight, pagination and steppers, the DOM fallback and reduced motion.
+
+`npm run test:effects` runs each `test/effects-*.browser.mjs` suite in its own process, on the native path and the polyfill path. It checks that the glass really magnifies and a click inside it reaches the magnified button, that a lit surface moves no pixel, that a stirred panel settles by itself and a click lands on the button shown where the water displaced it, that shards leave through the input mapper and the picture alike, that a curling or melting page takes input only where the new page is live, and that every stage rests, with reduced motion and without WebGPU.
