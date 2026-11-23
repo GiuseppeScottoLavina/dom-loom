@@ -287,8 +287,35 @@ archive.addEventListener('click', (event) => {
 const abortDialog = document.querySelector('#abort-dialog');
 const abortOut = document.querySelector('#abort-out');
 document.querySelector('#abort').addEventListener('click', () => abortDialog.showModal());
-abortDialog.addEventListener('close', () => {
-  abortOut.value = { abort: 'Abort ordered. Pulling out.', stay: 'Holding position.' }[abortDialog.returnValue] ?? '';
+// Aborting is the one act that cannot be taken back: the live controls of the mission
+// crack, hold for a beat and fall apart; then what is left assembles in their place.
+// Redeploy cuts them back in.
+const opsStage = document.querySelector('#ops');
+const vitalsPanel = document.querySelector('#panel-vitals');
+const missionLive = document.querySelector('#mission-live');
+const aborted = document.querySelector('#aborted');
+abortDialog.addEventListener('close', async () => {
+  if (abortDialog.returnValue !== 'abort') {
+    abortOut.value = abortDialog.returnValue === 'stay' ? 'Holding position.' : '';
+    return;
+  }
+  // Keep the panel's height: the shards fall through the space the controls leave.
+  vitalsPanel.style.minHeight = `${vitalsPanel.offsetHeight}px`;
+  await opsStage.transition(() => {
+    missionLive.hidden = true;
+  }, { morph: [missionLive], cut: false, exit: 'shatter', sound: 'remove' });
+  aborted.hidden = false;
+  opsStage.reveal(aborted);
+  document.querySelector('#redeploy').focus({ preventScroll: true });
+});
+document.querySelector('#redeploy').addEventListener('click', async () => {
+  await opsStage.transition(() => {
+    aborted.hidden = true;
+    missionLive.hidden = false;
+    abortOut.value = '';
+    vitalsPanel.style.minHeight = '';
+  }, { scope: vitalsPanel, direction: -1 });
+  document.querySelector('#abort').focus({ preventScroll: true });
 });
 const crewDrawer = document.querySelector('#crew-drawer');
 document.querySelector('#crew').addEventListener('click', () => crewDrawer.showModal());

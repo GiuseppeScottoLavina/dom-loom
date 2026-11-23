@@ -225,35 +225,43 @@ hull.value -= 18;</code></pre>
 
         <div class="tabpanels">
           <section role="tabpanel" id="panel-vitals" aria-labelledby="tab-vitals" class="vitals">
-            <div class="gauge">
-              <div class="field-row">
-                <label for="hull" class="loom-caption">Hull</label>
-                <output id="hull-out" for="hull">82 / 100</output>
+            <div class="mission-live" id="mission-live">
+              <div class="gauge">
+                <div class="field-row">
+                  <label for="hull" class="loom-caption">Hull</label>
+                  <output id="hull-out" for="hull">82 / 100</output>
+                </div>
+                <meter id="hull" min="0" max="100" low="30" high="60" optimum="100" value="82">82 of 100</meter>
               </div>
-              <meter id="hull" min="0" max="100" low="30" high="60" optimum="100" value="82">82 of 100</meter>
-            </div>
-            <div class="gauge">
-              <div class="field-row">
-                <label for="shield" class="loom-caption">Shield cells</label>
-                <output id="shield-out" for="shield">3 / 5</output>
+              <div class="gauge">
+                <div class="field-row">
+                  <label for="shield" class="loom-caption">Shield cells</label>
+                  <output id="shield-out" for="shield">3 / 5</output>
+                </div>
+                <meter id="shield" min="0" max="5" low="2" high="3" optimum="5" value="3" segments="5">3 of 5</meter>
               </div>
-              <meter id="shield" min="0" max="5" low="2" high="3" optimum="5" value="3" segments="5">3 of 5</meter>
-            </div>
-            <div class="gauge">
-              <div class="field-row">
-                <label for="uplink" class="loom-caption">Uplink</label>
-                <output id="uplink-out" for="uplink">Idle</output>
+              <div class="gauge">
+                <div class="field-row">
+                  <label for="uplink" class="loom-caption">Uplink</label>
+                  <output id="uplink-out" for="uplink">Idle</output>
+                </div>
+                <progress id="uplink" max="100" value="0">0 %</progress>
               </div>
-              <progress id="uplink" max="100" value="0">0 %</progress>
+              <div class="actions">
+                <button type="button" id="hit">Take a hit</button>
+                <button type="button" id="patch">Patch hull</button>
+                <button type="button" id="link" class="loom-primary">Open uplink</button>
+              </div>
+              <div class="abort-row">
+                <button type="button" id="abort">Abort mission</button>
+                <output id="abort-out"></output>
+              </div>
             </div>
-            <div class="actions">
-              <button type="button" id="hit">Take a hit</button>
-              <button type="button" id="patch">Patch hull</button>
-              <button type="button" id="link" class="loom-primary">Open uplink</button>
-            </div>
-            <div class="abort-row">
-              <button type="button" id="abort">Abort mission</button>
-              <output id="abort-out"></output>
+            <div class="aborted" id="aborted" hidden>
+              <p class="loom-caption">Squad 04 · mission scrubbed</p>
+              <p class="aborted-title">Aborted</p>
+              <p>The squad is pulling out by the south ramp. The relay stays in enemy hands.</p>
+              <button type="button" id="redeploy" class="loom-primary">Redeploy</button>
             </div>
           </section>
 

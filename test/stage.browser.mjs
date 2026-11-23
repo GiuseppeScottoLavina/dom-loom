@@ -1136,7 +1136,16 @@ async function overlayChecks(path, page) {
     await page.mouse.up();
     await page.waitForTimeout(1200);
     assert.deepEqual(await page.evaluate((sel) => [document.querySelector(sel).open, document.querySelector(sel).returnValue], dialog), [false, 'abort']);
-    assert.equal(await page.locator('#abort-out').textContent(), 'Abort ordered. Pulling out.');
+    // The mission controls break apart; what is left assembles in their place.
+    await page.waitForTimeout(1600);
+    assert.deepEqual(await page.evaluate(() => [
+      document.querySelector('#mission-live').hidden, document.querySelector('#aborted').hidden, document.activeElement.id,
+    ]), [true, false, 'redeploy']);
+    await page.click('#redeploy');
+    await page.waitForTimeout(1000);
+    assert.deepEqual(await page.evaluate(() => [
+      document.querySelector('#mission-live').hidden, document.querySelector('#aborted').hidden, document.activeElement.id,
+    ]), [false, true, 'abort']);
   });
 
   await check(`${path}: a drawer opens from its edge and closes with its form`, async () => {

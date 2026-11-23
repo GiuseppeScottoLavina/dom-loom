@@ -287,6 +287,19 @@ body {
 .ops-head { grid-template-columns: 1fr auto; align-items: end; }
 .abort-row, .replay-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .abort-row output { color: var(--dim); font: 500 12px/1 'JetBrains Mono Variable', monospace; }
+.vitals > [hidden] { display: none; }
+.mission-live { display: grid; gap: 22px; }
+/* What is left once the mission is aborted: the controls broke apart above it. */
+.aborted { display: grid; gap: 12px; align-content: start; justify-items: start; }
+.aborted-title {
+  margin: 0;
+  color: var(--signal);
+  font: 800 clamp(48px, 6vw, 72px)/0.86 'Big Shoulders Display Variable', sans-serif;
+  text-transform: uppercase;
+  transform: skewX(-9deg);
+}
+.aborted p:not([class]) { max-width: 30em; color: var(--dim); }
+.aborted button { margin-top: 10px; }
 .confirm-dialog > loom-stage { width: min(460px, calc(100vw - 32px)); }
 .confirm { display: grid; gap: 16px; }
 .confirm h2 { font-size: 44px; }
