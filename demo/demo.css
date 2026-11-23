@@ -141,6 +141,8 @@ body {
 .views > .view[inert] { visibility: hidden; }
 
 .sheet-head { display: grid; gap: 10px; }
+/* A head with a button beside it wraps its caption and title in a div: the same spacing there. */
+.sheet-head > div:first-child { display: grid; gap: 10px; }
 .sheet-head h2 { font-size: clamp(54px, 9vw, 76px); }
 
 .field { display: grid; gap: 10px; }
@@ -269,7 +271,6 @@ body {
 .panel--archive { position: static; }
 .archive { display: grid; gap: 20px; }
 .archive-head { grid-template-columns: 1fr auto; align-items: end; }
-.archive-head > div:first-child { display: grid; gap: 10px; } /* the same spacing as the other heads */
 .strip-nav { display: flex; gap: 6px; }
 .strip-nav button { width: 44px; padding: 0; height: 40px; font: 500 22px/1 'JetBrains Mono Variable', monospace; letter-spacing: 0; }
 #ops-strip { padding: 18px 4px; margin: -18px -4px; }
