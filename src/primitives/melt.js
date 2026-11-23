@@ -63,27 +63,28 @@ fn meltCut(p: vec2f, sc: vec4f, s: f32, front: f32, dir: f32, light: ptr<functio
     *light += u.holo.rgb * exp(d / 5.0) * 0.4 + u.hot.rgb * exp(d / 22.0) * 0.07;
     return livePicture(p);
   }
-  // The old page below the front, stretched downward from it; brighter pixels run
-  // longer: the brightest of the pixels above each one wins (a pixel sort along the column).
-  let source = d * (1.0 - 0.5 * progress);
-  let drip = progress * (40.0 + 300.0 * hash01(u32(floor(lx / 3.0)) * 668265263u + 5u));
-  var best = vec3f(0.0);
-  var bestLuma = -1.0;
-  for (var k = 0u; k < 12u; k++) {
-    let f = f32(k) / 11.0;
-    let c0 = sampleGhost(vec2f(p.x, sc.y + source - drip * f * f)) * (1.0 - 0.75 * f);
-    // The trail of a bright pixel runs cold: the further from it, the more holo.
-    let c = c0 * mix(vec3f(1.0), vec3f(0.35) + u.holo.rgb * 1.3, 0.65 * f);
-    let l = luma(c);
-    if (l > bestLuma) {
-      bestLuma = l;
-      best = c;
-    }
+  // The old page below the front, pulled downward from it: its own colours, stretched.
+  let source = sc.y + d * (1.0 - 0.5 * progress);
+  let stretched = sampleGhost(vec2f(p.x, source));
+  // Bright pixels run: each leaves a thin trail down its own column (no horizontal filter),
+  // fading with distance, never brighter than the pixel it comes from. The longer the
+  // column's own drip, the longer the trail; it grows as the melt goes on.
+  let run = (10.0 + 90.0 * hash01(u32(floor(p.x)) * 668265263u + 5u)) * clamp(progress * 2.5, 0.0, 1.0);
+  var trail = vec3f(0.0);
+  for (var k = 1u; k <= 10u; k++) {
+    let f = f32(k) / 10.0;
+    let fall = (1.0 - f) * (1.0 - f);
+    trail = max(trail, sampleGhost(vec2f(p.x, source - run * f)) * fall);
   }
-  // Hot at the front, cooling downward.
-  let heat = exp(-d / 3.0);
-  *light += u.holo.rgb * heat * 1.25 + vec3f(1.0, 0.95, 0.97) * exp(-d / 1.1) * 0.7 + u.hot.rgb * exp(-d / 26.0) * 0.18 * (1.0 - progress);
-  return mix(best, u.holo.rgb * (0.3 + best), 0.28 * exp(-d / 60.0));
+  // The trail runs colder the further it is from its glyph.
+  let cold = trail * (vec3f(0.55) + u.holo.rgb * 0.6);
+  var c = mix(stretched, max(stretched, cold), 0.65);
+  // A thin hot edge at the front, glowing a little; a bead at the tip of the longest columns.
+  let bead = smoothstep(0.62, 0.85, n) * exp(-pow((d - 3.0) / 4.0, 2.0));
+  *light += u.holo.rgb * exp(-d / 1.7) * 1.1 + vec3f(1.0, 0.95, 0.97) * exp(-d / 0.8) * 0.55
+    + u.holo.rgb * exp(-d / 9.0) * 0.12 + (u.holo.rgb * 0.5 + vec3f(0.5)) * bead * 0.5
+    + u.hot.rgb * exp(-d / 26.0) * 0.12 * (1.0 - progress);
+  return c;
 }
 `;
 
