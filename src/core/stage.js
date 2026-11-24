@@ -62,8 +62,8 @@ function flight(a, b, index, ms) {
   return r;
 }
 
-async function painted(compositor, version, signal) {
-  if (!(await compositor.waitForSource(version, 600, signal)) || signal.aborted) return false;
+async function painted(compositor, version, signal, height) {
+  if (!(await compositor.waitForSource(version, 600, signal, height)) || signal.aborted) return false;
   // Give the polyfill one more frame to present the new picture.
   return new Promise((resolve) => {
     const id = requestAnimationFrame(() => {
@@ -128,6 +128,7 @@ export class LoomStage extends ElementBase {
   #colors = null;
   #ctx = null;
   #sourceRect = null;
+  #scale = { rect: null, x: 1, y: 1 };
   #observers = [];
   #generation = 0;
   #audio = false;
@@ -448,7 +449,7 @@ export class LoomStage extends ElementBase {
         }
       }
       this.play(sound ?? (!transition.cut ? 'shuffle' : scopes ? 'swipe' : 'whoosh'));
-      if (!(await painted(compositor, version, signal)) || signal.aborted) return;
+      if (!(await painted(compositor, version, signal, this.#source?.offsetHeight)) || signal.aborted) return;
       transition.pending = false;
       this.#sync();
       this.wake();
@@ -512,7 +513,7 @@ export class LoomStage extends ElementBase {
       change.rect = before ?? this.#layoutRect(el);
       change.ghosted = true;
       this.wake();
-      if (!(await painted(compositor, version, signal)) || signal.aborted) return true;
+      if (!(await painted(compositor, version, signal, this.#source?.offsetHeight)) || signal.aborted) return true;
       change.pending = false;
       this.wake();
       return true;
@@ -569,7 +570,7 @@ export class LoomStage extends ElementBase {
       reflow.open = toggle();
       reflow.height = Math.abs(details.getBoundingClientRect().height - before);
       this.play(reflow.open ? 'open' : 'close');
-      if (!(await painted(compositor, version, signal)) || signal.aborted) return;
+      if (!(await painted(compositor, version, signal, this.#source?.offsetHeight)) || signal.aborted) return;
       reflow.pending = false;
       this.wake();
     } finally {
@@ -672,12 +673,32 @@ export class LoomStage extends ElementBase {
       }
       for (const behavior of this.#behaviors) behavior.mutated?.(records);
       this.#queueSync(records);
+      // Before the frame: the renderer learns a canvas size in the frame it changes.
+      this.#fitCanvas();
     });
     content.observe(this.#source, {
       childList: true, subtree: true, attributes: true, characterData: true,
       attributeFilter: ['hidden', 'class', 'hold', 'open', 'value', 'max', 'min', 'low', 'high', 'optimum', 'aria-selected', 'aria-current', 'segments', 'sortable', 'removable', 'list', 'aria-busy', 'ring', 'role', 'type', 'checked', 'name', 'rating', 'badge', 'toasts', 'split', 'multiple', 'size', 'nosort'],
     });
     this.#observers.push(adopt, content);
+  }
+
+  /**
+   * Sizes the canvas to its content. Run from a mutation, before the frame, it lets the
+   * renderer's own ResizeObserver see the new size in that frame; run from a
+   * ResizeObserver, only in the next one.
+   */
+  #fitCanvas() {
+    const canvas = this.#canvas;
+    if (!canvas) return;
+    const height = this.#source.offsetHeight;
+    const h = `${height}px`;
+    if (canvas.style.height === h) return;
+    // The frame being drawn still has the old size. Until one of the new size is drawn,
+    // the old picture keeps its scale, pinned to the top (base.css): cut when the stage
+    // shrinks, short when it grows, never squashed.
+    canvas.style.objectFit = height < parseFloat(canvas.style.height) ? 'cover' : 'contain';
+    canvas.style.height = h;
   }
 
   // Text and reflected values can change every frame. Only structural changes
@@ -878,8 +899,19 @@ export class LoomStage extends ElementBase {
 
   /** Where an element is in the layout, ignoring any flight it is on. */
   #layoutRect(el, s = this.#sourceRect ?? this.#source.getBoundingClientRect()) {
+    // In the content's own px. The content can be scaled on screen: by a page that scales
+    // the stage, or by the polyfill, which matches it to a picture of an older size until
+    // the new one is ready.
+    if (this.#scale.rect !== s) {
+      const source = this.#source;
+      const x = source.offsetWidth > 0 ? s.width / source.offsetWidth : 1;
+      const y = source.offsetHeight > 0 ? s.height / source.offsetHeight : 1;
+      // offsetWidth and offsetHeight are rounded: a fraction of a pixel is not a scale.
+      this.#scale = { rect: s, x: Math.abs(x - 1) < 0.005 ? 1 : x, y: Math.abs(y - 1) < 0.005 ? 1 : y };
+    }
+    const { x, y } = this.#scale;
     const r = el.getBoundingClientRect();
-    return [r.left - s.left, r.top - s.top, r.width, r.height];
+    return [(r.left - s.left) / x, (r.top - s.top) / y, r.width / x, r.height / y];
   }
 
   #domTick = (now) => {
@@ -1078,6 +1110,15 @@ export class LoomStage extends ElementBase {
     return Boolean(this.#animating || this.#boot || this.#arrivals.length);
   }
 
+  /** @internal A frame drawn at the canvas's size: its picture fills it again. */
+  _sized(cssWidth, cssHeight) {
+    const canvas = this.#canvas;
+    if (!canvas?.style.objectFit) return;
+    if (Math.abs(cssHeight - parseFloat(canvas.style.height)) < 1 && Math.abs(cssWidth - canvas.clientWidth) < 1) {
+      canvas.style.objectFit = '';
+    }
+  }
+
   /** @internal */
   _attachCompositor(compositor, canvas = this.#canvas) {
     if (canvas === this.#canvas) this.#compositor = compositor;
@@ -1131,8 +1172,7 @@ export class LoomStage extends ElementBase {
       const resize = new ResizeObserver(() => {
         const width = `${this.clientWidth}px`;
         if (source.style.width !== width) source.style.width = width;
-        const h = `${source.offsetHeight}px`;
-        if (canvas.style.height !== h) canvas.style.height = h;
+        this.#fitCanvas();
         this.wake();
       });
       resize.observe(this);

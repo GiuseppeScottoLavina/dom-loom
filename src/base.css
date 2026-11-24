@@ -10,6 +10,7 @@ loom-stage {
 loom-stage > .loom-canvas {
   display: block;
   width: 100%;
+  object-position: top; /* a picture older than a resize stays at the top (see the stage) */
 }
 
 loom-stage .loom-source {

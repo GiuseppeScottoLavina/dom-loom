@@ -28,3 +28,4 @@ The first public release. It depends on `@giuseppe-scotto-lavina/html-in-canvas-
 - With reduced motion, a held button no longer shakes while it charges, a finished hold sends no shock, and a refused tap no longer shakes.
 - `data-mode` is cleared when a stage falls back to plain HTML.
 - `useLoomDiscard` (React) and Vue's `discard` pass `{ exit }` on to the stage.
+- A stage that changes height no longer flickers. Closing a `<details>` that made the stage shorter showed, for a few frames, the old picture squashed into the new height (and, on the polyfill, the text twice): the canvas now takes its new size before the frame is drawn, a picture of the old size keeps its scale until one of the new size arrives, and the disclosure waits for that picture.

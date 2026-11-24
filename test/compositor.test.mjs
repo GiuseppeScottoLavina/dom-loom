@@ -53,6 +53,7 @@ function stageFixture() {
     field: { cols: FIELD_COLS, rows: FIELD_ROWS, data: new Float32Array(FIELD_COLS * FIELD_ROWS * 2), active: false, dirty: true },
     _step() { return scene; },
     _needsFrames() { return false; },
+    _sized() {},
     _attachCompositor(compositor) { this.compositor = compositor; },
     _detachCompositor(compositor) { if (this.compositor === compositor) this.compositor = null; },
   };

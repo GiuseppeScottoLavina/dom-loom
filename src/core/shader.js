@@ -20,6 +20,7 @@ struct Uniforms {
   present: vec4f, // the kinds in the scene, as a bit mask, 16 bits a slot: kinds 0..15 in x, .. 48..63 in w
   alpha: vec4f,   // 1: a transparent canvas; the output is premultiplied
   field: vec4f,   // displacement field: cols, rows, active
+  source: vec4f,  // css w, h of the live picture
 }
 struct Item { h: vec4f, r: vec4f, p: vec4f, q: vec4f }
 
@@ -96,8 +97,11 @@ fn overBg(c: vec4f) -> vec3f {
   if (u.alpha.x > 0.5) { return c.rgb; }
   return c.rgb + u.bg.rgb * (1.0 - c.a);
 }
+// The live picture keeps its own size: just after the stage changes height it can be
+// the older picture for a few frames, shown at its scale and empty past its edge.
 fn sampleSrc(p: vec2f) -> vec3f {
-  return overBg(textureSampleLevel(src, samp, p / u.view.zw, 0.0));
+  if (p.x > u.source.x + 0.5 || p.y > u.source.y + 0.5) { return overBg(vec4f(0.0)); }
+  return overBg(textureSampleLevel(src, samp, p / u.source.xy, 0.0));
 }
 fn sampleGhost(p: vec2f) -> vec3f {
   if (u.ghost.z < 0.5) { return u.bg.rgb; }
@@ -130,8 +134,8 @@ fn livePicture(p: vec2f) -> vec3f {
 fn liveAlpha(p: vec2f) -> f32 {
   var q = p;
   if (present(SPATIAL, SPATIAL_HI)) { q = p + offsetAt(p); }
-  if (q.x < -0.5 || q.y < -0.5 || q.x > u.view.z + 0.5 || q.y > u.view.w + 0.5) { return 0.0; }
-  return textureSampleLevel(src, samp, clamp(q, vec2f(0.0), u.view.zw) / u.view.zw, 0.0).a;
+  if (q.x < -0.5 || q.y < -0.5 || q.x > u.source.x + 0.5 || q.y > u.source.y + 0.5) { return 0.0; }
+  return textureSampleLevel(src, samp, clamp(q, vec2f(0.0), u.source.xy) / u.source.xy, 0.0).a;
 }
 
 // The old picture breaking into 4 px blocks: t = 0 whole, 1 gone. Each block leaves

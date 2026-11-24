@@ -89,6 +89,52 @@ async function greens(page, clip) {
   }, png.toString('base64'));
 }
 
+/**
+ * Every frame the page shows while `act` runs, as JPEG, from the DevTools screencast
+ * (the first ones before `act` starts).
+ */
+async function recordFrames(page, act) {
+  const cdp = await page.context().newCDPSession(page);
+  const frames = [];
+  cdp.on('Page.screencastFrame', (f) => {
+    frames.push(f.data);
+    cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => {});
+  });
+  await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 90, everyNthFrame: 1 });
+  try {
+    await page.waitForTimeout(200);
+    await act();
+  } finally {
+    await cdp.send('Page.stopScreencast');
+    await cdp.detach();
+  }
+  return frames;
+}
+
+/** How far each frame's `clip` lies from the first frame's: the mean difference of its green, 0..255. */
+function driftFromFirst(page, frames, clip) {
+  return page.evaluate(async ({ frames, clip }) => {
+    const greensOf = async (b64) => {
+      const bitmap = await createImageBitmap(await (await fetch(`data:image/jpeg;base64,${b64}`)).blob());
+      const c = new OffscreenCanvas(clip.width, clip.height);
+      c.getContext('2d').drawImage(bitmap, -clip.x, -clip.y);
+      const d = c.getContext('2d').getImageData(0, 0, clip.width, clip.height).data;
+      const g = new Float32Array(clip.width * clip.height);
+      for (let i = 0; i < g.length; i++) g[i] = d[i * 4 + 1];
+      return g;
+    };
+    const first = await greensOf(frames[0]);
+    const drift = [];
+    for (const f of frames.slice(1)) {
+      const g = await greensOf(f);
+      let sum = 0;
+      for (let i = 0; i < g.length; i++) sum += Math.abs(g[i] - first[i]);
+      drift.push(Math.round((sum / g.length) * 100) / 100);
+    }
+    return drift;
+  }, { frames, clip });
+}
+
 async function run(path, browser, url) {
   console.log(`\n${path}`);
   await check(`${path}: a growing stage paints the last of 96 slider thumbs and routes its input`, async () => {
@@ -675,10 +721,27 @@ async function opsChecks(path, page) {
     assert.deepEqual(clicks, ['Extract the', 'Wipe the'], `clicks: ${JSON.stringify(clicks)}`);
   });
 
-  await check(`${path}: closing a details shuts it and the stage rests`, async () => {
-    await page.click('text=Secure the relay');
-    await page.waitForTimeout(900);
+  await check(`${path}: closing a details shuts it, the shorter stage keeps its picture in place, and the stage rests`, async () => {
+    // With all three open the stage is the tallest of its row, so closing one makes it
+    // shorter. No frame may show a picture of the old height stretched to the new one, or
+    // the new picture drawn into the old canvas: the head of the stage never moves.
+    await page.evaluate(() => scrollBy(0, document.querySelector('#ops').getBoundingClientRect().top - 10));
+    await page.mouse.move(2, 2);
+    await page.waitForTimeout(500);
+    const canvas = await at('#ops canvas');
+    const tabs = await at('#ops [role=tablist]');
+    // Above the tabs' lower edge: the press ring around the summary does not reach it.
+    const clip = { x: Math.round(canvas.x), y: Math.round(canvas.y), width: Math.round(canvas.width), height: Math.round(tabs.y + tabs.height - canvas.y) };
+    const frames = await recordFrames(page, async () => {
+      await page.click('text=Secure the relay');
+      await page.waitForTimeout(900);
+    });
     assert.equal(await page.evaluate(() => document.querySelector('#panel-objectives details').open), false);
+    const shorter = (await at('#ops canvas')).height;
+    assert.ok(shorter < canvas.height - 20, `the stage got shorter (${canvas.height} → ${shorter})`);
+    assert.ok(frames.length > 20, `frames recorded: ${frames.length}`);
+    const drift = await driftFromFirst(page, frames, clip);
+    assert.ok(Math.max(...drift) < 2, `the head of the stage moved: ${drift.filter((d) => d >= 2).join(', ')} (of ${drift.length} frames)`);
     await page.mouse.move(2, 2);
     await page.waitForTimeout(900); // the reticle fades out
     assert.equal(await framesDuring(page, 600, '#ops canvas'), 0);

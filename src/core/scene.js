@@ -4,7 +4,7 @@
 
 export const ITEM_FLOATS = 16; // header, rect, p, q: 4 x vec4f
 export const INITIAL_ITEM_CAPACITY = 128;
-export const UNIFORM_FLOATS = 60; // 15 x vec4f
+export const UNIFORM_FLOATS = 64; // 16 x vec4f
 
 // The displacement field: a grid of vec2 displacements (CSS px) over the whole canvas.
 // Cell centres are spread over the canvas CSS width and height (core/math.js: fieldAt).
@@ -38,6 +38,7 @@ export const U = {
   // kinds 0..15, 16..31, 32..47, 48..63.
   alpha: 52, // 1: the canvas is transparent (an overlay stage); the shader writes premultiplied alpha
   field: 56, // cols, rows, active (1: the displacement field is in use)
+  source: 60, // css w, h of the live picture (a canvas that just changed size may still show an older one)
 };
 
 const ZERO = [0, 0, 0, 0];

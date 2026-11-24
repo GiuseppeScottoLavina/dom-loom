@@ -82,6 +82,7 @@ function ghostPipeline(device, resources) {
  */
 export function createCompositor(runtime, stage) {
   const { definePlugin, NO_TARGET } = runtime;
+  const ownSize = !String(runtime.mode).startsWith('native');
   return definePlugin({
     type: 'domloom-compositor',
     apiVersion: 2,
@@ -111,6 +112,7 @@ export function createCompositor(runtime, stage) {
       let destroyed = false;
       let lastNow = NaN;
       let sourceVersion = -1;
+      let sourceHeight = NaN; // css height of the live picture
       let presented = null;
       let fieldCopy = null; // the field as last uploaded: frozen with each presented frame that uses it
       let groups = new WeakMap();
@@ -229,13 +231,26 @@ export function createCompositor(runtime, stage) {
         pass.end();
       }
 
+      // The polyfill's picture has its own size, as wide as the canvas (the browser's own
+      // HTML-in-Canvas draws into the canvas's grid: its picture always spans the canvas).
+      function heightOf(frame) {
+        const texture = frame.sourceTexture;
+        return ownSize && texture?.width > 0 ? texture.height * frame.cssWidth / texture.width : frame.cssHeight;
+      }
+      // A canvas that changes size gets a new version of the old picture (the polyfill): a
+      // wait for the page after a change of height ends with a picture of that height.
+      function fits(height) {
+        return height == null || !ownSize || Math.abs(sourceHeight - height) <= 2;
+      }
+
       // An offscreen host may never draw the requested picture. Clear timers
       // and abort handlers on every exit, including teardown and supersession.
-      function waitForFrame(queue, version, timeoutMs, signal) {
+      function waitForFrame(queue, version, timeoutMs, signal, height) {
         if (destroyed || signal?.aborted) return Promise.resolve(false);
         return new Promise((resolve) => {
           const waiter = {
             version,
+            height,
             finish(value) {
               clearTimeout(timer);
               signal?.removeEventListener('abort', abort);
@@ -258,9 +273,9 @@ export function createCompositor(runtime, stage) {
         get sourceVersion() {
           return sourceVersion;
         },
-        waitForSource(version, timeoutMs = 400, signal) {
-          if (sourceVersion > version && !destroyed && !signal?.aborted) return Promise.resolve(true);
-          return waitForFrame(versionWaiters, version, timeoutMs, signal);
+        waitForSource(version, timeoutMs = 400, signal, height) {
+          if (sourceVersion > version && fits(height) && !destroyed && !signal?.aborted) return Promise.resolve(true);
+          return waitForFrame(versionWaiters, version, timeoutMs, signal, height);
         },
         requestRender: () => context.requestRender(),
         viewport: () => context.viewport(),
@@ -279,8 +294,9 @@ export function createCompositor(runtime, stage) {
 
           if (frame.sourceReady && frame.sourceVersion !== sourceVersion) {
             sourceVersion = frame.sourceVersion;
+            sourceHeight = heightOf(frame);
             for (const waiter of versionWaiters) {
-              if (sourceVersion > waiter.version) waiter.finish(true);
+              if (sourceVersion > waiter.version && fits(waiter.height)) waiter.finish(true);
             }
           }
 
@@ -309,10 +325,13 @@ export function createCompositor(runtime, stage) {
           uniforms[U.viewport + 1] = frame.height;
           uniforms[U.viewport + 2] = frame.cssWidth;
           uniforms[U.viewport + 3] = frame.cssHeight;
+          stage._sized(frame.cssWidth, frame.cssHeight);
           uniforms[U.count] = scene.count;
           uniforms[U.time] = frame.now / 1000;
           uniforms[U.dpr] = frame.dpr;
           uniforms.set(scene.uniforms.subarray(8), 8);
+          uniforms[U.source] = frame.cssWidth;
+          uniforms[U.source + 1] = heightOf(frame);
           // The mask is two 32-bit words: a float holds 24 bits exactly, so it goes 16 bits at a time.
           uniforms[U.present] = scene.mask & 0xffff;
           uniforms[U.present + 1] = scene.mask >>> 16;
