@@ -11,8 +11,8 @@ Underneath, it is still a real, accessible `<form>`.
 
 [![CI](https://github.com/GiuseppeScottoLavina/dom-loom/actions/workflows/ci.yml/badge.svg)](https://github.com/GiuseppeScottoLavina/dom-loom/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![WebGPU](https://img.shields.io/badge/WebGPU-compositor-7ff0ff)](#how-it-works)
-[![HTML-in-Canvas](https://img.shields.io/badge/HTML--in--Canvas-native%20%2B%20polyfill-ff3d6e)](https://github.com/WICG/html-in-canvas)
+[![WebGPU](https://img.shields.io/badge/WebGPU-compositor-7ff0ff.svg)](#how-it-works)
+[![HTML-in-Canvas](https://img.shields.io/badge/HTML--in--Canvas-native_and_polyfill-ff3d6e.svg)](https://github.com/WICG/html-in-canvas)
 
 **[Live demo](https://giuseppescottolavina.github.io/dom-loom/)** · [Quick start](#quick-start) · [Elements](#what-each-element-does) · [Transitions](#transitions) · [Browsers](#browser-support) · [FAQ](#faq) · [How it works](#how-it-works)
 
