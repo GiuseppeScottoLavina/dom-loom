@@ -1,5 +1,5 @@
 import type { ForwardRefExoticComponent, HTMLAttributes, ReactNode, RefAttributes, RefObject } from 'react';
-import type { LoomStage as LoomStageElement, TransitionOptions } from './index.js';
+import type { DiscardOptions, LoomStage as LoomStageElement, TransitionOptions } from './index.js';
 
 export interface LoomStageProps extends HTMLAttributes<LoomStageElement> {
   skin?: string;
@@ -17,7 +17,7 @@ export interface LoomStageProps extends HTMLAttributes<LoomStageElement> {
 export declare const LoomStage: ForwardRefExoticComponent<LoomStageProps & RefAttributes<LoomStageElement>>;
 export declare function useLoomEvent<E extends Event = CustomEvent>(ref: RefObject<LoomStageElement | null>, type: string, handler: ((event: E) => void) | null | undefined): void;
 export declare function useLoomTransition(ref: RefObject<LoomStageElement | null>): (update: () => void, options?: TransitionOptions) => Promise<void>;
-export declare function useLoomDiscard(ref: RefObject<LoomStageElement | null>): (el: Element, update: () => void) => Promise<void>;
+export declare function useLoomDiscard(ref: RefObject<LoomStageElement | null>): (el: Element, update: () => void, options?: DiscardOptions) => Promise<void>;
 
 /** The attributes DomLoom reads on ordinary elements. In JSX, write them as strings: sortable="". */
 interface DomLoomAttributes {
@@ -28,6 +28,7 @@ interface DomLoomAttributes {
   rating?: '' | 'rating';
   interval?: '' | 'interval';
   toasts?: '' | 'toasts';
+  dropzone?: '' | 'dropzone';
   badge?: '' | 'badge';
   tilt?: '' | 'tilt';
   carousel?: '' | 'carousel';

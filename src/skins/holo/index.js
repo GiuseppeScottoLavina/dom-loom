@@ -33,27 +33,28 @@ const draw = {
     if (lit > 0.002) scene.push(PILL, rect, [2, 0, 0, lit], colors.holo, ADD);
   },
 
-  charge(scene, { rect, progress: p, holding }, { colors, now }) {
+  charge(scene, { rect, progress: p, holding }, { colors, now, reduced }) {
     scene.push(SWEEP, rect, [easeInOutCubic(p) * 0.92 + p * 0.08, 0, 0.96], colors.signal, BEHIND);
-    if (holding) scene.push(JITTER, pad(rect, 6), [p * p * 1.9, now * 0.047, now * 0.063]);
+    // With reduced motion the charge is light only: it fills, it does not shake.
+    if (holding && !reduced) scene.push(JITTER, pad(rect, 6), [p * p * 1.9, now * 0.047, now * 0.063]);
     scene.push(PILL, rect, [2, 0, 4 + p * 14, p * 0.16], colors.signal, ADD);
   },
 
-  burst(scene, { rect, t }, { colors, durations }) {
+  burst(scene, { rect, t }, { colors, durations, reduced }) {
     const [cx, cy] = center(rect);
     const k = clamp01(t / durations.burst);
     const size = Math.max(rect[2], rect[3]);
     const ringR = easeOutCubic(k) * size * 1.5;
-    scene.push(DENT, pad(rect, 40), [cx, cy, size, 0], [ringR, (1 - k) ** 2 * 7, 14]);
+    if (!reduced) scene.push(DENT, pad(rect, 40), [cx, cy, size, 0], [ringR, (1 - k) ** 2 * 7, 14]);
     scene.push(RING, [cx, cy, ringR, 2 + 10 * k], [(1 - k) ** 2 * 1.2], colors.signal);
     scene.push(RING, [cx, cy, ringR * 0.7, 1 + 3 * k], [(1 - k) ** 3], colors.ink);
     scene.push(SWEEP, rect, [1, 0, (1 - k) ** 1.5], colors.signal, BEHIND);
     scene.push(PILL, rect, [2, 0, 20, (1 - k) ** 3 * 0.5], colors.ink, ADD);
   },
 
-  nudge(scene, { rect, t }, { colors, now, durations }) {
+  nudge(scene, { rect, t }, { colors, now, durations, reduced }) {
     const k = clamp01(t / durations.nudge);
-    scene.push(JITTER, pad(rect, 6), [(1 - k) * 3.5, now * 0.09, now * 0.07]);
+    if (!reduced) scene.push(JITTER, pad(rect, 6), [(1 - k) * 3.5, now * 0.09, now * 0.07]);
     scene.push(SWEEP, rect, [0.18 * Math.sin(k * Math.PI), 0, 0.9], colors.signal, BEHIND);
   },
 

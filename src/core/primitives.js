@@ -4,8 +4,8 @@
 // page actually imports, so an unused effect costs neither bytes nor GPU time.
 //
 // A primitive:
-//   kind      its number in the scene (stable: 1..9 move the picture or replace it,
-//             10..19 add light, 20..29 move or replace again)
+//   kind      its number in the scene, 1..63 (stable: 1..9 move the picture or replace
+//             it, 10..19 add light, 20 and up came later, of any capability)
 //   functions WGSL helpers it needs
 //   offset    moves the picture: { wgsl, js(x, y, items, b, out, ctx), whole }
 //             wgsl runs with p, it and `var o` in scope, only where p is in it.r;
@@ -35,8 +35,9 @@
 //             must then show the old page everywhere, and its js answer null.
 //             pace (optional, default 1) scales the skin's transition time for this style.
 //   exit      a way out for the elements a transition removes, in place of the
-//             crumble: { name, ms, item(rect, e, { seed, origin, whole }) ->
-//             { rect, p, q, h } | null }, chosen by transition/discard({ exit: name })
+//             crumble: { name, ms, item(rect, elapsed, { seed, origin, whole }) ->
+//             { rect, p, q, h } | null }, chosen by transition/discard({ exit: name });
+//             elapsed is the ms since the element left
 
 const table = new Map();
 let version = 0;

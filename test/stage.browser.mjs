@@ -110,6 +110,9 @@ async function run(path, browser, url) {
         stage.source.append(inputs);
       });
       const last = panelPage.getByRole('slider', { name: 'Slider 96', exact: true });
+      // Measure once the fonts have loaded (they move the layout) and the slider is in view.
+      await panelPage.evaluate(() => document.fonts.ready);
+      await last.scrollIntoViewIfNeeded();
       const box = await last.boundingBox();
       const x = Math.round(box.x + box.width / 2), y = Math.round(box.y + box.height / 2);
       // The unadorned track crosses only a few rows. The Holo thumb fills the centre.
@@ -450,6 +453,8 @@ async function run(path, browser, url) {
     const dom = await p.evaluate(() => [...document.querySelectorAll('#tags li')].map((li) => li.firstChild.textContent));
     assert.deepEqual(dom, ['Night op', 'Drones', 'Rain'], 'React and the DOM agree after a re-render');
     assert.equal(await p.locator('#stage thead button.loom-sort').count(), 2, 'the sort buttons survive React renders');
+    // React 19 sets a prop that the element has as a property: skin reaches the attribute.
+    assert.equal(await p.locator('#stage').getAttribute('skin'), 'holo');
     assert.deepEqual(await p.evaluate(() => window.__errors), []);
     assert.deepEqual(session.errors, []);
   });
@@ -465,6 +470,8 @@ async function run(path, browser, url) {
     await p.evaluate(() => window.__app.flip());
     assert.equal(await p.locator('#done').count(), 1);
     await p.waitForTimeout(400);
+    // Vue sets skin as a property too, and it must reach the attribute without a warning.
+    assert.equal(await p.locator('#stage').getAttribute('skin'), 'holo');
     assert.deepEqual(await p.evaluate(() => window.__errors), []);
     assert.deepEqual(session.errors, []);
   });

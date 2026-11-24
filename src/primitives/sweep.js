@@ -1,6 +1,10 @@
 import { definePrimitive } from '../core/primitives.js';
 
-/** A fill behind a label (charge) or a scan line crossing a rect. h.y: blend; r: rect; p: progress, mode (0 fill, 1 scan), alpha; q: rgb. */
+/**
+ * A fill behind a label (charge) or a scan line crossing a rect. The fill always paints the
+ * dark parts only, so the label stays on top; it takes no blend. r: rect; p: progress,
+ * mode (0 fill, 1 scan), alpha; q: rgb.
+ */
 export const SWEEP = definePrimitive({
   kind: 13,
   name: 'sweep',

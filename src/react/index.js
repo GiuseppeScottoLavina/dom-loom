@@ -66,12 +66,12 @@ export function useLoomTransition(ref) {
 
 /** stage.discard with a React state update that takes the element away: (el, update) => Promise. */
 export function useLoomDiscard(ref) {
-  return useCallback((el, update) => {
+  return useCallback((el, update, options) => {
     const stage = ref.current;
     if (!stage) {
       flushSync(update);
       return Promise.resolve();
     }
-    return stage.discard(el, () => flushSync(update));
+    return stage.discard(el, () => flushSync(update), options);
   }, [ref]);
 }

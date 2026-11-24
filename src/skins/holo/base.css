@@ -362,6 +362,7 @@
   border: 4px solid transparent;
   border-top-color: currentColor;
   opacity: 0.35;
+  pointer-events: none; /* a press on the arrow is a press on the header's sort button */
 }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort]) { color: var(--loom-ink); }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(th[aria-sort=ascending]:has(> button.loom-sort))::after {

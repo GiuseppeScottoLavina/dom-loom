@@ -42,7 +42,7 @@
         discard(event.target, () => setTags((t) => t.filter((x) => x !== text)));
       });
       window.__app = { rows, tags, addTag: (t) => setTags((x) => [...x, t]) };
-      return h(LoomStage, { ref: stage, id: 'stage', style: { width: '480px', display: 'block' } },
+      return h(LoomStage, { ref: stage, id: 'stage', skin: 'holo', style: { width: '480px', display: 'block' } },
         h('table', { sortable: '' },
           h('thead', null, h('tr', null,
             h('th', { 'aria-sort': sort?.column === 0 ? sort.direction : undefined }, 'Callsign'),

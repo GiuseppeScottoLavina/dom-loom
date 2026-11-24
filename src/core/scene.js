@@ -11,7 +11,7 @@ export const UNIFORM_FLOATS = 60; // 15 x vec4f
 export const FIELD_COLS = 64;
 export const FIELD_ROWS = 40;
 
-// Blend modes of PILL and SWEEP.
+// Blends of the paint primitives (PILL takes all five; TONE BEHIND, OVER, INK, INVERT; FOCUS OVER, INK).
 export const ADD = 0; // light added on top
 export const BEHIND = 1; // paints the dark parts only: text and bright lines stay on top
 export const OVER = 2; // ordinary alpha blend

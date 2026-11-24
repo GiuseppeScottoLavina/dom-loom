@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://giuseppescottolavina.github.io/dom-loom/sitemap.xml

@@ -18,7 +18,7 @@ export const DomLoom = {
   },
 };
 
-/** For a template ref to a <loom-stage>: { transition(update, options), discard(el, update) }. */
+/** For a template ref to a <loom-stage>: { transition(update, options), discard(el, update, options) }. */
 export function useLoomStage(stageRef) {
   const rendered = (update) => async () => {
     await update();
@@ -29,9 +29,9 @@ export function useLoomStage(stageRef) {
       const stage = stageRef.value;
       return stage ? stage.transition(rendered(update), options) : rendered(update)();
     },
-    discard(el, update) {
+    discard(el, update, options) {
       const stage = stageRef.value;
-      return stage ? stage.discard(el, rendered(update)) : rendered(update)();
+      return stage ? stage.discard(el, rendered(update), options) : rendered(update)();
     },
   };
 }

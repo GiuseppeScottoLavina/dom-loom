@@ -30,7 +30,7 @@
           view,
           flip: () => transition(() => { view.value = view.value === 'list' ? 'done' : 'list'; }),
         };
-        return () => h('loom-stage', { ref: stage, id: 'stage', style: 'display:block;width:480px', 'onLoom-remove': onRemove },
+        return () => h('loom-stage', { ref: stage, id: 'stage', skin: 'holo', style: 'display:block;width:480px', 'onLoom-remove': onRemove },
           view.value === 'list'
             ? h('ul', { id: 'tags' }, tags.value.map((t) => h('li', { key: t, removable: '' }, t)))
             : h('p', { id: 'done' }, 'Done.'));

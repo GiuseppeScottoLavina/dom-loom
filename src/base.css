@@ -24,6 +24,7 @@ loom-stage [role=tabpanel][hidden] { display: none !important; }
 loom-stage :where(th:has(> button.loom-sort)) { position: relative; }
 loom-stage :where(button.loom-sort) {
   position: absolute;
+  z-index: 1; /* over the header's own content, and a skin's sort arrow */
   inset: 0;
   width: 100%;
   height: 100%;

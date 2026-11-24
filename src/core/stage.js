@@ -173,6 +173,16 @@ export class LoomStage extends ElementBase {
     return this.hasAttribute('overlay');
   }
 
+  /**
+   * Sets the `overlay` attribute: true or '' for a line of light, 'left', 'right', 'top' or
+   * 'bottom' for an edge; false or null removes it. Frameworks that set properties (React 19,
+   * Vue) go through here.
+   */
+  set overlay(value) {
+    if (value === false || value == null) this.removeAttribute('overlay');
+    else this.setAttribute('overlay', value === true ? '' : String(value));
+  }
+
   /** Adds a listener on another element that is removed with the stage. */
   listenOn(target, type, listener, options = {}) {
     target.addEventListener(type, listener, { ...options, signal: this.#listeners.signal });
@@ -188,6 +198,12 @@ export class LoomStage extends ElementBase {
   /** The skin that draws this stage: its `skin` attribute, or the default one. */
   get skin() {
     return getSkin(this.getAttribute('skin'));
+  }
+
+  /** Sets the `skin` attribute to a skin's name (null removes it: the default skin). */
+  set skin(name) {
+    if (name == null || name === false || name === '') this.removeAttribute('skin');
+    else this.setAttribute('skin', typeof name === 'object' ? name.name : String(name));
   }
 
   /** The element that holds the stage's content (it moves into the canvas on the GPU path). */
@@ -1139,6 +1155,7 @@ export class LoomStage extends ElementBase {
     if (generation !== this.#generation) return;
     this.#release();
     this.dataset.renderer = 'dom';
+    delete this.dataset.mode;
     if (error) {
       this.dispatchEvent(new CustomEvent('loom-fallback', { bubbles: true, detail: { error } }));
     }
@@ -1160,5 +1177,6 @@ export class LoomStage extends ElementBase {
       canvas.remove();
     }
     if (this.isConnected) this.dataset.renderer = 'dom';
+    delete this.dataset.mode;
   }
 }
