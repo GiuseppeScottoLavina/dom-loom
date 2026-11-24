@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs';
 import { defineConfig } from 'vite';
 
 // Relative asset URLs: the demo works at the root of a site and under a project
@@ -31,8 +32,17 @@ export default defineConfig({
   // Agents work in git worktrees under .claude/ (each with its own node_modules):
   // watching them would make the dev server reload and re-optimize for every change there.
   server: { watch: { ignored: ['**/.claude/**'] } },
+  // Scan every page and test fixture at start. With build inputs set, Vite would scan only
+  // those, and a dependency first met elsewhere (vue in a fixture) would make it re-optimize
+  // mid-session and serve chunks with stale hashes (504 Outdated Optimize Dep).
+  optimizeDeps: { entries: ['*.html', 'guide/*.html', 'test/fixtures/*.html'] },
   build: {
     target: 'es2022',
+    // The demo and the guide's pages.
+    rollupOptions: {
+      input: Object.fromEntries(['index.html', ...readdirSync('guide').filter((f) => f.endsWith('.html')).map((f) => `guide/${f}`)]
+        .map((file) => [file.replace(/\.html$/, '').replace('/', '-'), file])),
+    },
     assetsInlineLimit: (file) => file.endsWith('.woff2') ? false : undefined,
   },
 });

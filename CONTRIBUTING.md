@@ -4,12 +4,12 @@ Thanks for helping. Bug reports, ideas and pull requests are welcome.
 
 ## Before you start
 
-- For a bug, open an issue with the browser and its version, the render path (`data-renderer` and `data-mode` on the stage: `webgpu`/`dom`, `native`/`polyfill`), the smallest markup that shows it, and what you expected.
+- For a bug, open an issue with the browser and its version, the render path (`data-renderer` and `data-mode` on the stage: `webgpu` or `dom`, and `native`, `native-bridged` or `polyfill`), the smallest markup that shows it, and what you expected.
 - For a new effect or component, open an issue first. DomLoom keeps a few rules (below); talking first saves you work.
 
 ## Set up
 
-Node 22 or later, and Google Chrome for the browser suites (or set `CHROME_PATH`).
+Node 22.12 or later, and Google Chrome for the browser suites (or set `CHROME_PATH`).
 
 ```sh
 npm install
@@ -21,10 +21,11 @@ npm run dev              # the demo at http://127.0.0.1:5173
 Run these before opening a pull request:
 
 ```sh
-npm test                 # unit tests of the mapper twins
+npm test                 # unit tests: the mapper twins, the shader, the stage's scheduling
 npm run test:types       # the public TypeScript types
 npm run test:browser     # Chrome with WebGPU, native and polyfill paths
 npm run test:effects     # the effect suites, each in its own process
+npm run test:guide       # every example of the guide
 npm run test:visual      # every demo stage at rest, pixel by pixel against HEAD
 ```
 

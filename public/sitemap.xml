@@ -1,8 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://giuseppescottolavina.github.io/dom-loom/</loc>
-    <changefreq>monthly</changefreq>
-    <priority>1.0</priority>
-  </url>
+  <url><loc>https://giuseppescottolavina.github.io/dom-loom/</loc></url>
+  <url><loc>https://giuseppescottolavina.github.io/dom-loom/guide/</loc></url>
+  <url><loc>https://giuseppescottolavina.github.io/dom-loom/guide/controls.html</loc></url>
+  <url><loc>https://giuseppescottolavina.github.io/dom-loom/guide/feedback.html</loc></url>
+  <url><loc>https://giuseppescottolavina.github.io/dom-loom/guide/transitions.html</loc></url>
+  <url><loc>https://giuseppescottolavina.github.io/dom-loom/guide/effects.html</loc></url>
+  <url><loc>https://giuseppescottolavina.github.io/dom-loom/guide/overlays.html</loc></url>
+  <url><loc>https://giuseppescottolavina.github.io/dom-loom/guide/skins.html</loc></url>
+  <url><loc>https://giuseppescottolavina.github.io/dom-loom/guide/frameworks.html</loc></url>
 </urlset>

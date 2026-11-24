@@ -1,6 +1,6 @@
 # Security
 
-DomLoom runs in the browser: it draws the page's own HTML through WebGPU and adds no network access, storage or evaluation of strings.
+DomLoom runs in the browser and draws the page's own HTML through WebGPU. Its own code makes no network requests, uses no storage and evaluates no strings. It loads its own chunks (the polyfill's loader and effects host) with dynamic imports, and on the polyfill path the bundled polyfill fetches the page's own images, fonts and stylesheets to draw them.
 
 ## Reporting a problem
 

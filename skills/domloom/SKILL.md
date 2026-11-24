@@ -258,7 +258,7 @@ extendSkin('holo', {
 | Symptom | First check |
 | --- | --- |
 | The controls look like unstyled HTML | Verify the entry actually imports `dom-loom/style.css` and the bundle served its CSS. Verify the controls are descendants of the stage. |
-| Styled controls, no expected effect | Inspect `await stage.ready` on the affected, visible stage. `'webgpu'` is the compositor and `stage.dataset.mode` identifies `native` or `polyfill`. `'dom'` is expected with `static`, forced colors, or unavailable WebGPU. Reduced motion can suppress a transition even on WebGPU. Also check the feature import and markup in the table. |
+| Styled controls, no expected effect | Inspect `await stage.ready` on the affected, visible stage. `'webgpu'` is the compositor and `stage.dataset.mode` identifies `native`, `native-bridged` (an earlier native draft completed by the polyfill) or `polyfill`. `'dom'` is expected with `static`, forced colors, or unavailable WebGPU. Reduced motion can suppress a transition even on WebGPU. Also check the feature import and markup in the table. |
 | Two views cut but their elements never morph | Keep the same stage, check equal visible keys on both sides, and use an unscoped transition for automatic key matching. For reordered nodes, check that each old node survives the update. |
 | An automated click immediately after startup misses | `ready` reports the renderer. Holo can still be revealing the control. For a settled-state pointer test, wait for its visible position to map to the intended live control before clicking. |
 | A removed row reappears | Cancel the request event and remove the row from framework state inside the adapter's `discard` callback. |

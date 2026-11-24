@@ -2,7 +2,7 @@
 
 All notable changes to DomLoom. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## Unreleased
 
 The first public release, 0.3.0, is waiting for `@giuseppe-scotto-lavina/html-in-canvas-polyfill` 1.0.4 on npm. Until then DomLoom builds against a patched 1.0.3 kept in `vendor/`.
 
@@ -14,7 +14,17 @@ The first public release, 0.3.0, is waiting for `@giuseppe-scotto-lavina/html-in
 - Surfaces and effects: tilting foil cards, bending carousels, elastic splitters, a magnifying loupe, a point-light surface, fluid panels.
 - Overlays: dialogs, drawers, popovers, ARIA menus and select lists drawn by transparent stages.
 - Transitions: `stage.transition(update)` with a blade cut, morph flights between states, crumbling exits, `style: 'curl'` and `style: 'melt'` cuts, and `exit: 'shatter'`; the new page stays live while they play, and ghosts are the picture as it was presented.
-- A modular build: per-component entries, a shader compiled from the primitives a page imports, a presence mask for 64 primitive kinds, and paint blends `ADD`, `BEHIND`, `OVER`, `INK`, `INVERT`.
+- A modular build: per-component entries, a shader compiled from the primitives a page imports, a presence mask for primitive kinds 1 to 63, and paint blends `ADD`, `BEHIND`, `OVER`, `INK`, `INVERT`.
 - Skins: `defineSkin` and `extendSkin`, the `holo` skin, token fallbacks that read the page, `draws` and `reticle` options.
 - React and Vue helpers, TypeScript types, and a skill for AI agents (`skills/domloom/SKILL.md`).
 - A demo console (Loadout, Ops, Roster, Supply, Comms, Archive), and browser suites on the native and polyfill paths with pixel checks of the input mapper.
+- A guide with live examples for every feature (`guide/`, published with the demo), and its browser suite (`npm run test:guide`).
+- Types for `dom-loom/core` (without the primitive kinds it does not export), for each `dom-loom/primitives/*` entry, and for the stage's behaviour API (`listen`, `draw`, `visible`, `pointOf`…).
+
+### Fixed
+
+- `skin` and `overlay` can be set as properties, as React 19 and Vue do: they reflect to the attributes (they had getters only, so React threw and Vue warned and dropped them).
+- A click on a sortable header's arrow sorts the table (the arrow was over the header's sort button).
+- With reduced motion, a held button no longer shakes while it charges, a finished hold sends no shock, and a refused tap no longer shakes.
+- `data-mode` is cleared when a stage falls back to plain HTML.
+- `useLoomDiscard` (React) and Vue's `discard` pass `{ exit }` on to the stage.

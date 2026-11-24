@@ -1,0 +1,130 @@
+title: Frameworks
+description: Use DomLoom with React, Vue, Svelte, Solid or Angular: loom-stage is a custom element, and the React and Vue helpers flush your state updates inside a transition.
+---
+      <p class="eyebrow">DomLoom guide</p>
+      <h1>Frame<span>works</span></h1>
+      <p class="lede">
+        <code>&lt;loom-stage&gt;</code> is a custom element, so it works in any framework. Two things need care. A transition
+        keeps a picture of the page before your update, so the update must be in the DOM when its callback returns. And
+        DomLoom changes the DOM of a sorted table or a removed chip only when nobody else owns it: in a framework, cancel
+        <code>loom-sort</code> and <code>loom-remove</code> and change your state instead, inside a transition or a discard.
+      </p>
+      <div class="note">
+        <p>The examples on this page are code only: they need a build step for JSX and single-file components.</p>
+      </div>
+
+      <h2 id="react">React</h2>
+      <p>
+        <code>dom-loom/react</code> has the <code>LoomStage</code> component and hooks: <code>useLoomTransition(ref)</code>
+        and <code>useLoomDiscard(ref)</code> run your state update and flush it inside the cut, and
+        <code>useLoomEvent(ref, type, handler)</code> listens to DomLoom's events. Here React owns the rows, so the
+        component cancels DomLoom's sort and sorts its state, while the rows fly:
+      </p>
+      <pre data-lang="js">
+        import { useRef, useState } from 'react';
+        import { LoomStage, useLoomEvent, useLoomTransition } from 'dom-loom/react';
+        import 'dom-loom/style.css';
+        import 'dom-loom/table';
+
+        const PLAYERS = [['Ivy', 12], ['Bram', 31], ['Osei', 7]];
+
+        export function Roster() {
+          const stage = useRef(null);
+          const [players, setPlayers] = useState(PLAYERS);
+          const [sort, setSort] = useState(null);
+          const transition = useLoomTransition(stage);
+
+          useLoomEvent(stage, 'loom-sort', (event) =&gt; {
+            event.preventDefault();
+            const { column, direction } = event.detail;
+            const sign = direction === 'ascending' ? 1 : -1;
+            const rows = [...stage.current.querySelectorAll('tbody tr')]; // before the update
+            transition(() =&gt; {
+              setSort({ column, direction });
+              setPlayers((list) =&gt; [...list].sort((a, b) =&gt; (a[column] &gt; b[column] ? sign : a[column] &lt; b[column] ? -sign : 0)));
+            }, { morph: rows, cut: false });
+          });
+
+          return (
+            &lt;LoomStage ref={stage} sound&gt;
+              &lt;table sortable=""&gt;
+                &lt;thead&gt;
+                  &lt;tr&gt;
+                    &lt;th aria-sort={sort?.column === 0 ? sort.direction : undefined}&gt;Player&lt;/th&gt;
+                    &lt;th aria-sort={sort?.column === 1 ? sort.direction : undefined}&gt;Level&lt;/th&gt;
+                  &lt;/tr&gt;
+                &lt;/thead&gt;
+                &lt;tbody&gt;
+                  {players.map(([name, level]) =&gt; &lt;tr key={name}&gt;&lt;td&gt;{name}&lt;/td&gt;&lt;td&gt;{level}&lt;/td&gt;&lt;/tr&gt;)}
+                &lt;/tbody&gt;
+              &lt;/table&gt;
+            &lt;/LoomStage&gt;
+          );
+        }
+      </pre>
+      <p>
+        A removal works the same way: cancel <code>loom-remove</code>, then call
+        <code>discard(event.target, () =&gt; setItems(…))</code> from <code>useLoomDiscard</code>; pass
+        <code>{ exit: 'shatter' }</code> as a third argument for shards. Write DomLoom's attributes as strings in JSX
+        (<code>sortable=""</code>, <code>hold="900ms"</code>); the types in <code>dom-loom/react</code> declare them.
+        <code>LoomStage</code> also takes <code>onReady</code> and <code>onFallback</code>.
+      </p>
+
+      <h2 id="vue">Vue</h2>
+      <p>
+        Tell Vue that <code>&lt;loom-stage&gt;</code> is a custom element: with <code>app.use(DomLoom)</code> for templates
+        compiled at runtime, or with <code>isCustomElement</code> in the compiler options for single-file components.
+        <code>useLoomStage(ref)</code> gives <code>transition</code> and <code>discard</code>, which wait for Vue's next tick
+        inside the cut.
+      </p>
+      <pre data-lang="js">
+        // vite.config.js
+        import vue from '@vitejs/plugin-vue';
+        import { isCustomElement } from 'dom-loom/vue';
+
+        export default { plugins: [vue({ template: { compilerOptions: { isCustomElement } } })] };
+      </pre>
+      <pre data-lang="html">
+        &lt;script setup&gt;
+        import { ref } from 'vue';
+        import { useLoomStage } from 'dom-loom/vue';
+        import 'dom-loom/core';
+        import 'dom-loom/style.css';
+
+        const stage = ref(null);
+        const boarding = ref(false);
+        const { transition } = useLoomStage(stage);
+        function changeStatus() {
+          return transition(() =&gt; { boarding.value = !boarding.value; });
+        }
+        &lt;/script&gt;
+
+        &lt;template&gt;
+          &lt;loom-stage ref="stage"&gt;
+            &lt;section&gt;
+              &lt;h2 v-if="boarding" data-morph="flight"&gt;Boarding now&lt;/h2&gt;
+              &lt;p v-else data-morph="flight"&gt;Awaiting boarding&lt;/p&gt;
+              &lt;button type="button" @click="changeStatus"&gt;Change boarding status&lt;/button&gt;
+            &lt;/section&gt;
+          &lt;/loom-stage&gt;
+        &lt;/template&gt;
+      </pre>
+      <p>For a state-owned removal, listen with <code>@loom-remove.prevent</code> and call <code>discard(item, update)</code>.</p>
+
+      <h2 id="others">Svelte, Solid, Angular</h2>
+      <p>
+        Use the element directly (Angular needs <code>CUSTOM_ELEMENTS_SCHEMA</code>), and make the transition's callback
+        wait for the framework to commit its DOM before it returns, as Svelte's <code>tick()</code> does:
+      </p>
+      <pre data-lang="js">
+        import { tick } from 'svelte';
+
+        await stage.transition(async () =&gt; {
+          showReceipt = true;
+          await tick();
+        });
+      </pre>
+      <p>
+        With server rendering, let the stage enhance the content on the client, after hydration: the stage moves its
+        content into a source wrapper when it connects. TypeScript types ship with the package.
+      </p>

@@ -10,24 +10,24 @@ Presses dent the button. Panels shatter. Tabs cut like a blade. A scope reads a 
 Underneath, it is still a real, accessible `<form>`.
 
 [![CI](https://github.com/GiuseppeScottoLavina/dom-loom/actions/workflows/ci.yml/badge.svg)](https://github.com/GiuseppeScottoLavina/dom-loom/actions/workflows/ci.yml)
-[![License: MIT](docs/badges/license-mit.svg)](LICENSE)
+[![Licence: MIT](docs/badges/licence-mit.svg)](LICENSE)
 [![WebGPU compositor](docs/badges/webgpu.svg)](#how-it-works)
 [![HTML-in-Canvas, native and polyfill](docs/badges/html-in-canvas.svg)](https://github.com/WICG/html-in-canvas)
 
-**[Live demo](https://giuseppescottolavina.github.io/dom-loom/)** · [Quick start](#quick-start) · [Elements](#what-each-element-does) · [Transitions](#transitions) · [Browsers](#browser-support) · [FAQ](#faq) · [How it works](#how-it-works)
+**[Live demo](https://giuseppescottolavina.github.io/dom-loom/)** · **[Guide](https://giuseppescottolavina.github.io/dom-loom/guide/)** · [Quick start](#quick-start) · [Elements](#what-each-element-does) · [Transitions](#transitions) · [Browsers](#browser-support) · [FAQ](#faq) · [How it works](#how-it-works)
 
 </div>
 
 DomLoom is a library of web components that draws ordinary HTML controls through one WebGPU compositor, with the motion and light of a game interface. A press dents the button under the finger, a radio selection slides to the new choice, a reticle locks onto what you point at or tab to, a hold-to-confirm button charges and fires, an invalid field glitches, and a page changes with a blade that cuts across it. The elements underneath stay real HTML: focusable, read by screen readers, validated and submitted with their form.
 
-It is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and on the effects host of [`@giuseppe-scotto-lavina/html-in-canvas-polyfill`](https://github.com/GiuseppeScottoLavina/html-in-canvas-polyfill). It runs on Chrome's own implementation (Chrome 157 and later) and on the polyfill elsewhere.
+It is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and on the effects host of [`@giuseppe-scotto-lavina/html-in-canvas-polyfill`](https://github.com/GiuseppeScottoLavina/html-in-canvas-polyfill). It runs on Chrome's own implementation (Chrome 157 and later) and, through the polyfill, in the browsers the polyfill supports that have WebGPU; anywhere else the same markup works as plain HTML. See [Browser support](#browser-support).
 
 ## Why DomLoom
 
 - **For interfaces that should feel like a game:** web games and their menus, launch and event sites, dashboards meant to impress, portfolios, tools for players. Every interaction answers with motion, light and sound.
 - **What CSS cannot do.** CSS moves, scales and clips whole boxes. DomLoom works per pixel on a picture of the live page: a shock front bends the lines of text it crosses, the old page breaks into blocks ahead of a blade, a removed panel shatters into shards that carry its own pixels, a magnifying glass really magnifies, and the new page stays clickable while the old one is still on screen.
 - **Still HTML.** You write `<form>`, `<button>`, `<meter>`, `<details>`, ARIA tabs. No new component API to learn: DomLoom recognises the standard elements inside a `<loom-stage>`. Accessibility, form validation, autofill and frameworks keep working, and without WebGPU the same markup falls back to plain CSS.
-- **Light at rest.** One canvas per stage, a shader built from the effects the page imports, and no frame rendered while nothing moves. All components: 41 KB gzip.
+- **Light at rest.** One canvas per stage, a shader built from the effects the page imports, and no frame rendered while nothing moves. Every component together: about 62 KB of JavaScript, minified and gzipped.
 
 ## See it
 
@@ -56,25 +56,33 @@ It is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and on t
 npm install dom-loom
 ```
 
+> **DomLoom 0.3.0 is not on npm yet** (it waits for a release of the polyfill it builds on). Until then, build the package from a clone: `git clone https://github.com/GiuseppeScottoLavina/dom-loom.git`, then `npm ci` and `npm pack` in it, and in your app `npm install /path/to/dom-loom-0.3.0.tgz`.
+
 For AI agents building a screen, the [DomLoom skill](skills/domloom/SKILL.md) includes a runnable form, component markup, framework recipes and browser checks.
 
-```html
-<link rel="stylesheet" href="dom-loom/style.css">
-<script type="module">import 'dom-loom';</script>
+Import the stylesheet and the library once, in your app's entry module (with a bundler such as Vite), and serve the page from `localhost` or HTTPS, which WebGPU needs:
 
+```js
+import 'dom-loom/style.css';
+import 'dom-loom';
+```
+
+Then put the controls that belong together in a stage:
+
+```html
 <loom-stage sound>
   <form>
     <label>Callsign <input name="callsign" required></label>
     <label><input type="radio" name="role" value="scout" checked> Scout</label>
     <label><input type="radio" name="role" value="medic"> Medic</label>
-    <input type="range" name="altitude" min="300" max="3000">
+    <label>Altitude <input type="range" name="altitude" min="300" max="3000"></label>
     <label><input type="checkbox" role="switch" name="nv"> Night vision</label>
     <button hold="900ms">Deploy</button>
   </form>
 </loom-stage>
 ```
 
-There is nothing else to learn for the controls themselves: DomLoom recognises the standard elements inside a stage.
+There is nothing else to learn for the controls themselves: DomLoom recognises the standard elements inside a stage. **[The guide](https://giuseppescottolavina.github.io/dom-loom/guide/)** shows every feature with a live example and its code.
 
 ### Only what you use
 
@@ -91,14 +99,19 @@ import 'dom-loom/tabs';
 @import 'dom-loom/base.css';
 @import 'dom-loom/skins/holo/base.css';      /* standard HTML */
 @import 'dom-loom/skins/holo/toast.css';     /* and the attribute components you use */
+@import 'dom-loom/skins/holo/removable.css'; /* (a toast's dismiss button) */
 ```
 
-| Entry (minified, gzip) | |
+| Entry (JavaScript, minified, gzip) | |
 | --- | --- |
-| `dom-loom/core` | 22 KB |
-| `dom-loom/core` + `dom-loom/tabs` | 24 KB |
-| `dom-loom/forms` | 27 KB |
-| `dom-loom` (all) | 41 KB |
+| `dom-loom/core` | 26 KB |
+| `dom-loom/core` + `dom-loom/tabs` | 27 KB |
+| `dom-loom/forms` | 30 KB |
+| `dom-loom` (all) | 62 KB |
+
+Measured with esbuild (`--bundle --minify`) and `gzip -9`, without the polyfill, which the first stage loads in its own chunk.
+
+The stylesheets of the components that are not standard HTML: `toast.css` (with `removable.css`, which draws the dismiss button), `removable.css`, `badge.css`, `busy.css`, `rating.css`, `dropzone.css`, `combobox.css` (also used by `select`), `carousel.css`, `split.css`, `tilt.css`, `loupe.css`, `lit.css`, `fluid.css`, `overlay.css` (`dialog`, `popover`) and `menu.css` (with `overlay.css`). `base.css` covers the standard elements.
 
 ### What each element does
 
@@ -107,7 +120,7 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, 
 | You write | What happens |
 | --- | --- |
 | `<button>`, `<summary>`, a link, a label of a radio or checkbox | Pressing dents it around the contact point; releasing sends a ring through it |
-| `<button hold="900ms">` | The button only fires after a hold (pointer, or Space / Enter on it). It charges, shakes, and bursts when it fires; a tap is refused with a shake. An activation that nobody pressed (a screen reader's, Enter in a field) arms it instead, says "activate again to confirm", and a second one within 4 seconds confirms: hold-to-confirm needs that alternative (WCAG 2.5.1). Screen readers hear "Press and hold, or activate twice, to confirm" |
+| `<button hold="900ms">` | The button only fires after a hold (pointer, or Space / Enter on it). It charges, shakes, and bursts when it fires; a tap is refused with a shake. An activation that nobody pressed (a screen reader's, Enter in a field) arms it instead, says "activate again to confirm", and a second one within 4 seconds confirms, so the button works for assistive technology that can only send a click. Screen readers hear "Press and hold, or activate twice, to confirm" |
 | Radios with the same name | The selection is a slanted fill that slides to the new choice, front edge first |
 | `<input type="checkbox" role="switch">` | A knob that stretches as it travels; the track lights up |
 | `<input type="checkbox">` | The box fills from the centre |
@@ -126,7 +139,7 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, 
 | `[removable][exit="shatter"]` (`dom-loom/shatter`) | The removed element breaks into Voronoi shards that fly off instead of crumbling; the rest still flies into the gap |
 | `[dropzone]` holding an `<input type="file">` | Files dragged over it pull the panel into a vortex at the pointer; dropped, they go to the input (its `change` fires) and the vortex collapses |
 | `[rating]` around a radio group | Stars: pointing previews, choosing lights them up one after another |
-| `[toasts]` (a list or a box) | Each child is a toast: it assembles, counts down (`data-timeout`, 5 s by default) with a bar of light, holds while pointed at or focused, and crumbles when the time is up or it is dismissed. `data-tone="good|warn|bad"`. The region is made a polite live region |
+| `[toasts]` (a list or a box) | Each child is a toast: it assembles, counts down (`data-timeout`, 5 s by default) with a bar of light, holds while pointed at or focused, and crumbles when the time is up or it is dismissed. `data-tone` is `good`, `warn` or `bad`. The region is made a polite live region |
 | `role="alert"` | When an alert appears or its text changes, it lands with a shock and its text tears for a moment |
 | `[badge]` | When its number changes, it pings (up and down sound and light differently) |
 | `aria-busy="true"` | The placeholder content is drawn as blocks and a scan passes over it while busy; when it is no longer busy the real content assembles block by block |
@@ -136,8 +149,8 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, 
 | `[split]` holding a pane, an `<hr>` and a pane | The `<hr>` is a window splitter: drag it, or focus it and use the arrow keys, Home and End (`aria-valuemin`, `aria-valuemax`, `aria-valuenow` in %). Pulled past a limit, the panes stretch like rubber and spring back |
 | `[loupe]` (a table, a block of small text; `dom-loom/loupe`) | A magnifying glass follows the mouse over the element: `loupe="3"` sets the magnification (default 2), `loupe-size="160"` its diameter. The glass really magnifies the picture, and a click inside it lands on the magnified element. On touch, press and hold shows the glass above the finger; a plain tap is left alone |
 | `[lit]` (a bordered panel; `dom-loom/lit`) | The pointer is a point light: text and borders emboss under it. `lit="0.6"` sets the intensity |
-| `[fluid]` (a readout panel; `dom-loom/fluid`) | Dragging the pointer across it stirs the content like water, and it settles. `fluid="0.5"` sets the strength. The holo skin sets `touch-action: pan-y` on it, so a finger stirs sideways and still scrolls the page; give the element the same in a custom skin |
-| `<dialog>` or `[popover]` holding `<loom-stage overlay>` | The stage is transparent around its panel (cut corners are cut out) and opens from a line of light; `overlay="left|right|top|bottom"` opens it from that edge (a drawer). A dialog closed by Escape, a `<form method="dialog">` or a `command="close"` button shuts first, then closes, with its `returnValue`. `dialog.close()` from a script closes at once, and so does a popover dismissed by a click outside |
+| `[fluid]` (a readout panel; `dom-loom/fluid`) | Dragging the pointer across it stirs the content like water, and it settles. `fluid="0.5"` sets the strength. The holo skin sets `touch-action: pan-y pinch-zoom` on it, so a finger stirs sideways and still scrolls and zooms the page; give the element the same in a custom skin |
+| `<dialog>` or `[popover]` holding `<loom-stage overlay>` | The stage is transparent around its panel (cut corners are cut out) and opens from a line of light; `overlay="left"`, `"right"`, `"top"` or `"bottom"` opens it from that edge (a drawer). A dialog closed by Escape, a `<form method="dialog">` or a `command="close"` button shuts first, then closes, with its `returnValue`. `dialog.close()` from a script closes at once, and so does a popover dismissed by a click outside |
 | `[role=menu]` in a popover's overlay stage | The ARIA menu pattern: the first item takes the focus; arrows, Home, End and a letter move it (a light follows); `menuitemcheckbox` and `menuitemradio` toggle; choosing closes the menu; Escape and Tab close it; the focus returns to the button. A popover opened by a `popovertarget` button is anchored under it (above if there is no room) and opens from that side |
 | `<select>` | A pointer opens its list inside the stage (the browser's popup cannot be drawn into a canvas). The keyboard and screen readers keep the select's own behaviour and popup |
 | `aria-current` in a list | The current page of a `<nav>` list, the place in a `nav[aria-label=breadcrumb]`, or the step of an `<ol>` with `aria-current="step"`: the marker stretches over when it moves, and a stepper's beam runs up to the current step |
@@ -164,7 +177,7 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | | |
 | --- | --- |
 | `sound` | Procedural interface sounds (WebAudio, no files), after the first gesture in the stage |
-| `haptics` | Short vibrations on toggles and on a completed hold, where the device has them |
+| `haptics` | Short vibrations where the device has them: toggles, tabs, ratings, a completed hold, a hit or a gain on a bar, an alert, a file drop |
 | `static` | Never start the compositor; plain DOM styling only |
 | `loading="lazy"` | Keeps the HTML interactive and starts the GPU within 240 CSS pixels of the viewport once scrolling settles. Focus, a pointer press or switching to `eager` starts it immediately. The default is eager. |
 | `stage.ready` | Resolves with `'webgpu'` or `'dom'`. Reading it explicitly starts a lazy stage, as does supplying React's `onReady`. |
@@ -173,7 +186,7 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | `stage.discard(el, update?, {exit})` | Removes an element with motion: it crumbles (`exit: 'shatter'` breaks it into shards), and what follows it flies into the space it leaves. A framework passes `update`, which removes it from its state |
 | `stage.reveal(el)` | Has an element that was just added assemble block by block |
 | `stage.mapPoint({x, y})` | The point of the live content shown at a visible point of the stage (CSS px), `null` where no element is shown |
-| `data-renderer`, `data-mode` | `webgpu` / `loading` / `dom`, and `native` / `polyfill` |
+| `data-renderer`, `data-mode` | `webgpu` / `loading` / `dom`; and, while the compositor runs, `native` (Chrome's own HTML-in-Canvas), `native-bridged` (an earlier native draft that the polyfill completes) or `polyfill` |
 | `loom-fallback` event | The compositor failed and the stage went back to plain DOM; `detail.error` says why |
 
 ## Browser support
@@ -181,7 +194,7 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | Path | Where | What you get |
 | --- | --- | --- |
 | Native HTML-in-Canvas + WebGPU | Chrome 157 and later | Every effect. The polyfill's core is not downloaded. |
-| Polyfill + WebGPU | Chromium browsers before 157, Safari on macOS and iPadOS, with WebGPU | Every effect, through the polyfill's snapshots. Tested on desktop Chrome and on an iPad with Safari; Edge and Firefox are not tested yet. |
+| Polyfill + WebGPU | Where the polyfill runs and the browser has WebGPU: Chrome 130 to 156, Safari 27+ on macOS, Safari on iPadOS 26+, Firefox 155+, Chrome for Android 130+ | Every effect, through the polyfill's snapshots. DomLoom is tested on desktop Chrome (native and polyfill paths) and on an iPad with Safari; Safari on macOS, Firefox, Edge and Android are not tested with DomLoom yet. |
 | No WebGPU, a GPU failure, forced colours | Any browser | The same HTML, styled in plain CSS. Holds, validation, tabs, sorting and transitions (as an instant swap) still work. |
 
 With `prefers-reduced-motion`, springs snap, transitions swap at once and nothing shakes.
@@ -192,10 +205,10 @@ With `prefers-reduced-motion`, springs snap, transitions swap at once and nothin
 They animate boxes: move, scale, fade, clip. DomLoom's effects work on the pixels of the live page (bending text under a shock, shattering a panel into shards of itself, refracting labels under moving glass, magnifying), and they stay interactive while they play: the input mapper sends a click to the element drawn under the pointer, even mid-flight. A view transition shows a screenshot that takes no input until it ends.
 
 **Is it accessible?**
-The controls are the browser's own elements, so focus, keyboard, screen readers, form validation and autofill are unchanged. A hold-to-confirm button also confirms with a double activation (WCAG 2.5.1). Reduced motion and forced colours are honoured. The browser suite compares the accessibility tree with and without the GPU.
+The controls are the browser's own elements, so focus, keyboard, screen readers, form validation and autofill are unchanged. A hold-to-confirm button also confirms with a double activation, for assistive technology that can only send a click. Reduced motion and forced colours are honoured. The browser suite compares the accessibility tree with and without the GPU.
 
 **What does it cost?**
-41 KB gzip for every component, 22 KB for the core; import only the components you use and the shader is built from their primitives alone. One canvas per stage, one GPU device for the page, and no frame at rest. On Chrome 157+ the demo loads about 66 KB gzip of JavaScript in all.
+About 62 KB of JavaScript (minified, gzip) for every component, 26 KB for the core; import only the components you use and the shader is built from their primitives alone. One canvas per stage, one GPU device for the page, and no frame at rest. On Chrome 157+ the whole demo loads about 94 KB of JavaScript, gzipped.
 
 **Does it work with React, Vue, Svelte?**
 Yes: `<loom-stage>` is a custom element. React and Vue have small helpers (`dom-loom/react`, `dom-loom/vue`) that flush your state updates inside a transition. See [Frameworks](#frameworks).
@@ -210,34 +223,69 @@ Point it at [the DomLoom skill](skills/domloom/SKILL.md): a runnable form, compo
 
 `<loom-stage>` is a custom element and works in any framework. Two things need care. A transition keeps a picture of the page before your update, so the update must be in the DOM when it returns. And DomLoom changes the DOM of a sorted table or a removed chip only when nobody else owns it: in a framework, cancel `loom-sort` and `loom-remove` and change your state instead, inside a transition or a discard.
 
-**React** (`dom-loom/react`):
+**React** (`dom-loom/react`). React owns the rows here, so the component cancels DomLoom's own sort and sorts its state inside a transition:
 
 ```jsx
-import { LoomStage, useLoomDiscard, useLoomEvent, useLoomTransition } from 'dom-loom/react';
+import { useRef, useState } from 'react';
+import { LoomStage, useLoomEvent, useLoomTransition } from 'dom-loom/react';
+import 'dom-loom/style.css';
 import 'dom-loom/table';
 
-function Roster() {
+const PLAYERS = [['Ivy', 12], ['Bram', 31], ['Osei', 7]];
+
+export function Roster() {
   const stage = useRef(null);
+  const [players, setPlayers] = useState(PLAYERS);
+  const [sort, setSort] = useState(null);
   const transition = useLoomTransition(stage); // flushes your update inside the cut
-  const discard = useLoomDiscard(stage);
-  useLoomEvent(stage, 'loom-sort', (e) => {
-    e.preventDefault();
-    const rows = [...stage.current.querySelectorAll('tbody tr')];
-    transition(() => setSort(e.detail), { morph: rows, cut: false });
+
+  useLoomEvent(stage, 'loom-sort', (event) => {
+    event.preventDefault();
+    const { column, direction } = event.detail;
+    const sign = direction === 'ascending' ? 1 : -1;
+    const rows = [...stage.current.querySelectorAll('tbody tr')]; // before the update
+    transition(() => {
+      setSort({ column, direction });
+      setPlayers((list) => [...list].sort((a, b) => (a[column] > b[column] ? sign : a[column] < b[column] ? -sign : 0)));
+    }, { morph: rows, cut: false });
   });
-  return <LoomStage ref={stage} sound><table sortable="">…</table></LoomStage>;
+
+  return (
+    <LoomStage ref={stage} sound>
+      <table sortable="">
+        <thead>
+          <tr>
+            <th aria-sort={sort?.column === 0 ? sort.direction : undefined}>Player</th>
+            <th aria-sort={sort?.column === 1 ? sort.direction : undefined}>Level</th>
+          </tr>
+        </thead>
+        <tbody>
+          {players.map(([name, level]) => <tr key={name}><td>{name}</td><td>{level}</td></tr>)}
+        </tbody>
+      </table>
+    </LoomStage>
+  );
 }
 ```
 
-Write DomLoom's attributes as strings in JSX (`sortable=""`, `hold="900ms"`); the types in `dom-loom/react` declare them.
+`useLoomDiscard(stage)` does the same for a removal: cancel `loom-remove`, then `discard(element, () => setItems(…))`. Write DomLoom's attributes as strings in JSX (`sortable=""`, `hold="900ms"`); the types in `dom-loom/react` declare them.
 
-**Vue** (`dom-loom/vue`):
+**Vue** (`dom-loom/vue`). Tell Vue that `<loom-stage>` is a custom element, in the app (runtime templates) or in the compiler (single-file components), and use the composable in a component:
 
 ```js
-import { DomLoom, isCustomElement, useLoomStage } from 'dom-loom/vue';
-app.use(DomLoom);                                  // runtime templates
-vue({ template: { compilerOptions: { isCustomElement } } }); // single-file components (vite.config)
+// main.js
+import { createApp } from 'vue';
+import { DomLoom } from 'dom-loom/vue';
+createApp(App).use(DomLoom).mount('#app');
 
+// vite.config.js
+import vue from '@vitejs/plugin-vue';
+import { isCustomElement } from 'dom-loom/vue';
+export default { plugins: [vue({ template: { compilerOptions: { isCustomElement } } })] };
+
+// a component's <script setup>, with <loom-stage ref="stage"> in its template
+import { ref } from 'vue';
+import { useLoomStage } from 'dom-loom/vue';
 const stage = ref(null);
 const { transition, discard } = useLoomStage(stage); // waits for nextTick inside the cut
 ```
@@ -276,7 +324,8 @@ Draw hooks receive `(scene, state, ctx)`; `ctx` holds `colors` (from `tokens`), 
 | `reticle` | `rect`, `alpha`, `flash` |
 | `press` | `rect`, `point`, `depth`, `released`, `t` (ms since release), `strength` |
 | `charge`, `burst`, `nudge` | `rect`, and `progress` and `holding`, or `t` |
-| `choice` (radio group), `indicator` (tabs) | `rect`, `alpha`, `motion` (the rect's springs, for speed) |
+| `choice` (radio group) | `rect`, `alpha`, `motion` (the rect's springs, for speed) |
+| `indicator` (tabs) | `rect`, `alpha`, `motion`, `list` (the tablist) |
 | `switch`, `checkbox`, `toggled` | `rect`, and `position`, `velocity`, `on`, or `amount`, or `t`, `on`, `select` |
 | `range` | `rect`, `value`, `drag`, `slosh` |
 | `field` | `rect`, `scan`, `focus`, `typing`, `invalid`, `glitch` |
@@ -288,7 +337,8 @@ Draw hooks receive `(scene, state, ctx)`; `ctx` holds `colors` (from `tokens`), 
 | `rating` | `stars` (rects), `value`, `hover`, `lit` (ms since each star lit) |
 | `drop` | `rect`, `point`, `pull` (0..1 while files hover), `dropped` (ms since the drop), `files` |
 | `interval` | `rect`, `low`, `high`, `drag` (two values), `slosh` |
-| `option` (listbox) | `rect`, `alpha`, `motion` |
+| `option` (listbox), `menuitem` (menu) | `rect`, `alpha`, `motion` |
+| `aperture` (overlay) | `rect`, `open` (0..1), `from` (0 a line of light in the middle, 1 left, 2 right, 3 top, 4 bottom), `closing` |
 | `toast` | `rect`, `left` (time left, 0..1), `paused`, `tone` |
 | `alert`, `badge` | `rect`, `t`, and `tone` or `up` |
 | `busy` | `rect`, `now` |
@@ -306,7 +356,7 @@ A token's fallback can be a function of the stage that returns a CSS colour, to 
 
 The holo material is themed with custom properties on the stage: `--loom-void`, `--loom-panel`, `--loom-line`, `--loom-ink`, `--loom-dim`, `--loom-holo`, `--loom-signal`, `--loom-warn`, `--loom-cut`, `--loom-font`, `--loom-display`, `--loom-mono`.
 
-Paint primitives take a blend in their header: `ADD` (light), `BEHIND` (only the dark parts of the picture), `OVER`, `INK` (multiplies: ink on paper, black stays black) or `INVERT` (reverses the picture). `TONE` is a screentone cut to a box (period, cover, angle, gradation) and `FOCUS` draws focus lines that converge on a clear oval; both come and go by their amount, growing and shrinking rather than fading.
+The blends of the paint primitives: `ADD` (light), `BEHIND` (only the dark parts of the picture), `OVER`, `INK` (multiplies: ink on paper, black stays black) and `INVERT` (reverses the picture). `PILL` takes all five, `TONE` takes `BEHIND`, `OVER`, `INK` and `INVERT`, `FOCUS` takes `OVER` and `INK`. `TONE` is a screentone cut to a box (period, cover, angle, gradation) and `FOCUS` draws focus lines that converge on a clear oval; both come and go by their amount, growing and shrinking rather than fading.
 
 ## How it works
 
@@ -327,20 +377,21 @@ Paint primitives take a blend in their header: `ADD` (light), `BEHIND` (only the
 - Opening or closing a `<details>` changes the height of the stage at once (the canvas must have the size of its content); the content inside slides. In a multi-column layout only the column of the `<details>` slides.
 - A press in the first moments of a flight (rows sorting) can reach nothing on Chrome's own HTML-in-Canvas: the press is mapped with the frame the browser captured for it, which may still show the row leaving. It never reaches another row.
 
-On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 190 KB of JavaScript for the whole demo, 66 KB gzip).
+On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 270 KB of JavaScript for the whole demo, 94 KB gzip, measured on a production build).
 
 ## Develop
 
-Node 22 or later.
+Node 22.12 or later.
 
 ```sh
 npm install
 npm run dev              # the demo at http://127.0.0.1:5173
-npm test                 # unit tests of the mapper twins
+npm test                 # unit tests: the mapper twins, the shader, the stage's scheduling
 npm run test:browser     # Chrome with WebGPU, native path and polyfill path
 npm run test:effects     # the loupe, lit, fluid, shatter, melt and curl suites
+npm run test:guide       # every example of the guide, on both paths
 npm run test:types       # the public TypeScript types
-npm run build            # the demo site in dist/
+npm run build            # the demo and the guide in dist/
 ```
 
 `npm run test:browser` uses `/Applications/Google Chrome.app` or `CHROME_PATH`. It checks that no frame renders at rest, compares pressed GPU pixels with the input mapper, and checks the hold guard, form validation, a click on an element in flight, the damage trail of a meter, the scoped cut of the tabs, a click on a sliding summary, sorting, the mapping of a press on a row in flight, pagination and steppers, the DOM fallback and reduced motion.
@@ -349,7 +400,7 @@ npm run build            # the demo site in dist/
 
 ### Publish the demo
 
-`.github/workflows/pages.yml` builds the demo and publishes it on GitHub Pages at every push to `main` (it runs the unit tests first). In the repository, set Settings → Pages → Source to "GitHub Actions" once. The build uses relative URLs, so the demo works under `https://<user>.github.io/<repo>/`. `node scripts/record-media.mjs` films the README's animations from the demo (Chrome and ffmpeg).
+`.github/workflows/pages.yml` builds the demo and publishes it on GitHub Pages at every push to `main` (it runs the unit tests first). In the repository, set Settings → Pages → Source to "GitHub Actions" once. The build uses relative URLs, so the demo works under `https://<user>.github.io/<repo>/`. The guide's pages are generated from `guide/src/*.html` by `node scripts/guide-page.mjs` (edit the sources, then run it). `node scripts/record-media.mjs` films the README's animations from the demo (Chrome and ffmpeg).
 
 ## Contributing
 

@@ -1,0 +1,282 @@
+title: Feedback and data
+description: Live examples of DomLoom's game bars, ARIA tabs with a blade cut, sliding details, sortable tables whose rows fly, pagination and steppers, toasts, alerts, badges, busy regions and removable chips.
+---
+      <p class="eyebrow">DomLoom guide</p>
+      <h1>Feedback <span>and data</span></h1>
+      <p class="lede">
+        Bars, tabs, disclosures, tables and notifications, written with the HTML and ARIA you already know. DomLoom
+        reacts when they change, whoever changes them: your script, the user, a framework.
+      </p>
+
+      <h2 id="bars">Meters and progress</h2>
+      <p>
+        <code>&lt;meter&gt;</code> and <code>&lt;progress&gt;</code> become game bars. A drop cuts the bar at once, sends a
+        shock through the whole stage and leaves a white trail that drains after a beat; a gain shows where the bar is
+        going and fills toward it. Meters are cut into chips (<code>segments="5"</code> sets how many,
+        <code>segments="0"</code> none) and take the colour of their region from <code>low</code>, <code>high</code> and
+        <code>optimum</code>, as HTML defines them. A <code>&lt;progress&gt;</code> without a value sweeps; reaching the end flashes.
+      </p>
+      <section class="example" id="bars-example">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <label for="hp">Health</label>
+            <meter id="hp" min="0" max="100" low="30" high="60" optimum="100" value="80">80 of 100</meter>
+            <label for="sync">Sync</label>
+            <progress id="sync" max="100" value="0">Not synced</progress>
+            <div>
+              <button type="button" data-action="hit">Take a hit</button>
+              <button type="button" data-action="heal">Heal</button>
+              <button type="button" data-action="sync">Sync save</button>
+            </div>
+          </loom-stage>
+        </script>
+        <script type="text/plain" class="example-js">
+          const stage = document.querySelector('#bars-example loom-stage');
+          const hp = stage.querySelector('#hp');
+          const sync = stage.querySelector('#sync');
+          stage.addEventListener('click', (event) => {
+            const action = event.target.closest('button')?.dataset.action;
+            if (action === 'hit') hp.value = Math.max(0, hp.value - 22);
+            if (action === 'heal') hp.value = Math.min(100, hp.value + 30);
+            if (action === 'sync') {
+              sync.removeAttribute('value'); // no value: it sweeps
+              setTimeout(() => (sync.value = 100), 1500); // then it fills and flashes
+            }
+          });
+        </script>
+        <p class="try">Take a hit twice: the bar turns amber, then red. Heal. Press Sync save.</p>
+      </section>
+      <p>
+        Add <code>ring</code> to a <code>&lt;progress&gt;</code> or a <code>&lt;meter&gt;</code> for a dial with the same
+        trail, gain preview, segments and sweep.
+      </p>
+      <section class="example" id="ring-example">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <meter ring id="signal" min="0" max="5" low="2" high="3" optimum="5" value="4" segments="5" aria-label="Signal">4 of 5</meter>
+            <button type="button">Lose signal</button>
+          </loom-stage>
+        </script>
+        <script type="text/plain" class="example-js">
+          const signal = document.querySelector('#ring-example meter');
+          document.querySelector('#ring-example button').addEventListener('click', () => {
+            signal.value = signal.value > 0 ? signal.value - 1 : 5;
+          });
+        </script>
+      </section>
+
+      <h2 id="tabs">Tabs</h2>
+      <p>
+        The ARIA tabs pattern works as written: click, the arrow keys, Home and End select a tab, and the panels are
+        shown and hidden with <code>hidden</code>. The indicator stretches to the new tab, and the panel changes with a
+        cut that runs the way you moved. Use <code>&lt;button type="button" role="tab"&gt;</code>, give each tab an id and
+        <code>aria-controls</code>, and each panel <code>role="tabpanel"</code> and <code>aria-labelledby</code>.
+      </p>
+      <section class="example" id="tabs-example">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <div role="tablist" aria-label="Character">
+              <button type="button" role="tab" id="tab-stats" aria-controls="panel-stats" aria-selected="true">Stats</button>
+              <button type="button" role="tab" id="tab-gear" aria-controls="panel-gear">Gear</button>
+              <button type="button" role="tab" id="tab-lore" aria-controls="panel-lore">Lore</button>
+            </div>
+            <section role="tabpanel" id="panel-stats" aria-labelledby="tab-stats">
+              <p>Strength 14 · Agility 18 · Will 11</p>
+            </section>
+            <section role="tabpanel" id="panel-gear" aria-labelledby="tab-gear" hidden>
+              <p>Grapnel, flare gun, two med kits.</p>
+            </section>
+            <section role="tabpanel" id="panel-lore" aria-labelledby="tab-lore" hidden>
+              <p>Raised on the night ferries, she knows every harbour by its lights.</p>
+            </section>
+          </loom-stage>
+        </script>
+        <p class="try">Click Lore, then Stats: the cut runs the way you move. Focus a tab and use the arrow keys.</p>
+      </section>
+
+      <h2 id="details">Details</h2>
+      <p>
+        Opening a <code>&lt;details&gt;</code> slides what is below down and uncovers the body behind a scan line; closing
+        shuts it upward and its last rows crumble. Clicks during the slide reach what is shown. Details that share a
+        <code>name</code> (an exclusive accordion) switch with a cut.
+      </p>
+      <section class="example" id="details-example">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <details name="quest" open>
+              <summary>Find the lighthouse keeper</summary>
+              <p>He was last seen on the north pier at dusk, carrying a lamp that was not lit.</p>
+            </details>
+            <details name="quest">
+              <summary>Repair the foghorn</summary>
+              <p>Three valves, one wrench, and a storm due before midnight.</p>
+            </details>
+            <p>Rewards are paid at the harbour office.</p>
+          </loom-stage>
+        </script>
+        <p class="try">Open Repair the foghorn: the first one closes, and the line below moves with them.</p>
+      </section>
+
+      <h2 id="tables">Sortable tables</h2>
+      <p>
+        <code>&lt;table sortable&gt;</code> makes every header of the first <code>&lt;thead&gt;</code> row a sort button
+        (<code>nosort</code> on a <code>&lt;th&gt;</code> opts out). Rows sort by <code>data-value</code> or by their text,
+        numbers as numbers, and fly to their new places on arcs. A click on a flying row reaches it. The table fires
+        <code>loom-sort</code> first (cancelable, to sort on a server or in a framework's state) and
+        <code>loom-sorted</code> once the rows are in order.
+      </p>
+      <section class="example" id="table-example">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <table sortable>
+              <thead>
+                <tr><th>Player</th><th>Level</th><th>Score</th><th nosort>Status</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Ivy</td><td>12</td><td data-value="48200">48,200</td><td>Online</td></tr>
+                <tr><td>Bram</td><td>31</td><td data-value="122900">122,900</td><td>Away</td></tr>
+                <tr><td>Osei</td><td>7</td><td data-value="9100">9,100</td><td>Online</td></tr>
+                <tr><td>Lumi</td><td>24</td><td data-value="87450">87,450</td><td>Offline</td></tr>
+              </tbody>
+            </table>
+            <output>Click a header to sort.</output>
+          </loom-stage>
+        </script>
+        <script type="text/plain" class="example-js">
+          const table = document.querySelector('#table-example table');
+          table.addEventListener('loom-sorted', (event) => {
+            const { header, direction } = event.detail;
+            table.nextElementSibling.value = `Sorted by ${header.textContent.trim()}, ${direction}.`;
+          });
+        </script>
+        <p class="try">Sort by Score, then by Level, and click a row while it flies.</p>
+      </section>
+
+      <h2 id="current">Pages and steps</h2>
+      <p>
+        Mark where the user is with <code>aria-current</code>, as you would anyway: <code>aria-current="page"</code> on
+        the current page of a <code>&lt;nav&gt;</code> list or on the last place of a <code>nav[aria-label=breadcrumb]</code>,
+        and <code>aria-current="step"</code> on the current step of an <code>&lt;ol&gt;</code>. When it moves, the marker
+        stretches over; a stepper's beam runs up to the current step. Your script moves the attribute.
+      </p>
+      <section class="example" id="current-example">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <nav aria-label="Results pages">
+              <ol>
+                <li><button type="button" aria-current="page">1</button></li>
+                <li><button type="button">2</button></li>
+                <li><button type="button">3</button></li>
+              </ol>
+            </nav>
+            <ol aria-label="Match">
+              <li>Lobby</li>
+              <li aria-current="step">Draft</li>
+              <li>Battle</li>
+              <li>Results</li>
+            </ol>
+            <button type="button" data-next>Next step</button>
+          </loom-stage>
+        </script>
+        <script type="text/plain" class="example-js">
+          const stage = document.querySelector('#current-example loom-stage');
+          stage.querySelector('nav').addEventListener('click', (event) => {
+            const page = event.target.closest('button');
+            if (!page) return;
+            for (const b of stage.querySelectorAll('nav button')) b.removeAttribute('aria-current');
+            page.setAttribute('aria-current', 'page');
+          });
+          stage.querySelector('[data-next]').addEventListener('click', () => {
+            const steps = [...stage.querySelectorAll('ol[aria-label=Match] li')];
+            const at = steps.findIndex((li) => li.getAttribute('aria-current') === 'step');
+            steps[at].removeAttribute('aria-current');
+            steps[(at + 1) % steps.length].setAttribute('aria-current', 'step');
+          });
+        </script>
+        <p class="try">Go to page 3, then press Next step a few times.</p>
+      </section>
+
+      <h2 id="notifications">Toasts, alerts, badges, busy</h2>
+      <ul>
+        <li><strong><code>toasts</code></strong> on a list or a box: each child is a toast. It assembles, counts down (<code>data-timeout</code>, 5 s by default) with a bar of light, holds while pointed at or focused, and crumbles when its time is up. <code>data-tone="good"</code>, <code>"warn"</code> or <code>"bad"</code> colours it. The region is made a polite live region.</li>
+        <li><strong><code>role="alert"</code></strong>: when an alert appears or its text changes, it lands with a shock and its text tears for a moment.</li>
+        <li><strong><code>badge</code></strong>: when its number changes, it pings; going up and going down sound and light differently.</li>
+        <li><strong><code>aria-busy="true"</code></strong>: the placeholder content is drawn as blocks with a scan over them; when it is no longer busy, the real content assembles block by block.</li>
+      </ul>
+      <section class="example" id="notify-example">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <h3>Party <span badge aria-label="players in the party">2</span></h3>
+            <div role="alert" hidden></div>
+            <p id="loot">Loot: 3 crates, 1 relic</p>
+            <div>
+              <button type="button" data-action="join">Player joins</button>
+              <button type="button" data-action="alert">Boss incoming</button>
+              <button type="button" data-action="loot">Roll loot</button>
+            </div>
+            <ol toasts aria-label="Notifications"></ol>
+          </loom-stage>
+        </script>
+        <script type="text/plain" class="example-js">
+          const stage = document.querySelector('#notify-example loom-stage');
+          const badge = stage.querySelector('[badge]');
+          const alert = stage.querySelector('[role=alert]');
+          const loot = stage.querySelector('#loot');
+          const toasts = stage.querySelector('[toasts]');
+          stage.addEventListener('click', (event) => {
+            const action = event.target.closest('button')?.dataset.action;
+            if (action === 'join') {
+              badge.textContent = Number(badge.textContent) + 1;
+              const toast = document.createElement('li');
+              toast.textContent = 'A player joined the party';
+              toast.dataset.tone = 'good';
+              toasts.append(toast);
+            }
+            if (action === 'alert') {
+              alert.textContent = 'The Warden wakes. Regroup at the gate.';
+              alert.hidden = false;
+            }
+            if (action === 'loot') {
+              loot.setAttribute('aria-busy', 'true');
+              setTimeout(() => {
+                loot.textContent = `Loot: ${1 + Math.floor(Math.random() * 6)} crates, 2 relics`;
+                loot.setAttribute('aria-busy', 'false');
+              }, 1400);
+            }
+          });
+        </script>
+        <p class="try">Press Player joins: the badge pings and a toast counts down; point at it to hold it. Press Boss incoming. Roll the loot.</p>
+      </section>
+
+      <h2 id="removable">Removable items</h2>
+      <p>
+        <code>removable</code> on a tag, a chip or a list item gives it a remove button; Delete or Backspace on the item
+        work too. Removing crumbles it and the rest flies into the gap. The item fires <code>loom-remove</code> first
+        (cancelable: a framework cancels it and removes the item from its own state). A removable item that is added
+        assembles block by block. <code>exit="shatter"</code> breaks it into shards instead (entry <code>dom-loom/shatter</code>).
+      </p>
+      <section class="example" id="removable-example">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <ul aria-label="Filters">
+              <li removable>Ranked</li>
+              <li removable>Europe</li>
+              <li removable exit="shatter">No bots</li>
+            </ul>
+            <label>Add a filter <input placeholder="Type and press Enter"></label>
+          </loom-stage>
+        </script>
+        <script type="text/plain" class="example-js">
+          const stage = document.querySelector('#removable-example loom-stage');
+          const input = stage.querySelector('input');
+          input.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' || !input.value.trim()) return;
+            const item = document.createElement('li');
+            item.setAttribute('removable', '');
+            item.textContent = input.value.trim();
+            stage.querySelector('ul').append(item);
+            input.value = '';
+          });
+        </script>
+        <p class="try">Remove Ranked, then No bots (it shatters). Add a filter of your own.</p>
+      </section>

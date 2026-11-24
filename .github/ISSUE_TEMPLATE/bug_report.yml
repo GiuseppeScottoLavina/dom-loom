@@ -30,6 +30,7 @@ body:
       description: The stage's data-renderer and data-mode attributes.
       options:
         - webgpu / native
+        - webgpu / native-bridged
         - webgpu / polyfill
         - dom (no WebGPU)
         - I don't know
