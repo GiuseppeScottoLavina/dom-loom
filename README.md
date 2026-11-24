@@ -4,7 +4,13 @@ Ordinary HTML controls drawn through one WebGPU compositor, with the motion and 
 
 DomLoom is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and on the effects host of [`@giuseppe-scotto-lavina/html-in-canvas-polyfill`](https://github.com/GiuseppeScottoLavina/html-in-canvas-polyfill). It runs on Chrome's own implementation (Chrome 157 and later) and on the polyfill elsewhere.
 
+**[Live demo](https://giuseppescottolavina.github.io/dom-loom/)** · MIT licence
+
 ## Use it
+
+```sh
+npm install dom-loom
+```
 
 For AI agents building a screen, the [DomLoom skill](skills/domloom/SKILL.md) includes a runnable form, component markup, framework recipes and browser checks.
 
@@ -268,3 +274,7 @@ npm run build            # the demo site in dist/
 `npm run test:browser` uses `/Applications/Google Chrome.app` or `CHROME_PATH`. It checks that no frame renders at rest, compares pressed GPU pixels with the input mapper, and checks the hold guard, form validation, a click on an element in flight, the damage trail of a meter, the scoped cut of the tabs, a click on a sliding summary, sorting, the mapping of a press on a row in flight, pagination and steppers, the DOM fallback and reduced motion.
 
 `npm run test:effects` runs each `test/effects-*.browser.mjs` suite in its own process, on the native path and the polyfill path. It checks that the glass really magnifies and a click inside it reaches the magnified button, that a lit surface moves no pixel, that a stirred panel settles by itself and a click lands on the button shown where the water displaced it, that shards leave through the input mapper and the picture alike, that a curling or melting page takes input only where the new page is live, and that every stage rests, with reduced motion and without WebGPU.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

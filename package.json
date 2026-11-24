@@ -4,6 +4,27 @@
   "private": true,
   "type": "module",
   "description": "Plain HTML controls drawn through a WebGPU compositor with game-grade motion and light, built on HTML-in-Canvas.",
+  "keywords": [
+    "webgpu",
+    "html-in-canvas",
+    "web-components",
+    "ui",
+    "game-ui",
+    "animation",
+    "shader",
+    "forms",
+    "transitions"
+  ],
+  "license": "MIT",
+  "author": "Giuseppe Scotto Lavina",
+  "homepage": "https://giuseppescottolavina.github.io/dom-loom/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GiuseppeScottoLavina/dom-loom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/GiuseppeScottoLavina/dom-loom/issues"
+  },
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
