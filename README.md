@@ -222,6 +222,24 @@ Every state also has `el`, the element. A skin's stylesheet styles the controls 
 
 The holo material is themed with custom properties on the stage: `--loom-void`, `--loom-panel`, `--loom-line`, `--loom-ink`, `--loom-dim`, `--loom-holo`, `--loom-signal`, `--loom-warn`, `--loom-cut`, `--loom-font`, `--loom-display`, `--loom-mono`.
 
+Paint primitives take a blend in their header: `ADD` (light), `BEHIND` (only the dark parts of the picture), `OVER`, `INK` (multiplies: ink on paper, black stays black) or `INVERT` (reverses the picture: ink turns paper-white). `TONE` is a screentone cut to a box (period, cover, angle, gradation) and `FOCUS` draws focus lines that converge on a clear oval; both come and go by their amount, growing and shrinking rather than fading to grey.
+
+### Manga (in progress)
+
+`manga` is ink on paper: nothing glows, every grey is a screentone, the selected option is a reversed panel, a press and a finished hold throw focus lines. So far it draws buttons, holds, focus, text fields, radios, checkboxes, switches and ranges; the other controls draw nothing extra yet.
+
+```js
+import 'dom-loom/base.css';
+import 'dom-loom/skins/manga.css';
+import 'dom-loom/skins/manga';
+```
+
+```html
+<loom-stage skin="manga">…</loom-stage>
+```
+
+It is themed with `--loom-ink`, `--loom-panel` (the paper), `--loom-spot` (the second colour), `--loom-void` (the page around the stage), `--loom-font` and `--loom-display`. The demo's second page, `manga.html`, is a reader survey drawn with it.
+
 ## How it works
 
 - **One stage, one canvas, one pass.** `<loom-stage>` moves its content into a `<canvas content="drawable">` and creates one effects host with one compositor plugin. Each control's behaviour describes its state every frame as a few items in a buffer: spatial items (dent, jitter, glitch, morph) move the picture, and light items (brackets, fills, rings, scan lines, liquid) are SDF shapes painted over it. There is no canvas per component.
@@ -256,7 +274,7 @@ npm install
 npm run dev              # the demo at http://127.0.0.1:5173
 npm test                 # unit tests of the mapper twins
 npm run test:browser     # Chrome with WebGPU, native path and polyfill path
-npm run test:effects     # the loupe, lit, fluid, shatter, melt and curl suites
+npm run test:effects     # the loupe, lit, fluid, shatter, melt, curl and manga suites
 npm run test:types       # the public TypeScript types
 npm run build            # the demo site in dist/
 ```

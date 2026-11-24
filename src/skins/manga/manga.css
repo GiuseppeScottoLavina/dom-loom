@@ -1,0 +1,2 @@
+/* DomLoom skin "manga": the whole material. Import it next to the base styles, and the skin module (dom-loom/skins/manga) once. */
+@import url('./base.css');

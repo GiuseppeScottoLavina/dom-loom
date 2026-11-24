@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DomLoom · manga skin</title>
+  <meta name="theme-color" content="#d8e1e5">
+  <style>html { background: #d8e1e5; color: #141215; }</style>
+  <script type="module" src="./demo/manga.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <p class="logo"><span class="logo-mark" aria-hidden="true">雷</span> Weekly Kaminari</p>
+    <p class="issue">No. 47 · Reader survey · p. 412</p>
+    <a class="other" href="./">The holo console →</a>
+  </header>
+
+  <main class="spread">
+    <section class="column" aria-labelledby="pitch">
+      <p class="eyebrow">Same HTML · <code>skin="manga"</code></p>
+      <h1 id="pitch">Ink, <span>not light.</span></h1>
+      <p class="lede">
+        The survey card is a plain <code>&lt;form&gt;</code>: checkboxes, radios, a range, a text field and a
+        submit button. One attribute puts the stage in the manga skin. Nothing glows: ink darkens the
+        paper, every grey is a screentone, and the strong moments get the lines a manga panel would draw.
+      </p>
+      <ul class="try">
+        <li><strong>Pick how you read it.</strong> The selection is a reversed panel, white on ink, and the labels flip as it slides past.</li>
+        <li><strong>Drag the hype.</strong> The fill is tone, and focus lines snap around the thumb while you hold it.</li>
+        <li><strong>Tick a fourth series.</strong> The card keeps three, and says so.</li>
+        <li><strong>Hold Send.</strong> Tone fills the button and it trembles. When it lands, the panel hits and the card turns over.</li>
+      </ul>
+    </section>
+
+    <loom-stage id="survey" class="card" skin="manga" haptics>
+      <div class="views">
+        <form id="survey-form" class="view" data-view="form">
+          <header class="card-head">
+            <div>
+              <p class="loom-caption">Reader survey · No. 47</p>
+              <h2>Who stays in Kaminari?</h2>
+            </div>
+            <p class="stamp" aria-hidden="true"><span>雷</span>Postage paid</p>
+          </header>
+          <p class="rules">Your three favourite series this week. The last one in the ranking ends at chapter 20.</p>
+
+          <fieldset class="series">
+            <legend>Favourites <output id="picked" for="series">0 / 3</output></legend>
+            <label><input type="checkbox" name="series" value="Kitsune Courier"> Kitsune Courier</label>
+            <label><input type="checkbox" name="series" value="Tidebreaker"> Tidebreaker</label>
+            <label><input type="checkbox" name="series" value="Gravity Club"> Gravity Club</label>
+            <label><input type="checkbox" name="series" value="Last Bus Samurai"> Last Bus Samurai</label>
+            <label><input type="checkbox" name="series" value="Oni Kitchen"> Oni Kitchen</label>
+            <label><input type="checkbox" name="series" value="Paper Moon Detectives"> Paper Moon Detectives</label>
+          </fieldset>
+
+          <fieldset>
+            <legend>How did you read this issue?</legend>
+            <div class="segments">
+              <label><input type="radio" name="read" value="Print" checked> Print</label>
+              <label><input type="radio" name="read" value="App"> App</label>
+              <label><input type="radio" name="read" value="Borrowed"> Borrowed</label>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <div class="field-row">
+              <label for="hype" class="loom-caption">Hype for No. 48</label>
+              <output id="hype-out" for="hype">Doki doki</output>
+            </div>
+            <input id="hype" type="range" name="hype" min="0" max="10" step="1" value="6">
+          </div>
+
+          <label class="field">
+            <span class="loom-caption">Pen name</span>
+            <input name="pen" required minlength="2" maxlength="20" autocomplete="nickname" placeholder="Inkfox">
+          </label>
+
+          <label class="draw"><input type="checkbox" role="switch" name="draw" checked> Enter the prize draw</label>
+
+          <div class="actions">
+            <button type="reset">Clear</button>
+            <button type="submit" hold="900ms">Send</button>
+          </div>
+        </form>
+
+        <section class="view receipt" data-view="receipt" aria-labelledby="receipt-title" inert>
+          <header class="card-head">
+            <div>
+              <p class="loom-caption">Postmarked · No. 47</p>
+              <h2 id="receipt-title" tabindex="-1">Vote counted</h2>
+            </div>
+            <p class="stamp" aria-hidden="true"><span>雷</span>Received</p>
+          </header>
+          <p class="votes" data-out="votes"></p>
+          <p data-out="pen"></p>
+          <div class="actions">
+            <button type="button" id="again" class="loom-primary">Fill another card</button>
+          </div>
+        </section>
+      </div>
+    </loom-stage>
+  </main>
+</body>
+</html>

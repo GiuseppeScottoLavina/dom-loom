@@ -8,7 +8,7 @@ export default defineConfig({
     name: 'demo-woff2-fonts',
     enforce: 'pre',
     transform(css, id) {
-      if (!id.includes('/@fontsource/chakra-petch/') || !id.endsWith('.css')) return;
+      if (!/\/@fontsource\/(chakra-petch|zen-kaku-gothic-new|dela-gothic-one)\//.test(id) || !id.endsWith('.css')) return;
       // The snapshotter embeds every listed source. Keep one format per Unicode range.
       return css.replace(/,\s*url\([^)]+\.woff\)\s*format\(['"]woff['"]\)/g, '');
     },
@@ -31,8 +31,13 @@ export default defineConfig({
   // Agents work in git worktrees under .claude/ (each with its own node_modules):
   // watching them would make the dev server reload and re-optimize for every change there.
   server: { watch: { ignored: ['**/.claude/**'] } },
+  // Scan both pages at start: a dependency first met on the second page would make Vite
+  // re-optimize mid-session and serve chunks with stale hashes (504 Outdated Optimize Dep).
+  optimizeDeps: { entries: ['index.html', 'manga.html'] },
   build: {
     target: 'es2022',
+    // Two pages: the holo console and the manga survey.
+    rollupOptions: { input: { main: 'index.html', manga: 'manga.html' } },
     assetsInlineLimit: (file) => file.endsWith('.woff2') ? false : undefined,
   },
 });
