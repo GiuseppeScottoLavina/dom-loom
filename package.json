@@ -25,6 +25,8 @@
     "./base.css": "./src/base.css",
     "./skins/holo.css": "./src/skins/holo/holo.css",
     "./skins/holo/*.css": "./src/skins/holo/*.css",
+    "./skins/glass": "./src/skins/glass/index.js",
+    "./skins/glass.css": "./src/skins/glass/glass.css",
     "./primitives/*": "./src/primitives/*.js",
     "./package.json": "./package.json",
     "./*": {

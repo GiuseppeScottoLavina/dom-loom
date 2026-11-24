@@ -216,6 +216,7 @@ Draw hooks receive `(scene, state, ctx)`; `ctx` holds `colors` (from `tokens`), 
 | `loupe` | `rect`, `center`, `focus`, `radius`, `mag`, `open`, `phase` |
 | `lit` | `rect`, `point`, `reach`, `power`, `open` |
 | `fluid` | `rect`, `strength` |
+| `glass` (a `[glass]` pane) | `rect`, `radius` |
 | `gauge` with `ring` | as `gauge`, with `ring: true` |
 
 Every state also has `el`, the element. A skin's stylesheet styles the controls at rest; scope its rules to `loom-stage[skin="mine"]`, and load it next to `dom-loom/base.css`, which holds what every skin relies on. `dom-loom/style.css` is base plus holo.
@@ -223,6 +224,26 @@ Every state also has `el`, the element. A skin's stylesheet styles the controls 
 A token's fallback can be a function of the stage that returns a CSS colour, to read the page around it (its background, its accent). `draws` lists the native parts a skin's hooks paint instead, which `base.css` hides on the GPU path: `'focus'` (the outline), `'thumbs'` (a range's thumb and fill), `'gauges'` (the values of meter and progress); the default is all three. `reticle: { hover: false }` keeps the reticle on keyboard focus. A stage whose page paints no panel shows its `bg` colour where the page is transparent.
 
 The holo material is themed with custom properties on the stage: `--loom-void`, `--loom-panel`, `--loom-line`, `--loom-ink`, `--loom-dim`, `--loom-holo`, `--loom-signal`, `--loom-warn`, `--loom-cut`, `--loom-font`, `--loom-display`, `--loom-mono`.
+
+### Glass
+
+`glass` is liquid glass over live content. Mark any element with the `glass` attribute (a toolbar, a dock, a floating button) and float it over content that scrolls or moves under it; the stage draws it as a pane: clear and frosted in the middle, thick at the edge, where what passes beneath bends, splits a little into red and blue, and catches the light, with a soft shadow below. The frost is the pane's own CSS background and `backdrop-filter` (`dom-loom/skins/glass.css`), painted under its lettering, so its labels stay crisp; the bend at the rim is what CSS cannot do. Input stays with the layout: a press on the rim is a press on the pane. Colours come from the page; set `--loom-glass-milk` to change the frost.
+
+```js
+import 'dom-loom/base.css';
+import 'dom-loom/skins/glass.css';
+import 'dom-loom';
+import 'dom-loom/skins/glass';
+```
+
+```html
+<loom-stage skin="glass">
+  <div class="scroller">…</div>
+  <nav glass>…</nav>
+</loom-stage>
+```
+
+The demo's `glass.html` is a reading app: an article scrolls under a glass bar, a glass dock and a glass button.
 
 Paint primitives take a blend in their header: `ADD` (light), `BEHIND` (only the dark parts of the picture), `OVER`, `INK` (multiplies: ink on paper, black stays black) or `INVERT` (reverses the picture). `TONE` is a screentone cut to a box (period, cover, angle, gradation) and `FOCUS` draws focus lines that converge on a clear oval; both come and go by their amount, growing and shrinking rather than fading.
 
@@ -260,7 +281,7 @@ npm install
 npm run dev              # the demo at http://127.0.0.1:5173
 npm test                 # unit tests of the mapper twins
 npm run test:browser     # Chrome with WebGPU, native path and polyfill path
-npm run test:effects     # the loupe, lit, fluid, shatter, melt and curl suites
+npm run test:effects     # the loupe, lit, fluid, shatter, melt, curl and glass suites
 npm run test:types       # the public TypeScript types
 npm run build            # the demo site in dist/
 ```
