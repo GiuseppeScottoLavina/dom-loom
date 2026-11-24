@@ -220,6 +220,8 @@ Draw hooks receive `(scene, state, ctx)`; `ctx` holds `colors` (from `tokens`), 
 
 Every state also has `el`, the element. A skin's stylesheet styles the controls at rest; scope its rules to `loom-stage[skin="mine"]`, and load it next to `dom-loom/base.css`, which holds what every skin relies on. `dom-loom/style.css` is base plus holo.
 
+A token's fallback can be a function of the stage that returns a CSS colour, to read the page around it (its background, its accent). `draws` lists the native parts a skin's hooks paint instead, which `base.css` hides on the GPU path: `'focus'` (the outline), `'thumbs'` (a range's thumb and fill), `'gauges'` (the values of meter and progress); the default is all three. `reticle: { hover: false }` keeps the reticle on keyboard focus. A stage whose page paints no panel shows its `bg` colour where the page is transparent.
+
 The holo material is themed with custom properties on the stage: `--loom-void`, `--loom-panel`, `--loom-line`, `--loom-ink`, `--loom-dim`, `--loom-holo`, `--loom-signal`, `--loom-warn`, `--loom-cut`, `--loom-font`, `--loom-display`, `--loom-mono`.
 
 Paint primitives take a blend in their header: `ADD` (light), `BEHIND` (only the dark parts of the picture), `OVER`, `INK` (multiplies: ink on paper, black stays black) or `INVERT` (reverses the picture). `TONE` is a screentone cut to a box (period, cover, angle, gradation) and `FOCUS` draws focus lines that converge on a clear oval; both come and go by their amount, growing and shrinking rather than fading.
