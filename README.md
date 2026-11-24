@@ -56,8 +56,6 @@ It is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and on t
 npm install dom-loom
 ```
 
-> **DomLoom 0.3.0 is not on npm yet** (it waits for a release of the polyfill it builds on). Until then, build the package from a clone: `git clone https://github.com/GiuseppeScottoLavina/dom-loom.git`, then `npm ci` and `npm pack` in it, and in your app `npm install /path/to/dom-loom-0.3.0.tgz`.
-
 For AI agents building a screen, the [DomLoom skill](skills/domloom/SKILL.md) includes a runnable form, component markup, framework recipes and browser checks.
 
 Import the stylesheet and the library once, in your app's entry module (with a bundler such as Vite), and serve the page from `localhost` or HTTPS, which WebGPU needs:

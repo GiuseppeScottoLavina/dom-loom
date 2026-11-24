@@ -1,7 +1,6 @@
 {
   "name": "dom-loom",
   "version": "0.3.0",
-  "private": true,
   "type": "module",
   "description": "Game-feel UI for plain HTML, drawn by WebGPU: presses dent, panels shatter, tabs cut like a blade. Web components on HTML-in-Canvas.",
   "keywords": [
@@ -82,7 +81,7 @@
     "test:visual": "node test/visual.mjs"
   },
   "dependencies": {
-    "@giuseppe-scotto-lavina/html-in-canvas-polyfill": "file:vendor/giuseppe-scotto-lavina-html-in-canvas-polyfill-1.0.3-domloom.1.tgz"
+    "@giuseppe-scotto-lavina/html-in-canvas-polyfill": "^1.0.4"
   },
   "devDependencies": {
     "@fontsource-variable/big-shoulders-display": "^5.3.0",
@@ -123,8 +122,5 @@
     "vue": {
       "optional": true
     }
-  },
-  "bundleDependencies": [
-    "@giuseppe-scotto-lavina/html-in-canvas-polyfill"
-  ]
+  }
 }

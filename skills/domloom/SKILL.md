@@ -19,7 +19,7 @@ Start with a working HTML interaction. Put the controls that belong together ins
 
 ## Run a complete interaction
 
-This guide targets DomLoom 0.3.0. In an existing app, use its installed DomLoom package and bundler. For a blank app, use Node 22.12+ and run `npm init -y` in the app directory. Place the supplied archive next to `package.json`, run `npm install ./dom-loom-0.3.0.tgz`, then `npm install -D vite@7.3.7`. To make the archive from the DomLoom checkout, run `npm ci` and `npm pack` there. The archive includes the project's matching HTML-in-Canvas polyfill. Serve the app on localhost or HTTPS for WebGPU.
+This guide targets DomLoom 0.3.0. In an existing app, use its installed DomLoom package and bundler. For a blank app, use Node 22.12+ and run `npm init -y` in the app directory, then `npm install dom-loom` and `npm install -D vite@7.3.7`. npm installs the HTML-in-Canvas polyfill DomLoom depends on. Serve the app on localhost or HTTPS for WebGPU.
 
 Create these two files side by side. In a blank app run `npx vite` from that directory and open the URL it prints.
 

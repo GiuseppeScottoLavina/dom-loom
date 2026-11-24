@@ -398,7 +398,7 @@ async function run(path, browser, url) {
     assert.ok(clicked, 'no point of the flight was mapped into the button');
     await page.waitForTimeout(200);
     const clicks = await page.evaluate(() => window.__clicks);
-    // One click, on the element drawn there (polyfill 1.0.3 swallows the browser's own).
+    // One click, on the element drawn there (the polyfill, since 1.0.3, swallows the browser's own).
     assert.deepEqual(clicks, ['Deploy'], `the click reached ${JSON.stringify(clicks)}`);
     assert.equal(await formActive(page), true, 'a plain click on a hold button does not submit');
     assert.ok(sawNoTarget, 'some sampled point of the old page mapped to no target');
