@@ -1050,7 +1050,7 @@ export class LoomStage extends ElementBase {
     for (const behavior of this.#behaviors) behavior.emit(scene, now);
     this.#sourceRect = null;
     this.#animating = active;
-    return { data: scene.data, count: scene.count, mask: scene.mask, uniforms: u };
+    return { data: scene.data, count: scene.count, mask: scene.mask, maskHi: scene.maskHi, uniforms: u };
   }
 
   /** @internal */

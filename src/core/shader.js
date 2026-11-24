@@ -17,7 +17,7 @@ struct Uniforms {
   scope: vec4f, // x, y, w, h of a scoped transition (w = 0: the whole stage)
   wipe2: vec4f, // direction, the cut's style (a primitive kind; 0: the blade)
   style: vec4f, // the skin's look: scan lines, chroma, crumble, hatch
-  present: vec4f, // the kinds in the scene, as a bit mask: bits 0..15 in x, bits 16..31 in y
+  present: vec4f, // the kinds in the scene, as a bit mask, 16 bits a slot: kinds 0..15 in x, .. 48..63 in w
   alpha: vec4f,   // 1: a transparent canvas; the output is premultiplied
   field: vec4f,   // displacement field: cols, rows, active
 }
@@ -35,8 +35,13 @@ struct Item { h: vec4f, r: vec4f, p: vec4f, q: vec4f }
   return vec4f(corners[i], 0.0, 1.0);
 }
 
-// A float holds integers exactly only up to 2^24: the mask comes in two halves of 16 bits.
-fn present(mask: u32) -> bool { return ((u32(u.present.x) | (u32(u.present.y) << 16u)) & mask) != 0u; }
+// A float holds integers exactly only up to 2^24: the mask comes 16 bits a slot. lo: kinds
+// 0..31, hi: kinds 32..63.
+fn present(lo: u32, hi: u32) -> bool {
+  let a = u32(u.present.x) | (u32(u.present.y) << 16u);
+  let b = u32(u.present.z) | (u32(u.present.w) << 16u);
+  return ((a & lo) | (b & hi)) != 0u;
+}
 
 fn pcg(v: u32) -> u32 {
   let state = v * 747796405u + 2891336453u;
@@ -57,6 +62,14 @@ fn sdBox(p: vec2f, b: vec2f, radius: f32) -> f32 {
   return length(max(q, vec2f(0.0))) + min(max(q.x, q.y), 0.0) - radius;
 }
 fn luma(c: vec3f) -> f32 { return dot(c, vec3f(0.2126, 0.7152, 0.0722)); }
+// Paint on the picture with coverage a: INK (3) multiplies, so black stays black and paper
+// takes the colour; INVERT (4) reverses the picture, ink to paper and paper to ink; any
+// other mode lays the colour over.
+fn paint(base: vec3f, rgb: vec3f, a: f32, mode: u32) -> vec3f {
+  if (mode == 3u) { return base * mix(vec3f(1.0), rgb, a); }
+  if (mode == 4u) { return mix(base, vec3f(1.0) - base, a); }
+  return mix(base, rgb, a);
+}
 
 // The displacement field at the canvas css point p: a bilinear sample of the grid
 // (cell centres spread over the canvas), clamped at its edges. Twin: fieldAt in core/math.js.
@@ -90,7 +103,7 @@ fn sampleGhost(p: vec2f) -> vec3f {
 const CORE = /* wgsl */ `
 // The live picture at p, displaced, with a chromatic split along the deformation.
 fn livePicture(p: vec2f) -> vec3f {
-  if (!present(SPATIAL)) { return sampleSrc(p); }
+  if (!present(SPATIAL, SPATIAL_HI)) { return sampleSrc(p); }
   let o = offsetAt(p);
   let raw = p + o;
   // Content moved in from beyond the edges is empty space (twin of mapThrough).
@@ -110,7 +123,7 @@ fn livePicture(p: vec2f) -> vec3f {
 // How opaque the live picture is at p (a transparent canvas only).
 fn liveAlpha(p: vec2f) -> f32 {
   var q = p;
-  if (present(SPATIAL)) { q = p + offsetAt(p); }
+  if (present(SPATIAL, SPATIAL_HI)) { q = p + offsetAt(p); }
   if (q.x < -0.5 || q.y < -0.5 || q.x > u.view.z + 0.5 || q.y > u.view.w + 0.5) { return 0.0; }
   return textureSampleLevel(src, samp, clamp(q, vec2f(0.0), u.view.zw) / u.view.zw, 0.0).a;
 }
@@ -138,7 +151,7 @@ fn crumbleFrom(p: vec2f, t: f32, drift: vec2f, live: bool) -> vec4f {
 // bottom edge (h.y: zone in px) and as a whole (h.z: 0..1). What shows through the
 // gaps is the panel (h.w = 0) or the live page (h.w = 1: the caller blends).
 fn ghostPicture(p: vec2f) -> vec4f {
-  if (!present(1u << 6u)) { return vec4f(0.0, 0.0, 0.0, -1.0); }
+  if (!present(1u << 6u, 0u)) { return vec4f(0.0, 0.0, 0.0, -1.0); }
   let n = u32(u.misc.x);
   for (var i = 0u; i < n; i++) {
     let it = items[i];
@@ -157,7 +170,7 @@ fn ghostPicture(p: vec2f) -> vec4f {
 }
 
 fn inMorphNow(p: vec2f) -> bool {
-  if (!present(1u << 4u)) { return false; }
+  if (!present(1u << 4u, 0u)) { return false; }
   let n = u32(u.misc.x);
   for (var i = 0u; i < n; i++) {
     let it = items[i];
@@ -168,7 +181,7 @@ fn inMorphNow(p: vec2f) -> bool {
 
 // The holographic streak that a flying element leaves behind it (w: its weight).
 fn morphTrail(p: vec2f) -> vec4f {
-  if (!present(1u << 4u)) { return vec4f(0.0); }
+  if (!present(1u << 4u, 0u)) { return vec4f(0.0); }
   var acc = vec3f(0.0);
   var weight = 0.0;
   let n = u32(u.misc.x);
@@ -200,7 +213,7 @@ fn morphTrail(p: vec2f) -> vec4f {
 }
 
 fn inMorphDest(p: vec2f, ghostSide: bool) -> bool {
-  if (!present(1u << 4u)) { return false; }
+  if (!present(1u << 4u, 0u)) { return false; }
   let n = u32(u.misc.x);
   for (var i = 0u; i < n; i++) {
     let it = items[i];
@@ -228,7 +241,7 @@ fn composeTransition(p: vec2f, light: ptr<function, vec3f>) -> vec3f {
 }
 
 fn composeCut(p: vec2f, light: ptr<function, vec3f>) -> vec3f {
-  if (present(1u << 4u)) {
+  if (present(1u << 4u, 0u)) {
     let n = u32(u.misc.x);
     for (var i = 0u; i < n; i++) {
       let it = items[i];
@@ -317,7 +330,18 @@ const TAIL = /* wgsl */ `
   return vec4f(min(color, vec3f(1.0)), 1.0);
 }`;
 
-const maskOf = (defs) => defs.reduce((m, d) => m | (1 << d.kind), 0) >>> 0;
+// The kinds of these primitives as two 32-bit words: kinds 0..31, then 32..63.
+const words = (defs) => {
+  let lo = 0;
+  let hi = 0;
+  for (const d of defs) {
+    if (d.kind < 32) lo |= 1 << d.kind;
+    else hi |= 1 << (d.kind - 32);
+  }
+  return [lo >>> 0, hi >>> 0];
+};
+// The same, as the arguments of present(lo, hi) in WGSL.
+const maskOf = (defs) => words(defs).map((w) => `${w}u`).join(', ');
 
 const chain = (defs, body) =>
   defs.map((d, i) => `${i ? ' else ' : '    '}if (kind == ${d.kind}u) {${body(d)}\n    }`).join('');
@@ -331,7 +355,7 @@ export function buildShader(defs) {
   const overCut = pictures.filter((d) => d.picture.transition);
   const lights = defs.filter((d) => d.light);
   const posts = defs.filter((d) => d.post);
-  const spatial = maskOf(offsets);
+  const [spatial, spatialHi] = words(offsets);
   const cuts = defs.filter((d) => d.cut);
 
   const offsetAt = /* wgsl */ `
@@ -351,7 +375,7 @@ ${chain(offsets, (d) => d.offset.wgsl)}
 // The part of it that moves content whole, without tearing it (no chromatic split).
 fn shiftAt(p: vec2f) -> vec2f {
   var o = vec2f(0.0);
-  if (!present(${maskOf(whole)}u)) { return o; }
+  if (!present(${maskOf(whole)})) { return o; }
   let n = u32(u.misc.x);
   for (var i = 0u; i < n; i++) {
     let it = items[i];
@@ -364,7 +388,7 @@ ${chain(whole, (d) => d.offset.wgsl)}
 `;
 
   const pictureCalls = pictures.filter((d) => !d.picture.transition).map((d) => /* wgsl */ `
-    if (!done && present(${(1 << d.kind) >>> 0}u)) {
+    if (!done && present(${maskOf([d])})) {
       let r = ${d.picture.name}(p, &light);
       if (r.w >= 0.0) {
         base = r.rgb;
@@ -393,7 +417,7 @@ ${chain(whole, (d) => d.offset.wgsl)}
     }
   }
 
-  if (present(${maskOf(lights)}u)) {
+  if (present(${maskOf(lights)})) {
     let n = u32(u.misc.x);
     for (var i = 0u; i < n; i++) {
       let it = items[i];
@@ -413,17 +437,17 @@ ${cuts.map((d) => `    if (style == ${d.kind}u) { return ${d.cut.fn}(p, sc, s, f
   const pictureFns = pictures.map((d) => d.picture.wgsl).join('\n');
   return [
     HEAD,
-    `const SPATIAL: u32 = ${spatial}u;`,
+    `const SPATIAL: u32 = ${spatial}u;\nconst SPATIAL_HI: u32 = ${spatialHi}u;`,
     functions,
     offsetAt,
     CORE.replace('/*CUTS*/', cutChain).replace('/*TRANSITION*/', overCut.map((d) => /* wgsl */ `
-  if (present(${(1 << d.kind) >>> 0}u)) {
+  if (present(${maskOf([d])})) {
     let over = ${d.picture.name}(p, light);
     if (over.w >= 0.0) { c = mix(c, over.rgb, over.w); }
   }`).join('')),
     pictureFns,
     fs + TAIL.replace('/*POST*/', posts.length ? /* wgsl */ `
-  if (present(${maskOf(posts)}u)) {
+  if (present(${maskOf(posts)})) {
     let n = u32(u.misc.x);
     for (var i = 0u; i < n; i++) {
       let it = items[i];

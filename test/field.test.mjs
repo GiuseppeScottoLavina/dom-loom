@@ -230,11 +230,30 @@ test('a cut style maps as its js says, inside the scope only', () => {
   assert.equal(mapThrough(250, 150, u, none, 0), null);
 });
 
-test('the shader emits the presence mask as unsigned integers up to kind 31', () => {
+test('the shader emits the presence mask as two unsigned words, kinds 0..31 and 32..63', () => {
   const code = buildShader([{ kind: 27, name: 'a', light: { wgsl: '' } }, { kind: 31, name: 'b', post: { wgsl: '' } }]);
-  assert.ok(code.includes(`present(${(1 << 27) >>> 0}u)`), 'kind 27');
-  assert.ok(code.includes('present(2147483648u)'), 'kind 31 does not turn negative');
-  assert.ok(code.includes('u32(u.present.y) << 16u'), 'the mask has two halves');
+  assert.ok(code.includes(`present(${(1 << 27) >>> 0}u, 0u)`), 'kind 27');
+  assert.ok(code.includes('present(2147483648u, 0u)'), 'kind 31 does not turn negative');
+  assert.ok(code.includes('u32(u.present.y) << 16u') && code.includes('u32(u.present.w) << 16u'), 'four slots of 16 bits');
+  const high = buildShader([{ kind: 40, name: 'c', light: { wgsl: '' } }, { kind: 63, name: 'd', post: { wgsl: '' } }]);
+  assert.ok(high.includes(`present(0u, ${1 << 8}u)`), 'kind 40 is bit 8 of the high word');
+  assert.ok(high.includes('present(0u, 2147483648u)'), 'kind 63 does not turn negative');
+});
+
+test('a scene marks kinds above 31 in its high word', () => {
+  const scene = new Scene();
+  scene.push(3, [0, 0, 1, 1]);
+  scene.push(33, [0, 0, 1, 1]);
+  scene.push(63, [0, 0, 1, 1]);
+  assert.equal(scene.mask, 1 << 3);
+  assert.equal(scene.maskHi >>> 0, ((1 << 1) | (1 << 31)) >>> 0);
+  scene.reset();
+  assert.deepEqual([scene.mask, scene.maskHi], [0, 0]);
+});
+
+test('a primitive kind must be in 1..63', () => {
+  assert.throws(() => definePrimitive({ kind: 64, name: 'too-far' }), RangeError);
+  assert.throws(() => definePrimitive({ kind: 0, name: 'none' }), RangeError);
 });
 
 test('the shader chains the registered cut styles after the scope check', () => {

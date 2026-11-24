@@ -15,6 +15,8 @@ export const FIELD_ROWS = 40;
 export const ADD = 0; // light added on top
 export const BEHIND = 1; // paints the dark parts only: text and bright lines stay on top
 export const OVER = 2; // ordinary alpha blend
+export const INK = 3; // ink on paper: multiplies, so black stays black and white paper takes the colour
+export const INVERT = 4; // reverses the picture (the colour is unused): ink turns paper-white, paper turns ink
 
 // Uniform slots (floats).
 export const U = {
@@ -32,7 +34,8 @@ export const U = {
   wipeStyle: 41, // the kind of the primitive that styles the cut (0: the blade)
   style: 44, // the skin's look: scan lines (0..1), chroma (0..1), crumble (0 | 1), hatch (0..1)
   present: 48, // the kinds in this frame's scene, as a bit mask: passes for absent kinds are skipped.
-  // A float holds integers exactly only up to 2^24, so the mask takes two slots: bits 0..15, then bits 16..31.
+  // A float holds integers exactly only up to 2^24, so the mask takes the four slots 16 bits at a time:
+  // kinds 0..15, 16..31, 32..47, 48..63.
   alpha: 52, // 1: the canvas is transparent (an overlay stage); the shader writes premultiplied alpha
   field: 56, // cols, rows, active (1: the displacement field is in use)
 };
@@ -45,11 +48,13 @@ export class Scene {
     this.data = new Float32Array(capacity * ITEM_FLOATS);
     this.max = capacity;
     this.count = 0;
-    this.mask = 0;
+    this.mask = 0; // kinds 0..31
+    this.maskHi = 0; // kinds 32..63
   }
   reset() {
     this.count = 0;
     this.mask = 0;
+    this.maskHi = 0;
   }
   push(kind, rect, p = ZERO, q = ZERO, h1 = 0, h2 = 0, h3 = 0) {
     if (!kind) return;
@@ -62,7 +67,8 @@ export class Scene {
     }
     const b = this.count++ * ITEM_FLOATS;
     const d = this.data;
-    this.mask |= 1 << kind;
+    if (kind < 32) this.mask |= 1 << kind;
+    else this.maskHi |= 1 << (kind - 32);
     d[b] = kind; d[b + 1] = h1; d[b + 2] = h2; d[b + 3] = h3;
     d[b + 4] = rect[0]; d[b + 5] = rect[1]; d[b + 6] = rect[2]; d[b + 7] = rect[3];
     d[b + 8] = p[0] ?? 0; d[b + 9] = p[1] ?? 0; d[b + 10] = p[2] ?? 0; d[b + 11] = p[3] ?? 0;

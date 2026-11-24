@@ -122,15 +122,20 @@ export interface PrimitiveDefinition {
 }
 export declare function definePrimitive(def: PrimitiveDefinition): number;
 
-/** Blend modes of PILL and SWEEP. */
+/** Blend modes of PILL and SWEEP (TONE and FOCUS take OVER and INK). */
 export declare const ADD: 0;
 export declare const BEHIND: 1;
 export declare const OVER: 2;
+/** Ink on paper: multiplies, so black stays black and white paper takes the colour. */
+export declare const INK: 3;
+/** Reverses the picture: ink turns paper-white and paper turns ink (the colour is unused). */
+export declare const INVERT: 4;
 
-export declare const ARC: number, BEND: number, BRACKETS: number, DENT: number, DIAMOND: number, GAUGE: number,
-  GHOST: number, GLITCH: number, JITTER: number, LENS: number, LIQUID: number, MATERIALIZE: number, MORPH: number,
-  PILL: number, RING: number, ROLL: number, SHIFT: number, STAR: number, STRETCH: number, SWEEP: number, TILT: number,
-  VORTEX: number;
+export declare const APERTURE: number, ARC: number, BEND: number, BRACKETS: number, CURL: number, DENT: number,
+  DIAMOND: number, FLUID: number, FOCUS: number, GAUGE: number, GHOST: number, GLITCH: number, JITTER: number,
+  LENS: number, LIQUID: number, LIT: number, LOUPE: number, MATERIALIZE: number, MELT: number, MORPH: number,
+  PILL: number, RING: number, ROLL: number, SHARDS: number, SHIFT: number, STAR: number, STRETCH: number,
+  SWEEP: number, TILT: number, TONE: number, VORTEX: number;
 
 export declare function audio(): AudioContext | null;
 export declare function output(): AudioNode;

@@ -1,6 +1,9 @@
 import { definePrimitive } from '../core/primitives.js';
 
-/** A rounded, optionally slanted box of light or paint. h.y: blend (ADD, BEHIND, OVER); r: rect; p: radius, skew, glow, alpha; q: rgb. */
+/**
+ * A rounded, optionally slanted box of light or paint. h.y: blend (ADD, BEHIND, OVER, INK, INVERT);
+ * r: rect; p: radius, skew, glow, alpha; q: rgb. In INK the glow is a soft ink shadow.
+ */
 export const PILL = definePrimitive({
   kind: 11,
   name: 'pill',
@@ -18,6 +21,8 @@ export const PILL = definePrimitive({
       if (mode == 1u) {
         base = mix(base, it.q.rgb, fill * (1.0 - smoothstep(0.35, 0.8, luma(base))));
         light += it.q.rgb * glow * (1.0 - fill);
+      } else if (mode >= 3u) {
+        base = paint(base, it.q.rgb, fill + glow * (1.0 - fill), mode);
       } else if (mode == 2u) {
         base = mix(base, it.q.rgb, fill);
         light += it.q.rgb * glow * (1.0 - fill);

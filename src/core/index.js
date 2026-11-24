@@ -19,6 +19,6 @@ export { LoomStage };
 export { defineBehavior } from './behaviors.js';
 export { definePrimitive } from './primitives.js';
 export { DEFAULT_SKIN, defineSkin, extendSkin, getSkin, skinNames } from './skin.js';
-export { ADD, BEHIND, OVER } from './scene.js';
+export { ADD, BEHIND, INK, INVERT, OVER } from './scene.js';
 export { audio, noise, output, tone } from './audio.js';
 export { holo } from '../skins/holo/index.js';

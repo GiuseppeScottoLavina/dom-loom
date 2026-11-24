@@ -313,9 +313,11 @@ export function createCompositor(runtime, stage) {
           uniforms[U.time] = frame.now / 1000;
           uniforms[U.dpr] = frame.dpr;
           uniforms.set(scene.uniforms.subarray(8), 8);
-          // The mask is a 32-bit integer: a float holds 24 bits exactly, so it goes in halves.
+          // The mask is two 32-bit words: a float holds 24 bits exactly, so it goes 16 bits at a time.
           uniforms[U.present] = scene.mask & 0xffff;
           uniforms[U.present + 1] = scene.mask >>> 16;
+          uniforms[U.present + 2] = scene.maskHi & 0xffff;
+          uniforms[U.present + 3] = scene.maskHi >>> 16;
           const field = stage.field;
           if (field.active && (field.dirty || !fieldCopy)) {
             device.queue.writeBuffer(fieldBuffer, 0, field.data);

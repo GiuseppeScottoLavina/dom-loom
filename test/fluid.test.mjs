@@ -181,6 +181,6 @@ test('the shader builds with the fluid primitive: offset, light, and no pass whe
   const code = buildShader(primitives.all());
   assert.ok(code.includes('fn fluidAt('));
   assert.ok(code.includes('if (kind == 26u)'));
-  assert.ok(buildShader([primitives.get(FLUID)]).includes(`present(${(1 << 26) >>> 0}u)`));
+  assert.ok(buildShader([primitives.get(FLUID)]).includes(`present(${(1 << 26) >>> 0}u, 0u)`));
   assert.ok(!buildShader([]).includes('fluidAt'));
 });

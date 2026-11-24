@@ -43,6 +43,9 @@ let version = 0;
 
 /** Registers a primitive (once per kind) and returns its kind, for scene.push(). */
 export function definePrimitive(def) {
+  if (!Number.isInteger(def.kind) || def.kind < 1 || def.kind > 63) {
+    throw new RangeError(`DomLoom: primitive kind ${def.kind} of ${def.name} is not in 1..63`);
+  }
   const known = table.get(def.kind);
   if (known && known !== def && known.name !== def.name) {
     throw new Error(`DomLoom: primitive kind ${def.kind} is both ${known.name} and ${def.name}`);
