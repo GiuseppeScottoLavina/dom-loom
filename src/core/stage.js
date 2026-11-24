@@ -659,7 +659,7 @@ export class LoomStage extends ElementBase {
     });
     content.observe(this.#source, {
       childList: true, subtree: true, attributes: true, characterData: true,
-      attributeFilter: ['hidden', 'class', 'hold', 'open', 'value', 'max', 'min', 'low', 'high', 'optimum', 'aria-selected', 'aria-current', 'segments', 'sortable', 'removable', 'list', 'aria-busy', 'ring', 'role', 'type', 'checked', 'name', 'rating', 'badge', 'toasts', 'split', 'multiple', 'size', 'nosort'],
+      attributeFilter: ['hidden', 'class', 'hold', 'open', 'value', 'max', 'min', 'low', 'high', 'optimum', 'aria-selected', 'aria-current', 'segments', 'sortable', 'removable', 'list', 'aria-busy', 'ring', 'role', 'type', 'checked', 'name', 'rating', 'badge', 'toasts', 'split', 'multiple', 'size', 'nosort', 'glass'],
     });
     this.#observers.push(adopt, content);
   }
