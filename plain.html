@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>DomLoom · plain skin</title>
+  <script type="module" src="./demo/plain.js"></script>
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><strong>Northwind</strong></li></ul>
+      <ul><li><a href="./">DomLoom holo demo</a></li></ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <hgroup>
+      <h1>Account settings</h1>
+      <p>This page is <a href="https://picocss.com">Pico CSS</a>, unchanged. The form sits in <code>&lt;loom-stage skin="plain"&gt;</code>: it keeps Pico's look and gains the stage's motion.</p>
+    </hgroup>
+
+    <loom-stage id="settings" skin="plain">
+      <form id="settings-form">
+        <fieldset>
+          <label>
+            Name
+            <input name="name" autocomplete="name" value="Ada Moreau" required>
+          </label>
+          <label>
+            Email
+            <input type="email" name="email" autocomplete="email" value="ada@northwind.test" required>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Plan</legend>
+          <label><input type="radio" name="plan" value="starter"> Starter · free</label>
+          <label><input type="radio" name="plan" value="team" checked> Team · €12 a seat</label>
+          <label><input type="radio" name="plan" value="business"> Business · €29 a seat</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Notifications</legend>
+          <label><input type="checkbox" role="switch" name="digest" checked> Weekly digest</label>
+          <label><input type="checkbox" role="switch" name="mentions" checked> Mentions</label>
+          <label><input type="checkbox" role="switch" name="billing"> Billing alerts</label>
+        </fieldset>
+
+        <button type="submit">Save changes</button>
+        <output id="saved" for="settings-form"></output>
+
+        <hr>
+
+        <article class="danger">
+          <h2>Delete account</h2>
+          <p>Removes Northwind for every member of your team. It cannot be undone.</p>
+          <button type="button" id="delete" class="secondary" hold="1500ms">Hold to delete account</button>
+          <output id="deleted"></output>
+        </article>
+      </form>
+    </loom-stage>
+  </main>
+</body>
+</html>

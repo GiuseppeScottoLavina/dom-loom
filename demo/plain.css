@@ -1,0 +1,7 @@
+/* The demo's own few rules; everything else is Pico. */
+loom-stage { margin-bottom: 4rem; }
+/* The stage draws the focus ring: Pico's own ring would double it. */
+loom-stage[data-renderer=webgpu] { --pico-outline-width: 0px; }
+#saved, #deleted { display: block; margin-top: 0.5rem; color: var(--pico-muted-color); }
+.danger { border: 1px solid var(--pico-del-color); }
+.danger h2 { font-size: 1.15rem; margin-bottom: 0.5rem; }

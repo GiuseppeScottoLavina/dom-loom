@@ -220,6 +220,24 @@ Draw hooks receive `(scene, state, ctx)`; `ctx` holds `colors` (from `tokens`), 
 
 Every state also has `el`, the element. A skin's stylesheet styles the controls at rest; scope its rules to `loom-stage[skin="mine"]`, and load it next to `dom-loom/base.css`, which holds what every skin relies on. `dom-loom/style.css` is base plus holo.
 
+A token's fallback can be a function of the stage that returns a CSS colour, to read the page around it (its background, its accent). `draws` lists the native parts a skin's hooks paint instead, which `base.css` hides on the GPU path: `'focus'` (the outline), `'thumbs'` (a range's thumb and fill), `'gauges'` (the values of meter and progress); the default is all three. `reticle: { hover: false }` keeps the reticle on keyboard focus.
+
+### Plain
+
+`plain` has no look of its own: the page keeps its CSS (its design system, a framework such as Pico, Bootstrap or Tailwind) and the stage adds motion only. A focus ring follows the keyboard from control to control with their corners, a press gives under the finger, a held button fills with the page's accent and ripples when the hold completes, a refused click and an invalid field shake. Its colours come from the page: `accent-color` (on the stage, or on the controls inside it), the text colour, and the first background behind the stage. Ranges, meters and progress bars keep the page's look.
+
+```js
+import 'dom-loom/base.css';
+import 'dom-loom';
+import 'dom-loom/skins/plain';
+```
+
+```html
+<loom-stage skin="plain"><form>…</form></loom-stage>
+```
+
+Turn off your own focus ring inside the stage on the GPU path (`loom-stage[data-renderer=webgpu]`), or the two will show together. Override the colours with `--loom-accent`, `--loom-ink` and `--loom-bg`. The demo's `plain.html` is an account settings page in Pico CSS. On the polyfill, `rem` units resolve against the snapshot's own root (1.0.3), so a rem-based page is drawn smaller than it is laid out; Chrome's native path is exact.
+
 The holo material is themed with custom properties on the stage: `--loom-void`, `--loom-panel`, `--loom-line`, `--loom-ink`, `--loom-dim`, `--loom-holo`, `--loom-signal`, `--loom-warn`, `--loom-cut`, `--loom-font`, `--loom-display`, `--loom-mono`.
 
 Paint primitives take a blend in their header: `ADD` (light), `BEHIND` (only the dark parts of the picture), `OVER`, `INK` (multiplies: ink on paper, black stays black) or `INVERT` (reverses the picture). `TONE` is a screentone cut to a box (period, cover, angle, gradation) and `FOCUS` draws focus lines that converge on a clear oval; both come and go by their amount, growing and shrinking rather than fading.
@@ -258,7 +276,7 @@ npm install
 npm run dev              # the demo at http://127.0.0.1:5173
 npm test                 # unit tests of the mapper twins
 npm run test:browser     # Chrome with WebGPU, native path and polyfill path
-npm run test:effects     # the loupe, lit, fluid, shatter, melt and curl suites
+npm run test:effects     # the loupe, lit, fluid, shatter, melt, curl and plain suites
 npm run test:types       # the public TypeScript types
 npm run build            # the demo site in dist/
 ```

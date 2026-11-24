@@ -31,8 +31,12 @@ export default defineConfig({
   // Agents work in git worktrees under .claude/ (each with its own node_modules):
   // watching them would make the dev server reload and re-optimize for every change there.
   server: { watch: { ignored: ['**/.claude/**'] } },
+  // Scan every page at start: a dependency first met on a second page would make Vite
+  // re-optimize mid-session and serve chunks with stale hashes (504 Outdated Optimize Dep).
+  optimizeDeps: { entries: ['index.html', 'plain.html'] },
   build: {
     target: 'es2022',
+    rollupOptions: { input: { main: 'index.html', plain: 'plain.html' } },
     assetsInlineLimit: (file) => file.endsWith('.woff2') ? false : undefined,
   },
 });
