@@ -1,0 +1,21 @@
+name: Idea for an effect or a component
+description: Something DomLoom could draw, with the moment it is for.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: moment
+    attributes:
+      label: The moment it is for
+      description: Which control or event, and what the person should feel. Effects in DomLoom serve a moment; they are not decoration.
+    validations:
+      required: true
+  - type: textarea
+    id: css
+    attributes:
+      label: Why CSS cannot do it
+      description: DomLoom only draws what plain CSS cannot (per-pixel work on the live page).
+  - type: textarea
+    id: html
+    attributes:
+      label: The markup you would write
+      render: html

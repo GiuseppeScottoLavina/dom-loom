@@ -1,6 +1,6 @@
 ---
 name: domloom
-description: Build, style, or debug DomLoom interfaces in vanilla JavaScript, React, or Vue. Use when a task mentions DomLoom, loom-stage, HTML-in-Canvas controls, shader-driven interaction, or morphing native HTML through the DomLoom compositor.
+description: Build, style, or debug DomLoom interfaces in vanilla JavaScript, React, or Vue. Use when a task mentions DomLoom, loom-stage, HTML-in-Canvas controls, game-feel or game-style UI on plain HTML, WebGPU effects on forms, shader-driven interaction, or morphing native HTML through the DomLoom compositor.
 ---
 
 # Build with DomLoom

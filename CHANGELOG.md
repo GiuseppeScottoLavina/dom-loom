@@ -1,0 +1,20 @@
+# Changelog
+
+All notable changes to DomLoom. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
+
+## [Unreleased]
+
+The first public release, 0.3.0, is waiting for `@giuseppe-scotto-lavina/html-in-canvas-polyfill` 1.0.4 on npm. Until then DomLoom builds against a patched 1.0.3 kept in `vendor/`.
+
+### Added
+
+- `<loom-stage>`: one canvas and one WebGPU compositor per panel, drawing the live HTML inside it through HTML-in-Canvas (native on Chrome 157+, the polyfill elsewhere), with zero frames at rest and a plain-CSS fallback without WebGPU.
+- Form controls with game feel: presses that dent, a reticle that locks onto hover and keyboard focus, hold-to-confirm buttons with a screen-reader alternative, sliding radio selections, stretching switches, liquid ranges, glitching invalid fields, rolling numbers, interval ranges, a datalist combobox.
+- Feedback and collections: game-bar meters and progress (damage trail, shock, segments, rings), ARIA tabs with a scoped blade cut, details that slide and crumble, sortable tables whose rows fly, `aria-current` markers, ratings, dropzones, removable chips, toasts, alerts, badges, busy regions.
+- Surfaces and effects: tilting foil cards, bending carousels, elastic splitters, a magnifying loupe, a point-light surface, fluid panels.
+- Overlays: dialogs, drawers, popovers, ARIA menus and select lists drawn by transparent stages.
+- Transitions: `stage.transition(update)` with a blade cut, morph flights between states, crumbling exits, `style: 'curl'` and `style: 'melt'` cuts, and `exit: 'shatter'`; the new page stays live while they play, and ghosts are the picture as it was presented.
+- A modular build: per-component entries, a shader compiled from the primitives a page imports, a presence mask for 64 primitive kinds, and paint blends `ADD`, `BEHIND`, `OVER`, `INK`, `INVERT`.
+- Skins: `defineSkin` and `extendSkin`, the `holo` skin, token fallbacks that read the page, `draws` and `reticle` options.
+- React and Vue helpers, TypeScript types, and a skill for AI agents (`skills/domloom/SKILL.md`).
+- A demo console (Loadout, Ops, Roster, Supply, Comms, Archive), and browser suites on the native and polyfill paths with pixel checks of the input mapper.

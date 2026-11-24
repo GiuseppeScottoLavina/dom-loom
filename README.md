@@ -1,12 +1,56 @@
+<div align="center">
+
+<img src="docs/media/deploy.gif" width="520" alt="A game-style loadout form: a callsign is typed, the role selection slides between options, the altitude slider sloshes like liquid, a switch lights up, and a held Deploy button bursts and cuts to the deployed receipt while the values fly into place.">
+
 # DomLoom
 
-Ordinary HTML controls drawn through one WebGPU compositor, with the motion and light of a game interface. Presses dent the button under the finger, a radio selection slides to the new choice, a reticle locks onto what you point at or tab to, a hold-to-confirm button charges and fires, and an invalid field glitches. The elements underneath stay real HTML: focusable, read by screen readers, validated and submitted with their form.
+**Game-feel UI for plain HTML, drawn by WebGPU.**
 
-DomLoom is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and on the effects host of [`@giuseppe-scotto-lavina/html-in-canvas-polyfill`](https://github.com/GiuseppeScottoLavina/html-in-canvas-polyfill). It runs on Chrome's own implementation (Chrome 157 and later) and on the polyfill elsewhere.
+Presses dent the button. Panels shatter. Tabs cut like a blade. A scope reads a map.<br>
+Underneath, it is still a real, accessible `<form>`.
 
-**[Live demo](https://giuseppescottolavina.github.io/dom-loom/)** · MIT licence
+[![CI](https://github.com/GiuseppeScottoLavina/dom-loom/actions/workflows/ci.yml/badge.svg)](https://github.com/GiuseppeScottoLavina/dom-loom/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![WebGPU](https://img.shields.io/badge/WebGPU-compositor-7ff0ff)](#how-it-works)
+[![HTML-in-Canvas](https://img.shields.io/badge/HTML--in--Canvas-native%20%2B%20polyfill-ff3d6e)](https://github.com/WICG/html-in-canvas)
 
-## Use it
+**[Live demo](https://giuseppescottolavina.github.io/dom-loom/)** · [Quick start](#quick-start) · [Elements](#what-each-element-does) · [Transitions](#transitions) · [Browsers](#browser-support) · [FAQ](#faq) · [How it works](#how-it-works)
+
+</div>
+
+DomLoom is a library of web components that draws ordinary HTML controls through one WebGPU compositor, with the motion and light of a game interface. A press dents the button under the finger, a radio selection slides to the new choice, a reticle locks onto what you point at or tab to, a hold-to-confirm button charges and fires, an invalid field glitches, and a page changes with a blade that cuts across it. The elements underneath stay real HTML: focusable, read by screen readers, validated and submitted with their form.
+
+It is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and on the effects host of [`@giuseppe-scotto-lavina/html-in-canvas-polyfill`](https://github.com/GiuseppeScottoLavina/html-in-canvas-polyfill). It runs on Chrome's own implementation (Chrome 157 and later) and on the polyfill elsewhere.
+
+## Why DomLoom
+
+- **For interfaces that should feel like a game:** web games and their menus, launch and event sites, dashboards meant to impress, portfolios, tools for players. Every interaction answers with motion, light and sound.
+- **What CSS cannot do.** CSS moves, scales and clips whole boxes. DomLoom works per pixel on a picture of the live page: a shock front bends the lines of text it crosses, the old page breaks into blocks ahead of a blade, a removed panel shatters into shards that carry its own pixels, a magnifying glass really magnifies, and the new page stays clickable while the old one is still on screen.
+- **Still HTML.** You write `<form>`, `<button>`, `<meter>`, `<details>`, ARIA tabs. No new component API to learn: DomLoom recognises the standard elements inside a `<loom-stage>`. Accessibility, form validation, autofill and frameworks keep working, and without WebGPU the same markup falls back to plain CSS.
+- **Light at rest.** One canvas per stage, a shader built from the effects the page imports, and no frame rendered while nothing moves. All components: 41 KB gzip.
+
+## See it
+
+<table>
+<tr>
+<td width="50%"><img src="docs/media/ops.gif" alt="A tactical panel: Take a hit drops the hull bar at once, a shock bends the panel and a white trail drains; the shield loses a cell; Open uplink sweeps then fills; tabs change with a slanted blade cut." width="100%"></td>
+<td width="50%"><img src="docs/media/abort.gif" alt="A confirmed Abort mission: the panel's controls crack, hold for a beat, break into large shards that fall carrying their bars and labels, then ABORTED assembles in their place." width="100%"></td>
+</tr>
+<tr>
+<td><b>Damage you can read.</b> <code>&lt;meter&gt;</code> and <code>&lt;progress&gt;</code> become game bars: a hit cuts the bar, shakes the panel and leaves a trail. ARIA tabs cut with a blade.</td>
+<td><b>Irreversible, and it shows.</b> <code>exit: 'shatter'</code> breaks what an update removes into shards made of its own pixels.</td>
+</tr>
+<tr>
+<td><img src="docs/media/roster.gif" alt="A sortable table: clicking a column header sorts it and the rows fly on arcs to their new places, leaving streaks." width="100%"></td>
+<td><img src="docs/media/scope.gif" alt="A dense tactical map too small to read: a magnifying scope follows the pointer and enlarges labels, drone times and coordinates." width="100%"></td>
+</tr>
+<tr>
+<td><b>Sort it, watch it move.</b> <code>&lt;table sortable&gt;</code>: the rows fly to their new places, and a click on a flying row reaches it.</td>
+<td><b>Read what is too small.</b> <code>[loupe]</code> magnifies the live picture; a click inside the glass lands on what it shows.</td>
+</tr>
+</table>
+
+## Quick start
 
 ```sh
 npm install dom-loom
@@ -55,6 +99,8 @@ import 'dom-loom/tabs';
 | `dom-loom/core` + `dom-loom/tabs` | 24 KB |
 | `dom-loom/forms` | 27 KB |
 | `dom-loom` (all) | 41 KB |
+
+### What each element does
 
 Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, `popover`, `menu`, `select`, `gauge`, `tabs`, `details`, `table`, `current`, `rating`, `dropzone`, `removable`, `combobox`, `toast`, `alert`, `badge`, `busy`, `tilt`, `carousel`, `split`, `loupe`, `lit`, `fluid`. Cuts and exits: `curl`, `melt`, `shatter` (see Transitions). A component imported later (a lazy chunk) joins the stages already running. The polyfill and the effects host are loaded by the first stage that starts, in their own chunks.
 
@@ -129,6 +175,36 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | `stage.mapPoint({x, y})` | The point of the live content shown at a visible point of the stage (CSS px), `null` where no element is shown |
 | `data-renderer`, `data-mode` | `webgpu` / `loading` / `dom`, and `native` / `polyfill` |
 | `loom-fallback` event | The compositor failed and the stage went back to plain DOM; `detail.error` says why |
+
+## Browser support
+
+| Path | Where | What you get |
+| --- | --- | --- |
+| Native HTML-in-Canvas + WebGPU | Chrome 157 and later | Every effect. The polyfill's core is not downloaded. |
+| Polyfill + WebGPU | Chromium browsers before 157, Safari on macOS and iPadOS, with WebGPU | Every effect, through the polyfill's snapshots. Tested on desktop Chrome and on an iPad with Safari; Edge and Firefox are not tested yet. |
+| No WebGPU, a GPU failure, forced colours | Any browser | The same HTML, styled in plain CSS. Holds, validation, tabs, sorting and transitions (as an instant swap) still work. |
+
+With `prefers-reduced-motion`, springs snap, transitions swap at once and nothing shakes.
+
+## FAQ
+
+**Why not CSS animations, or the View Transitions API?**
+They animate boxes: move, scale, fade, clip. DomLoom's effects work on the pixels of the live page (bending text under a shock, shattering a panel into shards of itself, refracting labels under moving glass, magnifying), and they stay interactive while they play: the input mapper sends a click to the element drawn under the pointer, even mid-flight. A view transition shows a screenshot that takes no input until it ends.
+
+**Is it accessible?**
+The controls are the browser's own elements, so focus, keyboard, screen readers, form validation and autofill are unchanged. A hold-to-confirm button also confirms with a double activation (WCAG 2.5.1). Reduced motion and forced colours are honoured. The browser suite compares the accessibility tree with and without the GPU.
+
+**What does it cost?**
+41 KB gzip for every component, 22 KB for the core; import only the components you use and the shader is built from their primitives alone. One canvas per stage, one GPU device for the page, and no frame at rest. On Chrome 157+ the demo loads about 66 KB gzip of JavaScript in all.
+
+**Does it work with React, Vue, Svelte?**
+Yes: `<loom-stage>` is a custom element. React and Vue have small helpers (`dom-loom/react`, `dom-loom/vue`) that flush your state updates inside a transition. See [Frameworks](#frameworks).
+
+**Can it look different?**
+The look is a skin: draw hooks that turn each control's state into compositor primitives, plus a stylesheet for the controls at rest. `holo` is the default; you can theme it with CSS custom properties or [write your own](#skins).
+
+**I build with an AI agent.**
+Point it at [the DomLoom skill](skills/domloom/SKILL.md): a runnable form, component markup, framework recipes and the checks to run in a browser.
 
 ## Frameworks
 
@@ -253,10 +329,6 @@ Paint primitives take a blend in their header: `ADD` (light), `BEHIND` (only the
 
 On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 190 KB of JavaScript for the whole demo, 66 KB gzip).
 
-## Publish the demo
-
-`.github/workflows/pages.yml` builds the demo and publishes it on GitHub Pages at every push to `main` (it runs the unit tests first). In the repository, set Settings → Pages → Source to "GitHub Actions" once. The build uses relative URLs, so the demo works under `https://<user>.github.io/<repo>/`.
-
 ## Develop
 
 Node 22 or later.
@@ -274,6 +346,14 @@ npm run build            # the demo site in dist/
 `npm run test:browser` uses `/Applications/Google Chrome.app` or `CHROME_PATH`. It checks that no frame renders at rest, compares pressed GPU pixels with the input mapper, and checks the hold guard, form validation, a click on an element in flight, the damage trail of a meter, the scoped cut of the tabs, a click on a sliding summary, sorting, the mapping of a press on a row in flight, pagination and steppers, the DOM fallback and reduced motion.
 
 `npm run test:effects` runs each `test/effects-*.browser.mjs` suite in its own process, on the native path and the polyfill path. It checks that the glass really magnifies and a click inside it reaches the magnified button, that a lit surface moves no pixel, that a stirred panel settles by itself and a click lands on the button shown where the water displaced it, that shards leave through the input mapper and the picture alike, that a curling or melting page takes input only where the new page is live, and that every stage rests, with reduced motion and without WebGPU.
+
+### Publish the demo
+
+`.github/workflows/pages.yml` builds the demo and publishes it on GitHub Pages at every push to `main` (it runs the unit tests first). In the repository, set Settings → Pages → Source to "GitHub Actions" once. The build uses relative URLs, so the demo works under `https://<user>.github.io/<repo>/`. `node scripts/record-media.mjs` films the README's animations from the demo (Chrome and ffmpeg).
+
+## Contributing
+
+Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md); report security problems as [SECURITY.md](SECURITY.md) says.
 
 ## Licence
 
