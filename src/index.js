@@ -53,6 +53,7 @@ export { LOUPE } from './primitives/loupe.js';
 export { MATERIALIZE } from './primitives/materialize.js';
 export { MELT } from './primitives/melt.js';
 export { MORPH } from './primitives/morph.js';
+export { OUTLINE } from './primitives/outline.js';
 export { PILL } from './primitives/pill.js';
 export { RING } from './primitives/ring.js';
 export { ROLL } from './primitives/roll.js';

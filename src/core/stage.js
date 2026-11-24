@@ -611,10 +611,14 @@ export class LoomStage extends ElementBase {
   }
 
   #readColors() {
+    // The native parts this skin paints itself (base.css hides them on the GPU path).
+    this.dataset.draws = (this.skin?.draws ?? ['focus', 'thumbs', 'gauges']).join(' ');
     const probes = Object.entries(this.skin?.tokens ?? {}).map(([name, [property, fallback]]) => {
       const probe = document.createElement('span');
       probe.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;';
-      probe.style.color = `var(${property}, ${fallback})`;
+      // A function fallback reads the page around the stage (its background, its accent colour).
+      const value = typeof fallback === 'function' ? fallback(this) : fallback;
+      probe.style.color = `var(${property}, ${value})`;
       return [name, probe];
     });
     // Resolve every token against the same stage, with no style writes between reads.

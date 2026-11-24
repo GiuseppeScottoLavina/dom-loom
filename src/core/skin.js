@@ -31,7 +31,8 @@ const pending = new Map(); // draw hooks for skins not defined yet
  * Registers a skin. Stages that use its name pick it up at once.
  * @param {object} skin
  * @param {string} skin.name
- * @param {Record<string, [string, string]>} [skin.tokens]  colour name -> [custom property, fallback]
+ * @param {Record<string, [string, string | ((stage: HTMLElement) => string)]>} [skin.tokens]  colour name ->
+ *   [custom property, fallback]; a function fallback reads the page around the stage and returns a CSS colour
  * @param {Record<string, Function>} [skin.draw]  draw hooks: (scene, state, ctx) => void
  * @param {Record<string, Function>} [skin.sounds]  sound hooks, called after a user gesture with `sound` on
  * @param {object} [skin.shader]  scanlines (0..1), chroma (0..1), crumble (0 | 1), hatch (0..1)
@@ -39,6 +40,9 @@ const pending = new Map(); // draw hooks for skins not defined yet
  * @param {object|null} [skin.boot]  { ms } of the sweep that reveals a stage, null for none
  * @param {object} [skin.durations]  see DURATIONS
  * @param {object} [skin.disclosure]  crumble: px of a closing body that crumble away
+ * @param {string[]} [skin.draws]  the native parts the hooks paint instead, hidden on the GPU path:
+ *   'focus' (the outline), 'thumbs' (a range's thumb and fill), 'gauges' (the values of meter and progress)
+ * @param {object} [skin.reticle]  hover: false keeps the reticle on keyboard focus only
  */
 export function defineSkin(skin) {
   if (!skin || typeof skin.name !== 'string' || !skin.name) throw new TypeError('defineSkin: a skin needs a name');
@@ -53,6 +57,8 @@ export function defineSkin(skin) {
     boot: skin.boot === undefined ? { ms: 760 } : skin.boot,
     durations: { ...DURATIONS, ...skin.durations },
     disclosure: { crumble: 0, ...skin.disclosure },
+    draws: [...(skin.draws ?? ['focus', 'thumbs', 'gauges'])],
+    reticle: { hover: true, ...skin.reticle },
     // Which of its colours the compositor uses for the cut's blade, its rim light,
     // the panel behind moved content, and empty space.
     roles: { hot: 'hot', rim: 'rim', bg: 'bg', void: 'void', ...skin.roles },

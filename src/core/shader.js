@@ -90,13 +90,19 @@ fn fieldAt(p: vec2f) -> vec2f {
   return top + (bottom - top) * f.y;
 }
 
+// The pictures are premultiplied. On an opaque canvas what the page leaves transparent shows
+// the stage's background (a page whose own CSS paints no panel); a transparent canvas keeps it.
+fn overBg(c: vec4f) -> vec3f {
+  if (u.alpha.x > 0.5) { return c.rgb; }
+  return c.rgb + u.bg.rgb * (1.0 - c.a);
+}
 fn sampleSrc(p: vec2f) -> vec3f {
-  return textureSampleLevel(src, samp, p / u.view.zw, 0.0).rgb;
+  return overBg(textureSampleLevel(src, samp, p / u.view.zw, 0.0));
 }
 fn sampleGhost(p: vec2f) -> vec3f {
   if (u.ghost.z < 0.5) { return u.bg.rgb; }
   if (p.x > u.ghost.x + 0.5 || p.y > u.ghost.y + 0.5) { return u.bg.rgb; }
-  return textureSampleLevel(ghostTex, samp, p / u.ghost.xy, 0.0).rgb;
+  return overBg(textureSampleLevel(ghostTex, samp, p / u.ghost.xy, 0.0));
 }
 `;
 

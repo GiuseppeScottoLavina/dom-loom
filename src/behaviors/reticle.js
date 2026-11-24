@@ -12,14 +12,17 @@ export class Reticle {
     this.flash = 0;
     this.keyboard = false; // the last input was the keyboard: the reticle follows focus
     const root = stage.source;
+    // A skin can keep the reticle on keyboard focus only (reticle: { hover: false }).
+    const hovers = () => stage.skin?.reticle?.hover !== false;
     stage.listen('pointerover', (e) => {
-      if (e.pointerType === 'touch' || this.keyboard) return;
+      if (e.pointerType === 'touch' || this.keyboard || !hovers()) return;
       this.hover = targetFor(e.target, root);
       this.retarget(true);
     });
     stage.listen('pointermove', (e) => {
       if (!this.keyboard || e.pointerType === 'touch') return;
       this.keyboard = false;
+      if (!hovers()) return;
       this.hover = targetFor(e.target, root);
       this.retarget(true);
     });

@@ -81,8 +81,8 @@ export type DrawHook = (scene: SceneLike, state: Record<string, any>, ctx: DrawC
 
 export interface SkinDefinition {
   name: string;
-  /** Colour name -> [custom property, fallback]. */
-  tokens?: Record<string, [string, string]>;
+  /** Colour name -> [custom property, fallback]. A function fallback reads the page around the stage and returns a CSS colour. */
+  tokens?: Record<string, [string, string | ((stage: HTMLElement) => string)]>;
   /** Which tokens the compositor uses for the cut's blade, its rim light, the panel and empty space. */
   roles?: Partial<Record<'hot' | 'rim' | 'bg' | 'void', string>>;
   draw?: Record<string, DrawHook>;
@@ -92,6 +92,10 @@ export interface SkinDefinition {
   boot?: { ms: number } | null;
   durations?: Partial<Record<string, number>>;
   disclosure?: { crumble?: number };
+  /** The native parts the hooks paint instead, hidden on the GPU path (default: all three). */
+  draws?: Array<'focus' | 'thumbs' | 'gauges'>;
+  /** hover: false keeps the reticle on keyboard focus only. */
+  reticle?: { hover?: boolean };
 }
 
 export type Skin = Readonly<Required<SkinDefinition>>;
@@ -134,7 +138,7 @@ export declare const INVERT: 4;
 export declare const APERTURE: number, ARC: number, BEND: number, BRACKETS: number, CURL: number, DENT: number,
   DIAMOND: number, FLUID: number, FOCUS: number, GAUGE: number, GHOST: number, GLITCH: number, JITTER: number,
   LENS: number, LIQUID: number, LIT: number, LOUPE: number, MATERIALIZE: number, MELT: number, MORPH: number,
-  PILL: number, RING: number, ROLL: number, SHARDS: number, SHIFT: number, STAR: number, STRETCH: number,
+  OUTLINE: number, PILL: number, RING: number, ROLL: number, SHARDS: number, SHIFT: number, STAR: number, STRETCH: number,
   SWEEP: number, TILT: number, TONE: number, VORTEX: number;
 
 export declare function audio(): AudioContext | null;

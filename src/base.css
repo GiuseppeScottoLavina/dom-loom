@@ -106,19 +106,21 @@ loom-stage .loom-live {
 loom-stage[overlay] { background: transparent; }
 
 /* ---------------------------------------------------------------- GPU path */
-/* The skin's draw hooks paint focus, thumbs and fills; the DOM keeps the static parts. */
+/* The skin's draw hooks paint what its definition lists in `draws` (data-draws on the stage):
+ * focus, thumbs (a range's thumb and fill), gauges (the values of meter and progress). The
+ * DOM keeps the static parts, and everything a skin leaves to the page. */
 /* (A range's CSS fill is set while the stage is plain DOM; it must not stay in the picture.) */
-loom-stage[data-renderer=webgpu] :where(input[type=range]) { --loom-fill: 0% !important; }
-loom-stage[data-renderer=webgpu] :focus-visible { outline: none; }
-loom-stage[data-renderer=webgpu] :where(input[type=range])::-webkit-slider-thumb { opacity: 0; }
-loom-stage[data-renderer=webgpu] :where(input[type=range])::-moz-range-thumb { opacity: 0; }
-loom-stage[data-renderer=webgpu] :where(input[type=range])::-moz-range-progress { background: transparent; }
-loom-stage[data-renderer=webgpu] :where(progress)::-webkit-progress-value { background: transparent; }
-loom-stage[data-renderer=webgpu] :where(progress)::-moz-progress-bar { background: transparent; }
-loom-stage[data-renderer=webgpu] :where(meter)::-webkit-meter-optimum-value,
-loom-stage[data-renderer=webgpu] :where(meter)::-webkit-meter-suboptimum-value,
-loom-stage[data-renderer=webgpu] :where(meter)::-webkit-meter-even-less-good-value { background: transparent; }
-loom-stage[data-renderer=webgpu] :where(meter)::-moz-meter-bar { background: transparent; }
+loom-stage[data-renderer=webgpu][data-draws~=thumbs] :where(input[type=range]) { --loom-fill: 0% !important; }
+loom-stage[data-renderer=webgpu][data-draws~=focus] :focus-visible { outline: none; }
+loom-stage[data-renderer=webgpu][data-draws~=thumbs] :where(input[type=range])::-webkit-slider-thumb { opacity: 0; }
+loom-stage[data-renderer=webgpu][data-draws~=thumbs] :where(input[type=range])::-moz-range-thumb { opacity: 0; }
+loom-stage[data-renderer=webgpu][data-draws~=thumbs] :where(input[type=range])::-moz-range-progress { background: transparent; }
+loom-stage[data-renderer=webgpu][data-draws~=gauges] :where(progress)::-webkit-progress-value { background: transparent; }
+loom-stage[data-renderer=webgpu][data-draws~=gauges] :where(progress)::-moz-progress-bar { background: transparent; }
+loom-stage[data-renderer=webgpu][data-draws~=gauges] :where(meter)::-webkit-meter-optimum-value,
+loom-stage[data-renderer=webgpu][data-draws~=gauges] :where(meter)::-webkit-meter-suboptimum-value,
+loom-stage[data-renderer=webgpu][data-draws~=gauges] :where(meter)::-webkit-meter-even-less-good-value { background: transparent; }
+loom-stage[data-renderer=webgpu][data-draws~=gauges] :where(meter)::-moz-meter-bar { background: transparent; }
 
 @media (forced-colors: active) {
   loom-stage :where(input[type=checkbox], input[type=radio]) { appearance: auto; }
