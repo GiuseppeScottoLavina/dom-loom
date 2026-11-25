@@ -886,6 +886,69 @@ async function inputChecks(path, page) {
     assert.equal(await value('#crates'), '24');
   });
 
+  await check(`${path}: a number with step="any" steps by amounts, on their grid, within min and max`, async () => {
+    // stepUp() throws on a field without an allowed step: the behaviour steps it itself.
+    const errors = [];
+    const onError = (e) => errors.push(e.message);
+    page.on('pageerror', onError);
+    await page.evaluate(() => {
+      document.querySelector('#crates').closest('.stepper').insertAdjacentHTML('afterend', `
+        <div class="stepper" id="any-stepper">
+          <button type="button" aria-controls="kg" data-step="-0.1" aria-label="0.1 kg less">−</button>
+          <input id="kg" type="number" step="any" min="0" max="120" value="105" data-step-by="0.1" aria-label="Kilograms">
+          <button type="button" aria-controls="kg" data-step="10" aria-label="10 kg more">+</button>
+        </div>`);
+      window.__kgEvents = [];
+      const log = (e) => window.__kgEvents.push(`${e.type}:${e.bubbles}`);
+      document.querySelector('#req').addEventListener('input', log);
+      document.querySelector('#req').addEventListener('change', log);
+    });
+    await page.waitForTimeout(400);
+    try {
+      await page.click('button[aria-controls=kg][data-step="10"]');
+      await page.waitForTimeout(250);
+      assert.equal(await value('#kg'), '110', 'the button adds 10 onto the grid of 10 (105 → 110, not 115)');
+      assert.deepEqual(await page.evaluate(() => window.__kgEvents), ['input:true', 'change:true']);
+
+      await page.click('button[aria-controls=kg][data-step="-0.1"]');
+      await page.waitForTimeout(250);
+      assert.equal(await value('#kg'), '109.9', 'a negative amount steps down');
+
+      await page.evaluate(() => (document.querySelector('#kg').value = '0.2'));
+      await page.focus('#kg');
+      await page.mouse.move(2, 2);
+      await page.waitForTimeout(700);
+      const rolling = framesDuring(page, 500, '#req canvas');
+      await page.keyboard.press('ArrowUp');
+      assert.ok((await rolling) > 0, 'the digits roll over');
+      assert.equal(await value('#kg'), '0.3', 'an arrow steps by data-step-by, without floating-point noise');
+      await page.keyboard.press('ArrowDown');
+      await page.waitForTimeout(250);
+      assert.equal(await value('#kg'), '0.2');
+
+      const box = await page.locator('#kg').boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.wheel(0, -100);
+      await page.waitForTimeout(250);
+      assert.equal(await value('#kg'), '0.3', 'the wheel over the focused field steps it too');
+
+      await page.evaluate(() => (document.querySelector('#kg').value = '115'));
+      await page.click('button[aria-controls=kg][data-step="10"]');
+      await page.waitForTimeout(250);
+      assert.equal(await value('#kg'), '120', 'clamped to max');
+      await page.evaluate(() => (window.__kgEvents = []));
+      await page.click('button[aria-controls=kg][data-step="10"]');
+      await page.waitForTimeout(250);
+      assert.equal(await value('#kg'), '120', 'at max it stays');
+      assert.deepEqual(await page.evaluate(() => window.__kgEvents), [], 'no event when nothing changes');
+      assert.deepEqual(errors, [], 'no exception');
+    } finally {
+      page.off('pageerror', onError);
+      await page.evaluate(() => document.querySelector('#any-stepper').remove());
+      await page.waitForTimeout(400);
+    }
+  });
+
   await check(`${path}: the ends of an interval cannot cross`, async () => {
     await page.focus('[interval] input[name=from]');
     await page.keyboard.press('End');

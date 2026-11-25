@@ -14,7 +14,9 @@
   <meta property="og:image" content="https://giuseppescottolavina.github.io/dom-loom/social-preview.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0a0e24">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0e24'/%3E%3Cpath d='M16 5 27 16 16 27 5 16z' fill='none' stroke='%237ff0ff' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../favicon-48.png" sizes="48x48" type="image/png">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
   <style>html { background: #0a0e24; color: #e8f4ff; }</style>
   <script type="module" src="./guide.js"></script>
 </head>
@@ -166,7 +168,7 @@
       <p>
         Stepping an <code>&lt;input type="number"&gt;</code> rolls its digits over: the old value leaves, the new one
         comes in. The arrow keys and the wheel step it, and so does a button with <code>aria-controls</code> set to its
-        id and <code>data-step="1"</code> (or <code>-1</code>).
+        id and <code>data-step="1"</code> (or <code>-1</code>): a number of steps of the field's <code>step</code>.
       </p>
       <section class="example" id="numbers-example">
         <script type="text/html">
@@ -179,7 +181,27 @@
             </div>
           </loom-stage>
         </script>
-        <p class="try">Press + a few times quickly, then hold − .</p>
+        <p class="try">Press + a few times quickly, then − .</p>
+      </section>
+      <p>
+        A field with <code>step="any"</code> has no step of its own, so it takes amounts in its own units:
+        <code>data-step</code> on a button is the amount (<code>data-step="0.5"</code> adds 0.5), and
+        <code>data-step-by</code> on the field is what an arrow key or a notch of the wheel adds (1 by default).
+        The value lands on that amount's grid in the direction of the step (105 + 10 gives 110, not 115),
+        stays within <code>min</code> and <code>max</code>, and keeps the amount's decimals: 0.2 + 0.1 is 0.3.
+      </p>
+      <section class="example" id="numbers-any">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <label for="fuel">Fuel (t)</label>
+            <div>
+              <button type="button" aria-controls="fuel" data-step="-0.5" aria-label="Half a tonne less">−</button>
+              <input id="fuel" type="number" step="any" min="0" max="40" value="12.35" data-step-by="0.1">
+              <button type="button" aria-controls="fuel" data-step="0.5" aria-label="Half a tonne more">+</button>
+            </div>
+          </loom-stage>
+        </script>
+        <p class="try">Press +: 12.35 goes to 12.5, the next half tonne. Then focus the field and use the arrow keys: tenths.</p>
       </section>
 
       <h2 id="lists">Select and suggestions</h2>

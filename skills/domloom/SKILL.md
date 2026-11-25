@@ -98,7 +98,7 @@ The full `dom-loom` entry registers every row. For a smaller bundle, keep `impor
 | Interaction | Markup and application contract | Entry |
 | --- | --- | --- |
 | Press, focus, hold to confirm | Use a button or a link with an actual destination. Add `hold="900ms"` to a button for a deliberate action. Keep its ordinary click or submit handler. | `core` |
-| Text, number and step buttons | Label an `input` or `textarea`. To add a step button for `<input id="qty" type="number">`, use `<button type="button" aria-controls="qty" data-step="1">+</button>`. | `field`, `number` |
+| Text, number and step buttons | Label an `input` or `textarea`. To add a step button for `<input id="qty" type="number">`, use `<button type="button" aria-controls="qty" data-step="1">+</button>`. With `step="any"` on the input, `data-step` is the amount in its units (`data-step="0.5"`) and `data-step-by="0.1"` on the input sets the arrow-key and wheel amount (1 by default). | `field`, `number` |
 | Checkbox, switch, radio, stars | Wrap each input in a label. Use `role="switch"` on a checkbox, a shared `name` on related radios, or `<fieldset rating>` around labeled radios with a legend. | `choice`, `rating` |
 | Slider or interval | Use a labeled `input[type=range]`. For an interval put two range inputs directly inside one `<div interval>`. Give them distinct accessible names, matching bounds and ordered initial values. | `range` |
 | Select or searchable list | Use a native `select` with options for a single choice, or `<input list="stops">` paired with `<datalist id="stops">` for suggestions. | `select`, `combobox` |
