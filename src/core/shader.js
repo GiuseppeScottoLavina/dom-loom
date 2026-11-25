@@ -99,14 +99,21 @@ fn overBg(c: vec4f) -> vec3f {
 }
 // The live picture keeps its own size: just after the stage changes height it can be
 // the older picture for a few frames, shown at its scale and empty past its edge.
+// On a transparent canvas a pixel is as opaque as the pictures it shows: the live page, the
+// old one (a transition, a ghost), or both. Each sample records its alpha here.
+var<private> shownAlpha: f32 = 0.0;
 fn sampleSrc(p: vec2f) -> vec3f {
   if (p.x > u.source.x + 0.5 || p.y > u.source.y + 0.5) { return overBg(vec4f(0.0)); }
-  return overBg(textureSampleLevel(src, samp, p / u.source.xy, 0.0));
+  let c = textureSampleLevel(src, samp, p / u.source.xy, 0.0);
+  shownAlpha = max(shownAlpha, c.a);
+  return overBg(c);
 }
 fn sampleGhost(p: vec2f) -> vec3f {
   if (u.ghost.z < 0.5) { return u.bg.rgb; }
   if (p.x > u.ghost.x + 0.5 || p.y > u.ghost.y + 0.5) { return u.bg.rgb; }
-  return overBg(textureSampleLevel(ghostTex, samp, p / u.ghost.xy, 0.0));
+  let c = textureSampleLevel(ghostTex, samp, p / u.ghost.xy, 0.0);
+  shownAlpha = max(shownAlpha, c.a);
+  return overBg(c);
 }
 `;
 
@@ -323,7 +330,7 @@ const TAIL = /* wgsl */ `
   let transparent = u.alpha.x > 0.5;
   var alpha = 1.0;
   if (transparent) {
-    alpha = max(liveAlpha(p), clamp(max(max(light.r, light.g), light.b) * scan, 0.0, 1.0));
+    alpha = max(shownAlpha, clamp(max(max(light.r, light.g), light.b) * scan, 0.0, 1.0));
   }
 
   if (u.boot.x > 0.5) {

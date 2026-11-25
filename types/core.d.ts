@@ -40,6 +40,8 @@ export declare class LoomStage extends HTMLElement {
   /** Resolves with 'webgpu' once the compositor draws the stage, or 'dom'. */
   readonly ready: Promise<'webgpu' | 'dom'>;
   readonly gpu: boolean;
+  /** A page stage (the `page` attribute): plain HTML at rest, drawn only for its transitions. */
+  readonly page: boolean;
   /** A stage in a dialog or a popover (the `overlay` attribute): transparent around its panel. */
   get overlay(): boolean;
   /** Sets the `overlay` attribute: true or '' for a line of light, an edge to open from, 'zoom' to open at scale, false or null to remove it. */

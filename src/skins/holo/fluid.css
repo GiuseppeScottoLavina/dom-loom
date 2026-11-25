@@ -1,6 +1,6 @@
 /* DomLoom skin "holo": fluid (see base.css for the scope and the rules). */
 /* A panel that is water: a surface the picture is stirred under. */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([fluid]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([fluid]) {
   box-sizing: border-box;
   /* A finger drags across it to stir; vertical swipes still scroll the page. */
   touch-action: pan-y pinch-zoom;

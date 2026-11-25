@@ -1,6 +1,6 @@
 /* DomLoom skin "holo": badge (see base.css for the scope and the rules). */
 /* Badges */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([badge]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([badge]) {
   display: inline-grid;
   place-items: center;
   min-width: 22px;

@@ -13,7 +13,7 @@ Start with a working HTML interaction. Put the controls that belong together ins
 | --- | --- |
 | A form or a small widget | Use the two-file example below. Change the fields and keep the native submit event. |
 | To enhance an existing screen | Wrap one coherent panel, import the stylesheet and features, and exercise the existing actions. Keep existing names, labels and event handlers. |
-| An app with several views | Keep the stage mounted across the views that morph together. Put independent panels in separate stages. Give below-the-fold panels `loading="lazy"`. |
+| An app with several views | Wrap the main view in `<loom-stage page>` and change views with `stage.transition(update, { style: 'curl' })`: plain HTML at rest, drawn only for the transition, whatever the view's height; the stages inside it keep working, and `data-morph` titles fly between views. Put independent panels in separate stages, and give below-the-fold panels `loading="lazy"`. |
 | React or Vue | Use the adapter recipes below for state updates. Both adapters need a stylesheet and component registrations. |
 | A layout element (a nav in a header, a toolbar) | Wrap it in `<loom-stage bare fill>`: `bare` drops the panel and lets the page show through, `fill` makes the content take the height the parent gives the stage. |
 | An app in another language | Set `lang` on the page. English and Italian names are built in; call `defineStrings(lang, words)` before the stages start for another language. Labels the page sets win. |

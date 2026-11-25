@@ -7,6 +7,8 @@ export interface LoomStageProps extends HTMLAttributes<LoomStageElement> {
   haptics?: boolean;
   static?: boolean;
   loading?: 'eager' | 'lazy';
+  /** Around an app's main view: plain HTML at rest, drawn only for its transitions (transition()). */
+  page?: boolean;
   /** No panel (background, padding, frame): the page shows through. For a stage around a layout element, or a page's toasts. */
   bare?: boolean;
   /** The parent sets the stage's height (a stretched flex or grid item), and the content takes all of it. */

@@ -1,6 +1,6 @@
 /* DomLoom skin "holo": tilt (see base.css for the scope and the rules). */
 /* Cards that tilt */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([tilt]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([tilt]) {
   display: grid;
   gap: 8px;
   align-content: start;

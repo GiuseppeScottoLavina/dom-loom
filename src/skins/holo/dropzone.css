@@ -1,6 +1,6 @@
 /* DomLoom skin "holo": dropzone (see base.css for the scope and the rules). */
 /* Dropzones */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([dropzone]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([dropzone]) {
   position: relative;
   display: grid;
   place-items: center;
@@ -15,8 +15,8 @@
   text-align: center;
   cursor: pointer;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([dropzone] strong) { color: var(--loom-ink); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([dropzone] input[type=file]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([dropzone] strong) { color: var(--loom-ink); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([dropzone] input[type=file]) {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -24,4 +24,4 @@
   opacity: 0;
   cursor: pointer;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([dropzone][data-over]) { border-color: var(--loom-holo); color: var(--loom-ink); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([dropzone][data-over]) { border-color: var(--loom-holo); color: var(--loom-ink); }

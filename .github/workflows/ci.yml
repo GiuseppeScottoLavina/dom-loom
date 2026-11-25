@@ -50,6 +50,10 @@ jobs:
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
           CHROME_ARGS: --use-webgpu-adapter=swiftshader --enable-features=Vulkan --use-vulkan=swiftshader --use-angle=swiftshader --disable-vulkan-surface
+      - run: xvfb-run --auto-servernum npm run test:page
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+          CHROME_ARGS: --use-webgpu-adapter=swiftshader --enable-features=Vulkan --use-vulkan=swiftshader --use-angle=swiftshader --disable-vulkan-surface
       # Here the "hardware" pass already runs on SwiftShader (CHROME_ARGS).
       - run: xvfb-run --auto-servernum npm run test:startup -- --gpu=hardware
         env:

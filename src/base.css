@@ -29,6 +29,14 @@ loom-stage[bare] .loom-source::before, loom-stage[bare] .loom-source::after { co
 loom-stage[fill] { display: grid; }
 loom-stage[fill] .loom-source { display: grid; grid-template-rows: minmax(0, 1fr); }
 
+/* A page stage moving its view into its canvas holds the screen with a view transition: the
+ * picture of the screen stays over the page until the canvas has drawn (the stage ends the
+ * view transition then, well before this hold runs out). */
+@keyframes loom-hold { from { opacity: 1; } to { opacity: 1; } }
+html.loom-page-swap::view-transition-group(*) { animation: none; }
+html.loom-page-swap::view-transition-old(*) { animation: loom-hold 2s step-end; }
+html.loom-page-swap::view-transition-new(*) { animation: none; opacity: 0; }
+
 /* toasts="viewport": a page's notifications, at the bottom of the viewport, above the page.
  * Put the list in a bare stage of its own. */
 loom-stage:has([toasts=viewport]) {

@@ -64,8 +64,14 @@ async function run(path, browser, url) {
       await check(`${path}, ${file}: every example starts on the GPU, its script runs, nothing logs an error, and the page rests`, async () => {
         const ids = await page.evaluate(() => [...document.querySelectorAll('.example')].map((e) => e.id));
         for (const id of ids) {
-          const stages = await page.locator(`#${id} .live > loom-stage`).count();
-          if (stages) assert.equal(await show(page, `#${id} .live > loom-stage`), 'webgpu', `${id} runs on the GPU`);
+          const stages = await page.locator(`#${id} .live > loom-stage:not([page])`).count();
+          if (stages) assert.equal(await show(page, `#${id} .live > loom-stage:not([page])`), 'webgpu', `${id} runs on the GPU`);
+          // A page stage is plain HTML at rest; the stages inside it run on the GPU.
+          if (await page.locator(`#${id} .live > loom-stage[page]`).count()) {
+            assert.equal(await page.locator(`#${id} .live > loom-stage[page]`).getAttribute('data-renderer'), 'dom', `${id}: the page stage rests as HTML`);
+            const inner = page.locator(`#${id} .live > loom-stage[page] loom-stage`);
+            if (await inner.count()) assert.equal(await show(page, `#${id} .live > loom-stage[page] loom-stage`), 'webgpu', `${id}: the stage in the page runs on the GPU`);
+          }
         }
         const shown = await page.evaluate(() => [...document.querySelectorAll('.example')].every((e) => e.querySelector('.codes figure.code')));
         assert.ok(shown, 'every example shows its code');
@@ -98,6 +104,14 @@ async function run(path, browser, url) {
           await click(page, '#discard-example [data-do=shatter]');
           await page.waitForTimeout(1900);
           assert.equal(await page.locator('#discard-example li').count(), 2);
+          // The page stage: a click on Stock turns the page, then the stage is HTML again.
+          await page.locator('#page-example').evaluate((e) => e.scrollIntoView({ block: 'center' }));
+          await page.waitForTimeout(400);
+          await page.locator('#page-example .page-nav [data-view="2"]').click();
+          await page.waitForFunction(() => document.querySelector('#page-example loom-stage[page]').dataset.renderer === 'webgpu', null, { timeout: 4000 });
+          await page.waitForFunction(() => document.querySelector('#page-example loom-stage[page]').dataset.renderer === 'dom', null, { timeout: 6000 });
+          assert.equal(await page.locator('#page-example [data-morph=title]').textContent(), 'Stock');
+          assert.equal(await page.locator('#page-example loom-stage[page] > canvas').count(), 0);
           assert.deepEqual(errors, []);
         });
       }

@@ -170,6 +170,25 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 
 `stage.transition(update, { morph: elements, exit: 'shatter' })` (`dom-loom/shatter`) breaks the elements that `update` removes into shards instead of crumbling them.
 
+#### A page stage, for an app's views
+
+`<loom-stage page>` wraps an app's main view (the content of `<main>`, whatever its height) to change views with a transition:
+
+```html
+<main>
+  <loom-stage page id="views">…the current view…</loom-stage>
+</main>
+```
+
+```js
+await views.transition(() => renderView('recipes'), { style: 'curl', direction: 1 });
+```
+
+- At rest it is plain HTML: no canvas, no compositor, no skin, and no cost when the view changes with the user's input. The stages inside it work as usual (a stage can hold stages).
+- `transition()` moves the visible part of the view, from the stage's top (or the top of the screen) to the bottom of the viewport, into a canvas of that size, whatever the height of the view. The blade, `curl` or `melt` cut runs over it with the stages inside shown as they are, `data-morph` elements visible in both views fly (only `data-morph` is read in a page stage), and the new view takes clicks during the cut.
+- The new view shows from its top. The page scrolls to its top for a stage in the first screen (an app's main view), else to the stage's top, as far as the new view lets it, and nothing moves when the transition ends.
+- With reduced motion, without WebGPU, or with `static`, `update` runs at once.
+
 ### Attributes and API
 
 | | |
@@ -178,6 +197,7 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | `haptics` | Short vibrations where the device has them: toggles, tabs, ratings, a completed hold, a hit or a gain on a bar, an alert, a file drop |
 | `static` | Never start the compositor; plain DOM styling only |
 | `bare` | No panel: no background, padding or frame, and the canvas is transparent, so the page shows through. For a stage around a layout element (a nav in a header) or a page's toasts |
+| `page` | A page stage, around an app's main view: plain HTML at rest, drawn only for its transitions (see [A page stage](#a-page-stage-for-an-apps-views)) |
 | `fill` | The stage's parent sets its height (a stretched flex or grid item, a fixed height) and its content takes all of it: one child (a nav, a toolbar) fills the box. Not for a stage that should shrink with its content |
 | `loading="lazy"` | Keeps the HTML interactive and starts the GPU within 240 CSS pixels of the viewport once scrolling settles. Focus, a pointer press or switching to `eager` starts it immediately. The default is eager. |
 | `stage.ready` | Resolves with `'webgpu'` or `'dom'`. Reading it explicitly starts a lazy stage, as does supplying React's `onReady`. |
@@ -394,6 +414,7 @@ The blends of the paint primitives: `ADD` (light), `BEHIND` (only the dark parts
 - Date and colour pickers open with the browser's own look; so does a select's popup when opened from the keyboard or a screen reader (on purpose: it is fully accessible).
 - Opening or closing a `<details>` changes the height of the stage at once (the canvas must have the size of its content); the content inside slides. In a multi-column layout only the column of the `<details>` slides.
 - On a software GPU (SwiftShader, as in headless test runs) the first draw of a stage compiles its shader on the CPU, and the page can get no new frame for seconds to minutes. Clicks still land meanwhile. Browsers do not enable WebGPU on SwiftShader by default.
+- A page stage's transition covers the visible part of the page from the stage's top down, as a canvas fixed to the viewport: content over it (a sticky header with no `z-index`) is under it for the transition, a click there waits for the end, and an ancestor with a `transform` or a `filter` would move the canvas. On the polyfill the browser needs view transitions (Safari 18 and later, Chromium) to hold the screen for the frame before the canvas's first picture; elsewhere that frame shows the page's background.
 - A press in the first moments of a flight (rows sorting) can reach nothing on Chrome's own HTML-in-Canvas: the press is mapped with the frame the browser captured for it, which may still show the row leaving. It never reaches another row.
 
 On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 270 KB of JavaScript for the whole demo, 95 KB gzip, measured on a production build).
@@ -410,6 +431,7 @@ npm run test:browser     # Chrome with WebGPU, native path and polyfill path
 npm run test:app         # what an app's page needs: languages, plain buttons, rows, a page's toasts, a bare stage
 npm run test:startup     # no click lost while stages start, on a hardware and a software GPU
 npm run test:dialog      # overlays born in closed dialogs, and overlay="zoom"
+npm run test:page        # a page stage around an app's views
 npm run test:effects     # the loupe, lit, fluid, shatter, melt and curl suites
 npm run test:guide       # every example of the guide, on both paths
 npm run test:types       # the public TypeScript types

@@ -1,6 +1,6 @@
 /* DomLoom skin "holo": rating (see base.css for the scope and the rules). */
 /* Ratings: the radios are invisible, the labels are stars. */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([rating]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([rating]) {
   display: flex;
   gap: 8px;
   min-width: 0;
@@ -8,7 +8,7 @@
   padding: 0;
   border: 0;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([rating] label) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([rating] label) {
   position: relative;
   width: 30px;
   height: 30px;
@@ -16,7 +16,7 @@
   clip-path: polygon(50% 3%, 61.5% 37%, 97% 37.5%, 68.5% 59%, 79% 94%, 50% 73%, 21% 94%, 31.5% 59%, 3% 37.5%, 38.5% 37%);
   cursor: pointer;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([rating] input[type=radio]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([rating] input[type=radio]) {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -27,5 +27,5 @@
   rotate: none;
   cursor: pointer;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where([rating] label:has(~ label > :checked), [rating] label:has(> :checked)) { background: var(--loom-warn); }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :where([rating] label:has(> :focus-visible)) { outline: 2px solid var(--loom-holo); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page]))[data-renderer=dom] :where([rating] label:has(~ label > :checked), [rating] label:has(> :checked)) { background: var(--loom-warn); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])):not([data-renderer=webgpu]) :where([rating] label:has(> :focus-visible)) { outline: 2px solid var(--loom-holo); }

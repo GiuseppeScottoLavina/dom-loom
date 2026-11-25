@@ -63,6 +63,7 @@ export function Shell() {
     <>
       <LoomStage bare fill><nav aria-label="Main" reticle="focus" /></LoomStage>
       <LoomStage bare><ol toasts="viewport" /></LoomStage>
+      <LoomStage page><main /></LoomStage>
       <LoomStage><div removable="row" /><button className="loom-plain" /></LoomStage>
     </>
   );

@@ -1,6 +1,6 @@
 /* DomLoom skin "holo": toast (see base.css for the scope and the rules). */
 /* Toasts: a stack in the corner of the stage. */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([toasts]) {
   position: absolute;
   z-index: 5;
   right: 18px;
@@ -15,13 +15,13 @@
 }
 /* The page's toasts: the stage is placed (base.css); the list fills it. No offsets: as a direct
  * child of the content the list is position: relative (above), and the corner's would shift it. */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts=viewport]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([toasts=viewport]) {
   position: static;
   inset: auto;
   justify-items: stretch;
   max-width: none;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts] > *) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([toasts] > *) {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -36,5 +36,5 @@
   text-transform: none;
   letter-spacing: 0.01em;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts] > [data-tone=warn]) { border-left-color: var(--loom-warn); }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([toasts] > [data-tone=bad]) { border-left-color: var(--loom-signal); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([toasts] > [data-tone=warn]) { border-left-color: var(--loom-warn); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([toasts] > [data-tone=bad]) { border-left-color: var(--loom-signal); }

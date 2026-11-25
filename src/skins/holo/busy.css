@@ -1,6 +1,6 @@
 /* DomLoom skin "holo": busy (see base.css for the scope and the rules). */
 /* Busy regions: the placeholder is drawn as blocks of the line colour. */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([aria-busy=true]) :where(h1, h2, h3, h4, p, li, dt, dd, a, strong, em, output, img, button) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([aria-busy=true]) :where(h1, h2, h3, h4, p, li, dt, dd, a, strong, em, output, img, button) {
   color: transparent !important;
   background: color-mix(in srgb, var(--loom-line) 75%, transparent) !important;
   border-color: transparent !important;

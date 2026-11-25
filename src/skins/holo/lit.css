@@ -1,6 +1,6 @@
 /* DomLoom skin "holo": lit (see base.css for the scope and the rules). */
 /* A surface under the pointer's light: a bordered panel, so its edges have something to catch */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([lit]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([lit]) {
   padding: 16px;
   border: 1px solid var(--loom-line);
   background: color-mix(in srgb, var(--loom-holo) 4%, var(--loom-panel));

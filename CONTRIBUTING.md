@@ -27,6 +27,7 @@ npm run test:browser     # Chrome with WebGPU, native and polyfill paths
 npm run test:app         # an app's page: languages, plain buttons, rows, toasts, bare stages
 npm run test:startup     # no click lost while stages start (hardware and software GPU)
 npm run test:dialog      # overlays in dialogs: first opening, overlay="zoom"
+npm run test:page        # a page stage around an app's views
 npm run test:effects     # the effect suites, each in its own process
 npm run test:guide       # every example of the guide
 npm run test:visual      # every demo stage at rest, pixel by pixel against HEAD

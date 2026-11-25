@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Page stage</title>
+  <!-- test/page.browser.mjs: a page stage around an app's views (BoilieLab). -->
+  <link rel="stylesheet" href="/src/loom.css">
+  <script type="module">
+    import '/src/index.js';
+    // The view that replaces the laboratory: short, with a title that morphs and a button.
+    window.recipes = () => {
+      const view = document.createElement('section');
+      view.id = 'recipes';
+      view.innerHTML = `
+        <h1 data-morph="title" id="title-recipes">Recipes</h1>
+        <p><button type="button" id="open" onclick="this.dataset.n = +(this.dataset.n ?? 0) + 1">Open the first recipe</button></p>
+        <p>Twelve recipes in the book.</p>`;
+      return view;
+    };
+    // A third view: its title lower down (it flies there), a button to press during the cut.
+    window.stock = () => {
+      const view = document.createElement('section');
+      view.id = 'stock';
+      view.innerHTML = `
+        <p style="text-align: right"><button type="button" id="restock" onclick="this.dataset.n = +(this.dataset.n ?? 0) + 1">Restock the shelf</button></p>
+        <div style="height: 160px"></div>
+        <h1 data-morph="title" id="title-stock">Stock</h1>
+        <p>Forty raw materials.</p>`;
+      return view;
+    };
+  </script>
+  <style>
+    body { margin: 0; background: #0a0e24; color: #e8f4ff; font: 16px system-ui, sans-serif; }
+    header { height: 60px; background: #2a1a4a; }
+    main { padding: 0 24px; }
+    h1 { margin: 0; padding: 24px 0 12px; font-size: 32px; }
+    #open { font: inherit; padding: 10px 16px; }
+    .tall { height: 2900px; background: linear-gradient(#13204a, #2b3766); }
+    #inner { width: 380px; }
+  </style>
+</head>
+<body>
+  <header>BoilieLab</header>
+  <main>
+    <loom-stage page id="view">
+      <section id="lab">
+        <h1 data-morph="title" id="title-lab">Laboratory</h1>
+        <div class="tall"></div>
+        <loom-stage id="inner">
+          <label><input type="checkbox" role="switch" checked> Night mix</label>
+          <button type="button">Weigh</button>
+        </loom-stage>
+        <div class="tall"></div>
+      </section>
+    </loom-stage>
+  </main>
+</body>
+</html>

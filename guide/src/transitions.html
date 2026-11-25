@@ -167,6 +167,60 @@ description: Change a view with DomLoom: a blade cut, elements that fly between 
         <p class="try">Turn the page, then melt it. During the turn, the new page is already live.</p>
       </section>
 
+      <h2 id="page">A page stage for an app's views</h2>
+      <p>
+        <code>&lt;loom-stage page&gt;</code> wraps an app's main view, whatever its height. At rest it is plain HTML: no
+        canvas, no skin, and no cost when the view changes with the user's input; the stages inside it work as usual.
+        <code>transition()</code> draws only the visible part of the view for the time of the cut: the stages inside are
+        in the picture as they are, the <code>data-morph</code> elements visible in both views fly, the new view takes
+        clicks during the cut, and the page gets its HTML back where the new view was shown.
+      </p>
+      <section class="example" id="page-example">
+        <script type="text/html">
+          <nav aria-label="Views" class="page-nav">
+            <button type="button" data-view="0" aria-current="page">Lab</button>
+            <button type="button" data-view="1">Recipes</button>
+            <button type="button" data-view="2">Stock</button>
+          </nav>
+          <loom-stage page>
+            <section>
+              <h3 data-morph="title">Lab</h3>
+              <p>Weigh the dry mix, then the eggs.</p>
+              <loom-stage loading="lazy">
+                <label><input type="checkbox" role="switch" checked> Night mix</label>
+              </loom-stage>
+            </section>
+          </loom-stage>
+        </script>
+        <script type="text/plain" class="example-js">
+          const views = [
+            '<h3 data-morph="title">Lab</h3><p>Weigh the dry mix, then the eggs.</p><loom-stage loading="lazy"><label><input type="checkbox" role="switch" checked> Night mix</label></loom-stage>',
+            '<h3 data-morph="title">Recipes</h3><p>Twelve recipes in the book. Tiger nut is the last one tried.</p>',
+            '<p>Forty raw materials.</p><h3 data-morph="title">Stock</h3><p>Fishmeal runs low.</p>',
+          ];
+          const nav = document.querySelector('#page-example .page-nav');
+          const stage = document.querySelector('#page-example loom-stage[page]');
+          let current = 0;
+          nav.addEventListener('click', (event) => {
+            const button = event.target.closest('button');
+            if (!button) return;
+            const next = Number(button.dataset.view);
+            if (next === current) return;
+            const direction = next > current ? 1 : -1;
+            current = next;
+            for (const b of nav.querySelectorAll('button')) b.toggleAttribute('aria-current', b === button);
+            stage.transition(() => {
+              stage.querySelector('section').innerHTML = views[next];
+            }, { style: 'curl', direction });
+          });
+        </script>
+        <style class="example-css">
+          #page-example .page-nav { display: flex; gap: 8px; }
+          #page-example loom-stage[page] { min-height: 160px; }
+        </style>
+        <p class="try">Go from Lab to Stock: the page turns, and the title flies to its new place.</p>
+      </section>
+
       <h2 id="discard">Remove and add with motion</h2>
       <p>
         <code>await stage.discard(element)</code> removes an element with motion: it crumbles where it was, and what comes

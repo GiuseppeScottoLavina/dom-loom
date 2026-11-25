@@ -1,13 +1,13 @@
 /* DomLoom skin "holo": menus (dom-loom/menu). */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"])[overlay] .loom-source:has(> [role=menu]) { padding: 8px; }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=menu]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page]))[overlay] .loom-source:has(> [role=menu]) { padding: 8px; }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([role=menu]) {
   display: grid;
   gap: 2px;
   min-width: 220px;
   margin: 0;
   padding: 0;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=menu] :is([role=menuitem], [role=menuitemcheckbox], [role=menuitemradio])) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([role=menu] :is([role=menuitem], [role=menuitemcheckbox], [role=menuitemradio])) {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -22,7 +22,7 @@
   text-transform: none;
   cursor: pointer;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=menu] [role=menuitemcheckbox], [role=menu] [role=menuitemradio])::before {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([role=menu] [role=menuitemcheckbox], [role=menu] [role=menuitemradio])::before {
   content: '';
   flex: none;
   width: 8px;
@@ -30,9 +30,9 @@
   border: 1.5px solid var(--loom-dim);
   transform: rotate(45deg);
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=menu] [aria-checked=true])::before { border-color: var(--loom-holo); background: var(--loom-holo); }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=menu] [aria-disabled=true]) { opacity: 0.45; cursor: not-allowed; }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=menu] hr) { margin: 4px 0; border: 0; border-top: 1px solid var(--loom-line); }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=menu] [role=group]) { display: grid; gap: 2px; }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([role=menu] .loom-caption) { padding: 8px 14px 4px; }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :where([role=menu] :is([role=menuitem], [role=menuitemcheckbox], [role=menuitemradio]):focus) { background: color-mix(in srgb, var(--loom-holo) 14%, transparent); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([role=menu] [aria-checked=true])::before { border-color: var(--loom-holo); background: var(--loom-holo); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([role=menu] [aria-disabled=true]) { opacity: 0.45; cursor: not-allowed; }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([role=menu] hr) { margin: 4px 0; border: 0; border-top: 1px solid var(--loom-line); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([role=menu] [role=group]) { display: grid; gap: 2px; }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([role=menu] .loom-caption) { padding: 8px 14px 4px; }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])):not([data-renderer=webgpu]) :where([role=menu] :is([role=menuitem], [role=menuitemcheckbox], [role=menuitemradio]):focus) { background: color-mix(in srgb, var(--loom-holo) 14%, transparent); }

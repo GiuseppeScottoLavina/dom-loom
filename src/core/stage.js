@@ -132,6 +132,12 @@ export class LoomStage extends ElementBase {
   #scale = { rect: null, x: 1, y: 1 };
   /** Pointers pressed on the stage and not released yet: its content does not move into the canvas under one. */
   #pressing = new Set();
+  /** Disconnected in a move that may connect it again in the same task (no moveBefore). */
+  #parked = false;
+  /** A page stage: a transition under way, and what to put back after it. */
+  #paging = false;
+  #pageInner = false;
+  #pageRestore = null;
   #observers = [];
   #generation = 0;
   #audio = false;
@@ -170,6 +176,15 @@ export class LoomStage extends ElementBase {
   attributeChangedCallback(name) {
     if (name === 'skin' && this.#source) this.#restyle();
     if (name === 'loading' && this.getAttribute('loading') !== 'lazy') this.#startEnhancement?.();
+  }
+
+  /**
+   * A page stage (the `page` attribute): around an app's main view. At rest it is plain HTML:
+   * no canvas, no compositor, no skin. A transition draws the visible part of the view, and
+   * gives the page back when it ends.
+   */
+  get page() {
+    return this.getAttribute('page') !== null;
   }
 
   /** A stage in a dialog or a popover: transparent around its panel (the `overlay` attribute). */
@@ -227,6 +242,11 @@ export class LoomStage extends ElementBase {
   }
 
   connectedCallback() {
+    // Moved and put back in the same task, where moveBefore is missing: it never left.
+    if (this.#parked) {
+      this.#parked = false;
+      return;
+    }
     if (!this.#source) {
       const existing = this.querySelector(':scope > .loom-source, :scope > canvas > .loom-source');
       this.#source = existing ?? document.createElement('div');
@@ -241,6 +261,10 @@ export class LoomStage extends ElementBase {
     this.#listeners = new AbortController();
     this.#readColors();
     this.listenOn(this.#motion, 'change', () => this.wake());
+    if (this.page) {
+      this.#connectPage();
+      return;
+    }
 
     // A skin registered later, or redefined, applies at once.
     document.addEventListener('loom-skin', (e) => {
@@ -287,7 +311,25 @@ export class LoomStage extends ElementBase {
     }
   }
 
+  /** Moved with moveBefore (a page stage taking its view into its canvas): it keeps running. */
+  connectedMoveCallback() {}
+
   disconnectedCallback() {
+    // Without moveBefore a move disconnects and connects again in one task: the stage waits for
+    // the end of it before it lets go of its canvas, so a move does not restart it.
+    if (typeof Element !== 'undefined' && !('moveBefore' in Element.prototype)) {
+      this.#parked = true;
+      queueMicrotask(() => {
+        if (!this.#parked) return;
+        this.#parked = false;
+        this.#teardown();
+      });
+      return;
+    }
+    this.#teardown();
+  }
+
+  #teardown() {
     ++this.#generation;
     this.#startEnhancement = null;
     this.#listeners?.abort();
@@ -429,7 +471,13 @@ export class LoomStage extends ElementBase {
    *   'shatter') for the elements of `morph` that the update removes; they crumble by default.
    * - sound: the skin's sound to play.
    */
-  async transition(update, { scope = null, direction = 1, morph = null, cut = true, sound = null, style = null, exit = null } = {}) {
+  async transition(update, options = {}) {
+    if (this.page && !this.#pageInner) return this.#pageTransition(update, options);
+    this.#pageInner = false;
+    return this.#runTransition(update, options);
+  }
+
+  async #runTransition(update, { scope = null, direction = 1, morph = null, cut = true, sound = null, style = null, exit = null } = {}) {
     const compositor = this.#compositor;
     this.#finishVisual();
     if (!this.#canPresent()) {
@@ -762,6 +810,11 @@ export class LoomStage extends ElementBase {
     return Math.min(width, document.documentElement.clientWidth);
   }
 
+  /** @internal Draws a frame now (a stage at rest that a page stage has just moved into its canvas). */
+  _repaint() {
+    this.#compositor?.requestRender();
+  }
+
   /** @internal Sizes the canvas to its content now (an overlay whose dialog has just opened). */
   _refit() {
     this.#fitCanvas();
@@ -951,13 +1004,18 @@ export class LoomStage extends ElementBase {
   #keyed() {
     const map = new Map();
     let origin;
-    for (const el of this.#source.querySelectorAll('*')) {
+    // A page stage holds a whole view: only data-morph is read there (not every element's
+    // style), and only what shows in its window flies.
+    const page = this.page;
+    const [w, h] = page ? [this.#source.clientWidth, this.#source.clientHeight] : [0, 0];
+    for (const el of this.#source.querySelectorAll(page ? '[data-morph]' : '*')) {
       const name = el.dataset.morph || getComputedStyle(el).viewTransitionName;
       if (!name || name === 'none' || map.has(name)) continue;
       if (!this.visible(el)) continue;
       origin ??= this.#source.getBoundingClientRect();
       const rect = this.#layoutRect(el, origin);
       if (rect[2] < 1 || rect[3] < 1) continue;
+      if (page && (rect[1] + rect[3] <= 0 || rect[1] >= h || rect[0] + rect[2] <= 0 || rect[0] >= w)) continue;
       map.set(name, { el, rect });
     }
     return map;
@@ -1035,7 +1093,7 @@ export class LoomStage extends ElementBase {
     u.set(role('void', role('bg', [0, 0, 0])), U.void);
     u.set([skin.shader.scanlines, skin.shader.chroma, skin.shader.crumble, skin.shader.hatch], U.style);
     u[U.wipeDir] = 1;
-    u[U.alpha] = this.overlay || this.hasAttribute('bare') ? 1 : 0;
+    u[U.alpha] = this.overlay || this.page || this.hasAttribute('bare') ? 1 : 0;
     const whole = [0, 0, sourceRect.width, sourceRect.height];
     this.#ctx = { colors, now, reduced: this.reduced, whole, durations: skin.durations, stage: this };
 
@@ -1211,6 +1269,180 @@ export class LoomStage extends ElementBase {
     }
   }
 
+  /** A page stage at rest: plain HTML. Only its runtime is readied, when the page is idle. */
+  #connectPage() {
+    this.#instances = new Map();
+    this.#behaviors = [];
+    this.#customSync = [];
+    this.#contentSync = [];
+    if (!navigator.gpu || this.hasAttribute('static')) return;
+    const connection = this.#listeners.signal;
+    (globalThis.requestIdleCallback ?? setTimeout)(() => {
+      if (connection.aborted) return;
+      loadRuntime()
+        .then(() => sharedDevice())
+        .then((device) => warmCompositor(device, navigator.gpu.getPreferredCanvasFormat()))
+        .catch(() => {});
+    });
+  }
+
+  /**
+   * A page stage's transition: the visible part of the view moves into a canvas of its size
+   * for the time of the transition (whatever the height of the view), the new view shows
+   * from its top, and the page gets its HTML back when the transition ends, scrolled so the
+   * new view stays where it was shown.
+   */
+  async #pageTransition(update, options) {
+    const plain = !navigator.gpu || this.reduced || this.hasAttribute('static')
+      || matchMedia('(forced-colors: active)').matches || this.#paging || !this.isConnected;
+    const box = this.getBoundingClientRect();
+    const top = Math.max(box.top, 0);
+    const bottom = Math.min(box.bottom, innerHeight);
+    if (plain || bottom - top < 1 || box.width < 1) {
+      await update?.();
+      return;
+    }
+    this.#paging = true;
+    let active = false;
+    try {
+      active = await this.#activatePage(this.#generation);
+      if (!active) {
+        await update?.();
+        return;
+      }
+      this.#pageInner = true;
+      await this.transition(async () => {
+        await update?.();
+        this.#placeNewView();
+      }, options);
+    } catch (error) {
+      this.dispatchEvent(new CustomEvent('loom-fallback', { bubbles: true, detail: { error } }));
+    } finally {
+      if (active) this.#deactivatePage();
+      this.#paging = false;
+    }
+  }
+
+  /** Moves the visible part of a page stage's view into a canvas over it, and starts its compositor. */
+  async #activatePage(generation) {
+    const runtime = await loadRuntime();
+    await document.fonts?.ready;
+    await warmCompositor(await sharedDevice(), navigator.gpu.getPreferredCanvasFormat());
+    if (generation !== this.#generation || !this.isConnected) return false;
+    // Measured after the awaits: the page may have scrolled. The window runs from the top of
+    // the stage's visible part to the bottom of the viewport: the new view may be taller.
+    const box = this.getBoundingClientRect();
+    const top = Math.max(box.top, 0);
+    const height = innerHeight - top;
+    if (box.bottom <= 0 || height < 1) return false;
+    this.#readColors();
+    const native = String(runtime.mode).startsWith('native');
+    // The polyfill keeps a canvas's content invisible until its first picture is drawn, a
+    // frame or two after the move: a view transition holds the picture of the screen (base.css),
+    // and lets go once the canvas has drawn. (No frame is drawn during its callback: the move
+    // happens there, the wait after it.)
+    if (!native && typeof document.startViewTransition === 'function' && !document.activeViewTransition) {
+      const root = document.documentElement;
+      root.classList.add('loom-page-swap');
+      let entered = false;
+      const swap = document.startViewTransition(async () => {
+        entered = await this.#enterPage(runtime, box, top, height, generation, native);
+      });
+      swap.finished.catch(() => {}).finally(() => root.classList.remove('loom-page-swap'));
+      try {
+        await swap.updateCallbackDone;
+        if (entered) await this._settled(800);
+      } finally {
+        swap.skipTransition();
+      }
+      return entered;
+    }
+    const entered = await this.#enterPage(runtime, box, top, height, generation, native);
+    // The old view's picture first: the transition keeps it as the page that leaves.
+    if (entered) await this._settled(800);
+    return entered;
+  }
+
+  /** The move of #activatePage: the view into a canvas over its visible part, and the compositor started. */
+  async #enterPage(runtime, box, top, height, generation, native) {
+    const source = this.#source;
+    // The stage keeps its place in the page while its content is in the canvas.
+    this.#pageRestore = { height: this.style.height };
+    this.style.height = `${this.offsetHeight}px`;
+    const canvas = document.createElement('canvas');
+    canvas.className = 'loom-canvas';
+    Object.assign(canvas.style, {
+      position: 'fixed', left: `${box.left}px`, top: `${top}px`, width: `${box.width}px`, height: `${height}px`, margin: '0',
+    });
+    // The content becomes a window of the visible part, scrolled to where the page is.
+    Object.assign(source.style, { width: `${box.width}px`, height: `${height}px`, overflow: 'hidden' });
+    source.setAttribute('drawable', '');
+    this.insertBefore(canvas, source);
+    canvas.setAttribute('content', 'drawable');
+    moveSource(canvas, source);
+    source.scrollTop = top - box.top;
+    this.#canvas = canvas;
+    // The stages in the view draw nothing at rest, and the browser's own HTML-in-Canvas has
+    // no picture of a canvas just moved in until it draws: a frame each. (The polyfill copies
+    // what a canvas shows.)
+    if (native) for (const stage of source.querySelectorAll('loom-stage')) stage._repaint?.();
+    await Promise.resolve();
+    const host = await runtime.api.createHost(canvas, source, { maxDpr: 2, interposer: true, device: sharedDevice, alphaMode: 'premultiplied' });
+    this.#host = host;
+    this.#boot = null;
+    await host.addPlugin(createCompositor(runtime, this), {});
+    if (generation !== this.#generation) return true;
+    this.dataset.renderer = 'webgpu';
+    this.dataset.mode = runtime.mode;
+    return true;
+  }
+
+  /**
+   * Shows a page stage's new view from its top where it will be once the page has its HTML
+   * back, and scrolls the page under the canvas there already: to its top for a stage in the
+   * first screen (an app's main view), else to the stage's top; as far as the new view lets
+   * the page scroll. Nothing moves when the transition ends.
+   */
+  #placeNewView() {
+    const source = this.#source;
+    const windowTop = parseFloat(this.#canvas.style.top);
+    source.style.paddingTop = '0px';
+    source.scrollTop = 0;
+    const stageDocTop = this.getBoundingClientRect().top + scrollY;
+    const docHeight = document.documentElement.scrollHeight - this.offsetHeight + source.scrollHeight;
+    const wanted = stageDocTop < innerHeight ? 0 : stageDocTop - windowTop;
+    const target = Math.min(Math.max(0, wanted), Math.max(0, docHeight - innerHeight));
+    window.scrollTo(0, target);
+    // Below the top of the visible part: the window shows the page (transparent) above it.
+    source.style.paddingTop = `${Math.max(0, stageDocTop - target - windowTop)}px`;
+  }
+
+  /** Gives a page stage's view back to the page, where it was last shown. */
+  #deactivatePage() {
+    const canvas = this.#canvas;
+    const source = this.#source;
+    const restore = this.#pageRestore;
+    if (!canvas || !restore) return;
+    this.#pageRestore = null;
+    // Where the stage's top was shown (the top of the window, less how far it is scrolled,
+    // plus the room left above a view that starts lower).
+    const shownTop = parseFloat(canvas.style.top) - source.scrollTop + (parseFloat(source.style.paddingTop) || 0);
+    this.#host?.destroy();
+    this.#host = null;
+    this.#compositor = null;
+    this.#finishVisual();
+    this.#canvas = null;
+    source.removeAttribute('drawable');
+    Object.assign(source.style, { width: '', height: '', overflow: '', paddingTop: '' });
+    moveSource(this, source, canvas);
+    canvas.remove();
+    this.style.height = restore.height;
+    window.scrollBy(0, this.getBoundingClientRect().top - shownTop);
+    for (const stage of source.querySelectorAll('loom-stage')) stage._repaint?.();
+    this.dataset.renderer = 'dom';
+    delete this.dataset.mode;
+  }
+
   async #enhance(generation) {
     try {
       if (!navigator.gpu || matchMedia('(forced-colors: active)').matches || this.hasAttribute('static')) return 'dom';
@@ -1301,6 +1533,10 @@ export class LoomStage extends ElementBase {
   }
 
   #release() {
+    if (this.#pageRestore) {
+      this.#deactivatePage();
+      return;
+    }
     this.#host?.destroy();
     this.#host = null;
     this.#compositor = null;

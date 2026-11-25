@@ -1,7 +1,7 @@
 /* DomLoom skin "holo": split (see base.css for the scope and the rules). */
 /* Splitters: a line with a grip. */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([split] > hr) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([split] > hr) {
   background: linear-gradient(var(--loom-line), var(--loom-line)) center / 1px 100% no-repeat;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where([split] > :not(hr)) { padding: 14px; }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :where([split] > hr:focus-visible) { outline-offset: -2px; }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where([split] > :not(hr)) { padding: 14px; }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])):not([data-renderer=webgpu]) :where([split] > hr:focus-visible) { outline-offset: -2px; }

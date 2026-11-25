@@ -1,6 +1,6 @@
 /* DomLoom skin "holo": combobox (see base.css for the scope and the rules). */
 /* The listbox of a combobox */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) .loom-listbox {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) .loom-listbox {
   max-height: 228px;
   overflow-y: auto;
   padding: 4px;
@@ -8,12 +8,12 @@
   background: var(--loom-panel);
   box-shadow: 0 14px 28px rgb(0 0 0 / 0.45);
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(.loom-listbox [role=option]) {
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where(.loom-listbox [role=option]) {
   padding: 10px 12px;
   color: var(--loom-dim);
   font: 500 14px/1.2 var(--loom-font);
   letter-spacing: 0.03em;
   cursor: pointer;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(.loom-listbox [role=option][aria-selected=true]) { color: var(--loom-ink); }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(.loom-listbox [role=option][aria-selected=true]) { background: color-mix(in srgb, var(--loom-holo) 14%, transparent); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page])) :where(.loom-listbox [role=option][aria-selected=true]) { color: var(--loom-ink); }
+:where(loom-stage:not([skin], [page]), loom-stage[skin="holo"]:not([page]))[data-renderer=dom] :where(.loom-listbox [role=option][aria-selected=true]) { background: color-mix(in srgb, var(--loom-holo) 14%, transparent); }
