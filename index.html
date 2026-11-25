@@ -755,15 +755,19 @@ toasts.append(Object.assign(document.createElement('li'),
         </div>
 
         <div split class="split">
-          <ul class="crew" aria-label="Crew">
-            <li>Nightjar · Scout</li>
-            <li>Kestrel · Breacher</li>
-            <li>Moth · Medic</li>
-            <li>Grackle · Engineer</li>
-          </ul>
+          <section class="crew" aria-labelledby="crew-head">
+            <p class="loom-caption" id="crew-head">Crew · 4</p>
+            <ul>
+              <li><span class="crew-name">Nightjar</span> <span class="crew-role">Scout</span></li>
+              <li><span class="crew-name">Kestrel</span> <span class="crew-role">Breacher</span></li>
+              <li><span class="crew-name">Moth</span> <span class="crew-role">Medic</span></li>
+              <li><span class="crew-name">Grackle</span> <span class="crew-role">Engineer</span></li>
+            </ul>
+          </section>
           <hr aria-valuemin="25" aria-valuemax="75" aria-valuenow="40">
-          <section class="notes" aria-label="Notes">
-            <p>Breakwater went loud at the pier when a patrol boat came in early. Kestrel held the stairs while Moth patched the courier.</p>
+          <section class="notes" aria-labelledby="notes-head">
+            <p class="loom-caption" id="notes-head">Debrief · Op Breakwater</p>
+            <p>Breakwater went loud at the pier when a patrol boat came in early. <b>Kestrel</b> held the stairs while <b>Moth</b> patched the courier.</p>
             <p>Next time: two drones on the water, and a second exit by the cranes.</p>
           </section>
         </div>

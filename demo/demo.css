@@ -318,9 +318,33 @@ body {
 #ops-strip .replay { justify-self: start; margin-top: 6px; padding: 10px 14px; }
 .replay-out { color: var(--dim); font: 500 12px/1 'JetBrains Mono Variable', monospace; }
 .split { min-height: 180px; border: 1px solid var(--line); }
-.crew { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; font: 500 13px/1.3 'Chakra Petch', sans-serif; white-space: nowrap; }
+.split > :not(hr) { padding: 16px 18px; }
+/* The crew: a roster, one row per callsign, the role under it (it holds in a narrow pane). */
+.crew { display: grid; gap: 10px; align-content: start; min-width: 0; container-type: inline-size; }
+.crew ul { display: grid; margin: 0; padding: 0; list-style: none; }
+.crew li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: center;
+  padding-block: 9px;
+  border-top: 1px solid var(--line);
+}
+.crew li:first-child { border-top: 0; padding-top: 2px; }
+/* The marker of the mission steps. */
+.crew li::before { content: ''; grid-row: span 2; width: 6px; height: 6px; border: 1.5px solid var(--holo); transform: rotate(45deg); }
+.crew-name, .crew-role { grid-column: 2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crew-name { color: var(--ink); font: 600 15px/1.1 'Chakra Petch', sans-serif; letter-spacing: 0.06em; text-transform: uppercase; }
+.crew-role { margin-top: 3px; color: var(--dim); font: 500 11px/1.2 'JetBrains Mono Variable', monospace; letter-spacing: 0.14em; text-transform: uppercase; }
+/* A pane dragged narrow keeps whole callsigns: the marker steps aside. */
+@container (max-width: 150px) {
+  .crew li { grid-template-columns: minmax(0, 1fr); }
+  .crew li::before { display: none; }
+  .crew-name, .crew-role { grid-column: 1; }
+}
 .notes { display: grid; gap: 10px; align-content: start; }
-.notes p { font-size: 14px; }
+.notes p:not(.loom-caption) { font-size: 14px; }
+.notes b { color: var(--ink); font-weight: 600; }
 
 /* ------------------------------------------------------------------ overlays */
 .ops-head { grid-template-columns: 1fr auto; align-items: end; }
