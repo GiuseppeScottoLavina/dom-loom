@@ -13,7 +13,8 @@
     body { margin: 0; background: #0a0e24; color: #e8f4ff; font: 16px system-ui, sans-serif; }
     header { display: flex; align-items: stretch; gap: 24px; height: 70px; padding: 0 16px; background: #2a1a4a; }
     header .logo { align-self: center; }
-    header nav ul { display: flex; align-items: center; gap: 8px; height: 100%; margin: 0; padding: 0; list-style: none; }
+    header nav { display: flex; }
+    header nav a { display: flex; align-items: center; padding: 0 16px; color: #e8f4ff; text-decoration: none; }
     main { padding: 24px 16px 1600px; }
     #content { width: 520px; }
     .row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; }
@@ -24,11 +25,9 @@
   <header>
     <span class="logo">BoilieLab</span>
     <loom-stage id="navstage" bare fill>
-      <nav aria-label="Main">
-        <ul>
-          <li><a href="#recipes" aria-current="page">Recipes</a></li>
-          <li><a href="#stock">Stock</a></li>
-        </ul>
+      <nav aria-label="Main" current="line">
+        <a href="#recipes" aria-current="page">Recipes</a>
+        <a href="#stock">Stock</a>
       </nav>
     </loom-stage>
   </header>

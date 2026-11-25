@@ -389,7 +389,8 @@
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav[aria-label="breadcrumb" i] a) { color: var(--loom-dim); text-decoration: none; }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav[aria-label="breadcrumb" i] [aria-current]:not([aria-current=false])) { color: var(--loom-ink); }
 
-/* Other nav lists: a row of pages. The current one is marked in light. */
+/* Other nav lists: a row of pages. The current one is marked in light. A page's own
+ * navigation (current="line" on the nav or the list) keeps the page's look and gets a line. */
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav:not([aria-label="breadcrumb" i]) > :is(ol, ul)) {
   display: flex;
   flex-wrap: wrap;
@@ -398,7 +399,7 @@
   padding: 0;
   list-style: none;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav:not([aria-label="breadcrumb" i]) > :is(ol, ul) > li > :is(a, button)) {
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(nav:not([aria-label="breadcrumb" i], [current=line]) > :is(ol, ul):not([current=line]) > li > :is(a, button)) {
   display: inline-grid;
   place-items: center;
   min-width: 40px;
@@ -552,8 +553,12 @@
   background: color-mix(in srgb, var(--loom-holo) 10%, transparent);
 }
 
-:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(nav:not([aria-label="breadcrumb" i]) [aria-current]:not([aria-current=false])) {
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(nav:not([aria-label="breadcrumb" i]) [aria-current]:not([aria-current=false], [current=line] *)) {
   border-color: var(--loom-holo);
+  box-shadow: inset 0 -3px var(--loom-holo);
+}
+/* current="line" without the GPU: the same line on the bottom edge of the current item. */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]):not([data-renderer=webgpu]) :where([current=line] [aria-current]:not([aria-current=false])) {
   box-shadow: inset 0 -3px var(--loom-holo);
 }
 :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(ol > li[aria-current=step], ol > li:has(~ li[aria-current=step]))::before {

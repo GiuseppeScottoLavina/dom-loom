@@ -93,6 +93,55 @@ async function run(path, browser, url) {
     assert.ok(Math.abs(r - 0x2a) < 6 && Math.abs(g - 0x1a) < 6 && Math.abs(b - 0x4a) < 6, `the header shows through (${r},${g},${b})`);
   });
 
+  await check(`${path}: current="line" marks the current page with a line on its bottom edge, inside the canvas, and nothing else`, async () => {
+    await page.mouse.move(500, 650);
+    await page.waitForTimeout(600);
+    const geo = () => page.evaluate(() => {
+      const box = (s) => {
+        const r = document.querySelector(s).getBoundingClientRect();
+        return { left: Math.round(r.left), right: Math.round(r.right), top: Math.round(r.top), bottom: Math.round(r.bottom) };
+      };
+      return { canvas: box('#navstage canvas'), current: box('#navstage a[aria-current]'), other: box('#navstage a:not([aria-current])') };
+    });
+    const header = (rgb) => Math.abs(rgb[0] - 0x2a) < 8 && Math.abs(rgb[1] - 0x1a) < 8 && Math.abs(rgb[2] - 0x4a) < 8;
+    const lit = (rgb) => rgb[1] > 150 && rgb[2] > 150;
+    // In the item's padding, clear of its text: the line on the last rows, the header above.
+    const marked = async (item) => ({
+      line: lit(await pixel(page, item.left + 4, item.bottom - 2)),
+      above: header(await pixel(page, item.left + 4, item.bottom - 6)),
+      top: header(await pixel(page, item.left + 4, item.top + 4)),
+    });
+    let g = await geo();
+    assert.equal(g.current.bottom, g.canvas.bottom, 'the item reaches the bottom of the canvas');
+    assert.deepEqual(await marked(g.current), { line: true, above: true, top: true }, 'a line on the bottom edge, no glass, tint or diamond');
+    assert.deepEqual(await marked(g.other), { line: false, above: true, top: true }, 'nothing under the other page');
+    await page.evaluate(() => {
+      const [a, b] = document.querySelectorAll('#navstage a');
+      a.removeAttribute('aria-current');
+      b.setAttribute('aria-current', 'page');
+    });
+    await page.waitForTimeout(900);
+    g = await geo();
+    assert.deepEqual(await marked(g.current), { line: true, above: true, top: true }, 'the line moved to the new page');
+    assert.deepEqual(await marked(g.other), { line: false, above: true, top: true }, 'and left the old one');
+  });
+
+  await check(`${path}: without WebGPU, current="line" is the same line, drawn by CSS`, async () => {
+    const plain = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+    await plain.addInitScript(() => Object.defineProperty(Navigator.prototype, 'gpu', { get: () => undefined }));
+    await plain.goto(`${url}test/fixtures/app.html`);
+    await plain.waitForFunction(() => document.querySelector('#navstage').dataset.renderer === 'dom');
+    const looks = await plain.evaluate(() => [...document.querySelectorAll('#navstage a')].map((a) => {
+      const cs = getComputedStyle(a);
+      return { shadow: cs.boxShadow, border: cs.borderBottomStyle, background: cs.backgroundColor };
+    }));
+    assert.deepEqual(looks, [
+      { shadow: 'rgb(127, 240, 255) 0px -3px 0px 0px inset', border: 'none', background: 'rgba(0, 0, 0, 0)' },
+      { shadow: 'none', border: 'none', background: 'rgba(0, 0, 0, 0)' },
+    ]);
+    await plain.close();
+  });
+
   await check(`${path}: toasts="viewport" shows the page's toasts at the bottom centre of the viewport`, async () => {
     await page.evaluate(() => {
       const li = document.createElement('li');

@@ -25,6 +25,7 @@ The first public release. It depends on `@giuseppe-scotto-lavina/html-in-canvas-
   - `toasts="viewport"`: a page's notifications at the bottom centre of the viewport, in a bare stage of their own.
   - `removable="row"` for removable items that are not chips.
   - `loom-plain` for buttons that keep the page's look.
+  - `current="line"` for a page's own navigation: the links keep their look, and a line on the bottom edge of the current one slides to the next. It is drawn inside the item's box, so it never leaves the canvas.
 - Names in the page's language: the remove, dismiss, sort and splitter buttons and the hold hints follow the nearest `lang`. English and Italian are built in, and `defineStrings(lang, words)` adds a language or changes words. Labels the page sets still win.
 
 ### Fixed

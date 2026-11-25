@@ -22,6 +22,12 @@ extendSkin('holo', {
       scene.push(DIAMOND, [x1, y0, 7, 0], [10, alpha, 1], colors.holo);
       return;
     }
+    if (list.closest('[current=line]')) {
+      // A page's navigation: a line resting on the bottom edge of the current item, inside
+      // its box (no glow: it never leaves the canvas, even for an item as tall as the stage).
+      scene.push(PILL, [rect[0], rect[1] + rect[3] - 3, rect[2], 3], [0, 0, 0, alpha], colors.holo, ADD);
+      return;
+    }
     if (list.closest('nav[aria-label="breadcrumb" i]')) {
       // Where you are: a thin trace under the last crumb.
       scene.push(PILL, [rect[0], rect[1] + rect[3] + 1, rect[2], 1.5], [0.5, 0, 6, alpha], colors.holo, ADD);

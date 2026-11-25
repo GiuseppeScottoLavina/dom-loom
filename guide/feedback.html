@@ -229,6 +229,36 @@
         </script>
         <p class="try">Go to page 3, then press Next step a few times.</p>
       </section>
+      <p>
+        Your app's own navigation (a top bar) is not a pagination: put <code>current="line"</code> on the
+        <code>nav</code> (or its list). The links keep your look, and the current one gets a line on its bottom edge that
+        slides to the next page. In a bar, wrap the nav in <code>&lt;loom-stage bare fill&gt;</code>: no panel, the bar's
+        colour behind it, and the bar's height.
+      </p>
+      <section class="example" id="topbar-example">
+        <script type="text/html">
+          <div style="display: flex; height: 56px; padding: 0 12px; background: #1b2147">
+            <loom-stage bare fill loading="lazy">
+              <nav aria-label="Sections" current="line" style="display: flex">
+                <a href="#lobby" aria-current="page" style="display: flex; align-items: center; padding: 0 16px; color: #e8f4ff; text-decoration: none">Lobby</a>
+                <a href="#armory" style="display: flex; align-items: center; padding: 0 16px; color: #e8f4ff; text-decoration: none">Armory</a>
+                <a href="#ranks" style="display: flex; align-items: center; padding: 0 16px; color: #e8f4ff; text-decoration: none">Ranks</a>
+              </nav>
+            </loom-stage>
+          </div>
+        </script>
+        <script type="text/plain" class="example-js">
+          const nav = document.querySelector('#topbar-example nav');
+          nav.addEventListener('click', (event) => {
+            const link = event.target.closest('a');
+            if (!link) return;
+            event.preventDefault();
+            nav.querySelector('[aria-current]')?.removeAttribute('aria-current');
+            link.setAttribute('aria-current', 'page');
+          });
+        </script>
+        <p class="try">Go from Lobby to Ranks: the line slides along the bottom of the bar.</p>
+      </section>
 
       <h2 id="notifications">Toasts, alerts, badges, busy</h2>
       <ul>
