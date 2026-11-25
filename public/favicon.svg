@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- DomLoom, the blade (favicon): a chamfered panel, a diamond cut by the blade. Drawn for 16 and 32 px. -->
+  <defs>
+    <clipPath id="l"><polygon points="0,0 17,0 9,32 0,32"/></clipPath>
+    <clipPath id="r"><polygon points="23,0 32,0 32,32 15,32"/></clipPath>
+  </defs>
+  <polygon points="6,0 32,0 32,26 26,32 0,32 0,6" fill="#0a0e24"/>
+  <g clip-path="url(#l)"><polygon points="16,8.5 23.5,16 16,23.5 8.5,16" fill="none" stroke="#7ff0ff" stroke-width="2.6"/></g>
+  <g transform="translate(1.3 -1.8)"><g clip-path="url(#r)"><polygon points="16,8.5 23.5,16 16,23.5 8.5,16" fill="none" stroke="#7ff0ff" stroke-width="2.6"/></g></g>
+  <polygon points="10.5,28 14.5,28 22.5,4 18.5,4" fill="#ff3d6e"/>
+</svg>

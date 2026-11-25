@@ -38,7 +38,9 @@ for (const file of readdirSync(src).filter((f) => f.endsWith('.html'))) {
   <meta property="og:image" content="${SITE}social-preview.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#0a0e24">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0e24'/%3E%3Cpath d='M16 5 27 16 16 27 5 16z' fill='none' stroke='%237ff0ff' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="../favicon-48.png" sizes="48x48" type="image/png">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
   <style>html { background: #0a0e24; color: #e8f4ff; }</style>
   <script type="module" src="./guide.js"></script>
 </head>
