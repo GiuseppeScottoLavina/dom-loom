@@ -14,7 +14,7 @@ const flag = (on) => (on ? '' : undefined);
  * ref is the element (stage.transition, stage.discard, stage.ready…).
  */
 export const LoomStage = forwardRef(function LoomStage(
-  { skin, sound, haptics, static: still, overlay, onFallback, onReady, children, ...rest },
+  { skin, sound, haptics, static: still, bare, fill, overlay, onFallback, onReady, children, ...rest },
   ref,
 ) {
   const stage = useRef(null);
@@ -32,7 +32,7 @@ export const LoomStage = forwardRef(function LoomStage(
   return createElement(
     'loom-stage',
     {
-      ref: stage, skin, sound: flag(sound), haptics: flag(haptics), static: flag(still),
+      ref: stage, skin, sound: flag(sound), haptics: flag(haptics), static: flag(still), bare: flag(bare), fill: flag(fill),
       overlay: overlay === true ? '' : overlay || undefined, ...rest,
     },
     children,

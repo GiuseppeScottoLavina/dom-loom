@@ -117,8 +117,8 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, 
 
 | You write | What happens |
 | --- | --- |
-| `<button>`, `<summary>`, a link, a label of a radio or checkbox | Pressing dents it around the contact point; releasing sends a ring through it |
-| `<button hold="900ms">` | The button only fires after a hold (pointer, or Space / Enter on it). It charges, shakes, and bursts when it fires; a tap is refused with a shake. An activation that nobody pressed (a screen reader's, Enter in a field) arms it instead, says "activate again to confirm", and a second one within 4 seconds confirms, so the button works for assistive technology that can only send a click. Screen readers hear "Press and hold, or activate twice, to confirm" |
+| `<button>`, `<summary>`, a link, a label of a radio or checkbox | Pressing dents it around the contact point; releasing sends a ring through it. A button with class `loom-plain` keeps the page's look (the skin does not style it) and still dents |
+| `<button hold="900ms">` | The button only fires after a hold (pointer, or Space / Enter on it). It charges, shakes, and bursts when it fires; a tap is refused with a shake. An activation that nobody pressed (a screen reader's, Enter in a field) arms it instead, says "activate again to confirm", and a second one within 4 seconds confirms, so the button works for assistive technology that can only send a click. Screen readers hear "Press and hold, or activate twice, to confirm", in the page's language (see [Languages](#languages)) |
 | Radios with the same name | The selection is a slanted fill that slides to the new choice, front edge first |
 | `<input type="checkbox" role="switch">` | A knob that stretches as it travels; the track lights up |
 | `<input type="checkbox">` | The box fills from the centre |
@@ -133,11 +133,11 @@ Components: `choice`, `range`, `field`, `number`, `forms` (the four), `dialog`, 
 | `<input type="number">` | Stepping rolls the digits over: the old value leaves, the new one comes in. Arrow keys and the wheel step it; so does a `<button aria-controls="its-id" data-step="1">` (or `-1`). With `step="any"`, `data-step` is an amount in the field's units and `data-step-by` on the field sets what an arrow key or a wheel notch adds (1 by default); the value lands on that amount's grid (105 + 10 is 110), within `min` and `max` |
 | `[interval]` holding two `<input type="range">` | One track with two thumbs that cannot cross; the liquid runs between them |
 | `<input list>` with its `<datalist>` | The browser's popup cannot be drawn into a canvas, so the stage opens its own listbox under the field (the ARIA combobox pattern: arrow keys, Enter, Escape). It unfolds and folds with a scan line |
-| `[removable]` (a tag, a chip, a list item) | Gets a remove button (also Delete or Backspace on it). Removing crumbles it and the rest flies into the gap; `loom-remove` fires first (cancelable). A removable element that is added assembles block by block |
+| `[removable]` (a tag, a chip, a list item) | Gets a remove button (also Delete or Backspace on it). Removing crumbles it and the rest flies into the gap; `loom-remove` fires first (cancelable). A removable element that is added assembles block by block. `removable="row"` does the same for an element that is not a chip (a table row, a grid row): it keeps its own look, and only the remove button is styled. A remove button the page supplies (`button.loom-remove` inside the element) keeps its label and its content |
 | `[removable][exit="shatter"]` (`dom-loom/shatter`) | The removed element breaks into Voronoi shards that fly off instead of crumbling; the rest still flies into the gap |
 | `[dropzone]` holding an `<input type="file">` | Files dragged over it pull the panel into a vortex at the pointer; dropped, they go to the input (its `change` fires) and the vortex collapses |
 | `[rating]` around a radio group | Stars: pointing previews, choosing lights them up one after another |
-| `[toasts]` (a list or a box) | Each child is a toast: it assembles, counts down (`data-timeout`, 5 s by default) with a bar of light, holds while pointed at or focused, and crumbles when the time is up or it is dismissed. `data-tone` is `good`, `warn` or `bad`. The region is made a polite live region |
+| `[toasts]` (a list or a box) | Each child is a toast: it assembles, counts down (`data-timeout`, 5 s by default) with a bar of light, holds while pointed at or focused, and crumbles when the time is up or it is dismissed. `data-tone` is `good`, `warn` or `bad`. The region is made a polite live region. `toasts="viewport"` is for a page's notifications: in a `<loom-stage bare>` of its own, the list sits at the bottom centre of the viewport, above the page, across the width of a phone |
 | `role="alert"` | When an alert appears or its text changes, it lands with a shock and its text tears for a moment |
 | `[badge]` | When its number changes, it pings (up and down sound and light differently) |
 | `aria-busy="true"` | The placeholder content is drawn as blocks and a scan passes over it while busy; when it is no longer busy the real content assembles block by block |
@@ -177,6 +177,8 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | `sound` | Procedural interface sounds (WebAudio, no files), after the first gesture in the stage |
 | `haptics` | Short vibrations where the device has them: toggles, tabs, ratings, a completed hold, a hit or a gain on a bar, an alert, a file drop |
 | `static` | Never start the compositor; plain DOM styling only |
+| `bare` | No panel: no background, padding or frame, and the canvas is transparent, so the page shows through. For a stage around a layout element (a nav in a header) or a page's toasts |
+| `fill` | The stage's parent sets its height (a stretched flex or grid item, a fixed height) and its content takes all of it: one child (a nav, a toolbar) fills the box. Not for a stage that should shrink with its content |
 | `loading="lazy"` | Keeps the HTML interactive and starts the GPU within 240 CSS pixels of the viewport once scrolling settles. Focus, a pointer press or switching to `eager` starts it immediately. The default is eager. |
 | `stage.ready` | Resolves with `'webgpu'` or `'dom'`. Reading it explicitly starts a lazy stage, as does supplying React's `onReady`. |
 | `stage.transition(update, {scope, direction, morph, cut, style, exit})` | See above; `style` is `'curl'` or `'melt'` (a cut drawn in place of the blade), `exit` is `'shatter'`. Resolves when the transition has ended |
@@ -186,6 +188,23 @@ It works like `document.startViewTransition(update)`. The compositor keeps a pic
 | `stage.mapPoint({x, y})` | The point of the live content shown at a visible point of the stage (CSS px), `null` where no element is shown |
 | `data-renderer`, `data-mode` | `webgpu` / `loading` / `dom`; and, while the compositor runs, `native` (Chrome's own HTML-in-Canvas), `native-bridged` (an earlier native draft that the polyfill completes) or `polyfill` |
 | `loom-fallback` event | The compositor failed and the stage went back to plain DOM; `detail.error` says why |
+
+### Languages
+
+DomLoom names the controls it adds and announces holds for screen readers: "Remove Garlic", "Dismiss", "Sort by Level", "Resize panes", "Press and hold, or activate twice, to confirm". Each name is in the language of its element (its nearest `lang`, else the page's). English and Italian are built in; `defineStrings` adds a language or changes some of its words, and the words a language leaves out are English. A label or description the page sets itself always wins.
+
+```js
+import { defineStrings } from 'dom-loom';
+
+defineStrings('de', {
+  remove: (label) => `${label} entfernen`,
+  dismiss: 'Schließen',
+  sortBy: (label) => `Nach ${label} sortieren`,
+  resizePanes: 'Bereiche anpassen',
+  holdHint: 'Gedrückt halten oder zweimal aktivieren, um zu bestätigen',
+  holdArmed: (label) => `${label}: zum Bestätigen erneut aktivieren`,
+});
+```
 
 ## Browser support
 
@@ -292,7 +311,7 @@ Svelte, Solid, Angular (with `CUSTOM_ELEMENTS_SCHEMA`) and plain HTML use the el
 
 ## Skins
 
-A skin decides how a stage looks, moves and sounds. The behaviours (pressing, holding, selecting, sorting, validating) are the same for every skin: they compute what a control is doing and hand that state to the skin's draw hooks, which turn it into compositor primitives. `holo`, the holo-kinetic material above, is the default skin.
+A skin's rules have no specificity (they are written with `:where()`), so any rule of the page wins over them without `!important`, and a button with class `loom-plain` keeps the page's look altogether. A skin decides how a stage looks, moves and sounds. The behaviours (pressing, holding, selecting, sorting, validating) are the same for every skin: they compute what a control is doing and hand that state to the skin's draw hooks, which turn it into compositor primitives. `holo`, the holo-kinetic material above, is the default skin.
 
 ```js
 import { defineSkin, PILL, RING, ADD } from 'dom-loom';
@@ -364,6 +383,7 @@ The blends of the paint primitives: `ADD` (light), `BEHIND` (only the dark parts
 - **The input mapper is the shader.** A fragment shader maps backwards, from the pixel shown to the source point it shows, and that is exactly the question the host's input mapper answers for a pointer. Each primitive's JavaScript twin sits next to its WGSL. Each presented frame freezes its own numbers for the mapper, and the browser test checks the twins against real GPU pixels.
 - **Why it needs the GPU.** CSS can move, scale and clip whole boxes. It cannot bend the lines of text a shock front crosses, refract a label under a moving piece of glass, break a picture of the old page into blocks, smear a flying element along its path, or keep the new page clickable while the old one is still on screen. Those are per-pixel operations on a picture of live HTML, which is what HTML-in-Canvas provides; the mapper keeps every one of them clickable where it is seen.
 - **Zero work at rest.** The plugin is `continuous` only while a spring moves. A page at rest renders no frame.
+- **Starting.** Until the compositor is compiled, a stage's content is the page's: shown and clickable as plain HTML. It moves into the canvas only when the first frame can follow at once, never under a press in progress, and until that frame a click goes to what is under it. The boot sweep is only seen: it takes no input.
 - **Fallbacks.** Without WebGPU, in forced colours, or after a GPU failure, the same markup is styled in plain CSS and the behaviours (hold, validation, transitions as an instant swap) keep working. With reduced motion, springs snap, transitions swap at once and nothing shakes.
 
 ## Limits
@@ -373,6 +393,7 @@ The blends of the paint primitives: `ADD` (light), `BEHIND` (only the dark parts
 - Top-layer content (an open modal `<dialog>`, an open popover) is not drawn into the canvas of the page's stages: give it its own `<loom-stage overlay>` (dom-loom/dialog, dom-loom/popover).
 - Date and colour pickers open with the browser's own look; so does a select's popup when opened from the keyboard or a screen reader (on purpose: it is fully accessible).
 - Opening or closing a `<details>` changes the height of the stage at once (the canvas must have the size of its content); the content inside slides. In a multi-column layout only the column of the `<details>` slides.
+- On a software GPU (SwiftShader, as in headless test runs) the first draw of a stage compiles its shader on the CPU, and the page can get no new frame for seconds to minutes. Clicks still land meanwhile. Browsers do not enable WebGPU on SwiftShader by default.
 - A press in the first moments of a flight (rows sorting) can reach nothing on Chrome's own HTML-in-Canvas: the press is mapped with the frame the browser captured for it, which may still show the row leaving. It never reaches another row.
 
 On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 270 KB of JavaScript for the whole demo, 95 KB gzip, measured on a production build).
@@ -386,6 +407,8 @@ npm install
 npm run dev              # the demo at http://127.0.0.1:5173
 npm test                 # unit tests: the mapper twins, the shader, the stage's scheduling
 npm run test:browser     # Chrome with WebGPU, native path and polyfill path
+npm run test:app         # what an app's page needs: languages, plain buttons, rows, a page's toasts, a bare stage
+npm run test:startup     # no click lost while stages start, on a hardware and a software GPU
 npm run test:effects     # the loupe, lit, fluid, shatter, melt and curl suites
 npm run test:guide       # every example of the guide, on both paths
 npm run test:types       # the public TypeScript types

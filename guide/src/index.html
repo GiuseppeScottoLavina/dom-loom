@@ -71,12 +71,14 @@ description: Install DomLoom, put your first form in a loom-stage, and learn wha
       <ul>
         <li><strong>One stage per panel.</strong> A stage is one canvas. Wrap a panel or a form, not each control.</li>
         <li><strong>Nothing renders at rest.</strong> A stage draws frames only while something moves.</li>
+        <li><strong>While it starts</strong>, its content is plain HTML, shown and clickable; a click is never lost, and the content does not move into the canvas under a press.</li>
         <li><strong>Without WebGPU</strong>, in forced colours or after a GPU failure, the same markup is styled in plain CSS and keeps working.</li>
         <li><strong>With reduced motion</strong>, springs snap, transitions swap at once and nothing shakes.</li>
       </ul>
       <p>
         A stage is an opaque rectangle: put it on a background of its <code>--loom-void</code> colour
-        (<code>#0a0e24</code> in the default skin), so its cut corners blend in.
+        (<code>#0a0e24</code> in the default skin), so its cut corners blend in. A <code>bare</code> stage
+        has no panel and lets the page show through (see <a href="#attributes">Stage attributes</a>).
       </p>
 
       <h2 id="render-path">Which path is running</h2>
@@ -117,8 +119,18 @@ description: Install DomLoom, put your first form in a loom-stage, and learn wha
           <tr><td><code>static</code></td><td>Never starts the compositor: plain HTML styling only.</td></tr>
           <tr><td><code>skin</code></td><td>The skin that draws the stage. The default is <code>holo</code>; see <a href="skins.html">Skins and theming</a>.</td></tr>
           <tr><td><code>overlay</code></td><td>A transparent stage inside a <code>&lt;dialog&gt;</code> or a popover; see <a href="overlays.html">Overlays</a>.</td></tr>
+          <tr><td><code>bare</code></td><td>No panel: no background, padding or frame, and the canvas is transparent, so the page shows through. For a stage around a layout element, or a page's toasts.</td></tr>
+          <tr><td><code>fill</code></td><td>The parent sets the stage's height (a stretched flex or grid item, a fixed height) and the content takes all of it: one child (a nav, a toolbar) fills the box. Not for a stage that should shrink with its content.</td></tr>
         </tbody>
       </table>
+      <p>A nav in a header 70 pixels tall keeps the header's height and colour:</p>
+      <pre data-lang="html">
+        &lt;header style="display: flex; height: 70px"&gt;
+          &lt;loom-stage bare fill&gt;
+            &lt;nav aria-label="Main"&gt;…&lt;/nav&gt;
+          &lt;/loom-stage&gt;
+        &lt;/header&gt;
+      </pre>
       <p>These are boolean attributes: to turn one off, remove it. Try the sound:</p>
       <section class="example" id="sound">
         <script type="text/html">
@@ -129,6 +141,23 @@ description: Install DomLoom, put your first form in a loom-stage, and learn wha
         </script>
         <p class="try">Turn your volume up, then flip the switch and press Ping.</p>
       </section>
+
+      <h2 id="languages">Languages</h2>
+      <p>
+        DomLoom names the controls it adds and announces holds for screen readers ("Remove Garlic", "Dismiss",
+        "Sort by Level", "Press and hold, or activate twice, to confirm"). Each name is in the language of its
+        element: its nearest <code>lang</code>, else the page's. English and Italian are built in;
+        <code>defineStrings</code> adds a language, or changes some of its words, before the stages start.
+        A label or a description the page sets itself always wins.
+      </p>
+      <pre data-lang="js">
+        import { defineStrings } from 'dom-loom';
+
+        defineStrings('de', {
+          remove: (label) =&gt; `${label} entfernen`,
+          dismiss: 'Schließen',
+        });
+      </pre>
 
       <h2 id="only-what-you-use">Import only what you use</h2>
       <p>

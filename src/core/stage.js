@@ -1,7 +1,8 @@
 import { isListMutation } from './list-elements.js';
 import { scheduleLazyStage } from './lazy-stage.js';
 import { behaviorList } from './behaviors.js';
-import { createCompositor } from './compositor.js';
+import { createCompositor, warmCompositor } from './compositor.js';
+import { wordFor } from './strings.js';
 import { GHOST } from '../primitives/ghost.js';
 import { MATERIALIZE } from '../primitives/materialize.js';
 import { MORPH } from '../primitives/morph.js';
@@ -129,6 +130,8 @@ export class LoomStage extends ElementBase {
   #ctx = null;
   #sourceRect = null;
   #scale = { rect: null, x: 1, y: 1 };
+  /** Pointers pressed on the stage and not released yet: its content does not move into the canvas under one. */
+  #pressing = new Set();
   #observers = [];
   #generation = 0;
   #audio = false;
@@ -248,7 +251,11 @@ export class LoomStage extends ElementBase {
     this.listen('pointerdown', (e) => {
       this.#unlockAudio();
       this.#press = { point: this.pointOf(e), at: performance.now() };
+      this.#pressing.add(e.pointerId);
     }, { capture: true });
+    const released = (e) => this.#pressing.delete(e.pointerId);
+    this.listenGlobal('pointerup', released, { capture: true });
+    this.listenGlobal('pointercancel', released, { capture: true });
     this.listen('keydown', () => this.#unlockAudio(), { capture: true });
     this.listen('click', (e) => this.#guardHold(e), { capture: true });
     const connection = this.#listeners.signal;
@@ -329,6 +336,30 @@ export class LoomStage extends ElementBase {
     if (!el?.isConnected) return false;
     return el.checkVisibility ? el.checkVisibility({ visibilityProperty: true }) : true;
   }
+
+  /**
+   * A click on the bare canvas before the stage has drawn the page (the content has moved
+   * in, milliseconds after warmCompositor, and the renderer does not route input until its
+   * first frame): it goes to the element under it, as it would have before the move. Once
+   * the page is drawn, a click the renderer leaves on the canvas is one that has no target
+   * (the old page of a transition) and stays there.
+   */
+  #forwardClick = (event) => {
+    if (event.target !== this.#canvas) return;
+    const state = this.dataset.renderer;
+    if (state !== 'loading' && !(state === 'webgpu' && !this.#compositor?.drawn)) return;
+    let hit = null;
+    // The last element whose box holds the point, in document order: the innermost or the
+    // one laid out later (on top).
+    for (const el of this.#source.querySelectorAll('*')) {
+      const r = el.getBoundingClientRect();
+      if (event.clientX >= r.left && event.clientX < r.right && event.clientY >= r.top && event.clientY < r.bottom && this.visible(el)) hit = el;
+    }
+    if (!hit) return;
+    event.stopImmediatePropagation();
+    hit.closest('button, a[href], input, select, textarea, summary, label, [tabindex]')?.focus({ preventScroll: true });
+    hit.click();
+  };
 
   /** A pointer event's point as the user sees it, in the canvas's CSS pixels. */
   pointOf(event) {
@@ -582,7 +613,7 @@ export class LoomStage extends ElementBase {
 
   #describeHold(button) {
     if (!button.hasAttribute('aria-description')) {
-      button.setAttribute('aria-description', 'Press and hold, or activate twice, to confirm');
+      button.setAttribute('aria-description', wordFor(button, 'holdHint'));
     }
   }
 
@@ -602,7 +633,7 @@ export class LoomStage extends ElementBase {
         return;
       }
       this.#armed = { el: button, at: event.timeStamp };
-      this.#announce(`${button.textContent.trim()}: activate again to confirm`);
+      this.#announce(wordFor(button, 'holdArmed', button.textContent.trim()));
     }
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -691,6 +722,11 @@ export class LoomStage extends ElementBase {
   #fitCanvas() {
     const canvas = this.#canvas;
     if (!canvas) return;
+    // fill: the parent sets the stage's height, and the content takes all of it.
+    if (this.hasAttribute('fill')) {
+      const min = `${this.clientHeight}px`;
+      if (this.#source.style.minHeight !== min) this.#source.style.minHeight = min;
+    }
     const height = this.#source.offsetHeight;
     const h = `${height}px`;
     if (canvas.style.height === h) return;
@@ -956,7 +992,7 @@ export class LoomStage extends ElementBase {
     u.set(role('void', role('bg', [0, 0, 0])), U.void);
     u.set([skin.shader.scanlines, skin.shader.chroma, skin.shader.crumble, skin.shader.hatch], U.style);
     u[U.wipeDir] = 1;
-    u[U.alpha] = this.overlay ? 1 : 0;
+    u[U.alpha] = this.overlay || this.hasAttribute('bare') ? 1 : 0;
     const whole = [0, 0, sourceRect.width, sourceRect.height];
     this.#ctx = { colors, now, reduced: this.reduced, whole, durations: skin.durations, stage: this };
 
@@ -1138,13 +1174,35 @@ export class LoomStage extends ElementBase {
       const runtime = await loadRuntime();
       await document.fonts?.ready;
       if (generation !== this.#generation || !this.isConnected) return 'dom';
+      // The slow part first, while the content is still the page's: once it moves into the
+      // canvas it is neither shown nor hit until the first frame.
+      await warmCompositor(await sharedDevice(), navigator.gpu.getPreferredCanvasFormat());
+      // A press under way ends first (and its click lands): moved between its down and its
+      // up, its element would get no click.
+      while (this.#pressing.size) {
+        await new Promise((resolve) => {
+          const end = () => {
+            removeEventListener('pointerup', end, true);
+            removeEventListener('pointercancel', end, true);
+            setTimeout(resolve);
+          };
+          addEventListener('pointerup', end, true);
+          addEventListener('pointercancel', end, true);
+        });
+      }
+      if (generation !== this.#generation || !this.isConnected) return 'dom';
 
       const source = this.#source;
       const canvas = document.createElement('canvas');
       canvas.className = 'loom-canvas';
+      // From here to the first frame the content is in the canvas, neither shown nor hit:
+      // a click on the canvas goes to the element under it.
+      canvas.addEventListener('click', this.#forwardClick, true);
       const height = source.offsetHeight;
       canvas.style.height = `${height}px`;
-      source.style.width = `${this.clientWidth}px`;
+      // The canvas gets its width in pixels too: a percentage of a stage sized by its content
+      // (a flex item, an inline block) would resolve from the canvas's own aspect ratio.
+      source.style.width = canvas.style.width = `${this.clientWidth}px`;
       source.setAttribute('drawable', '');
       this.insertBefore(canvas, source);
       // On a connected canvas this mounts the polyfill's empty live layer
@@ -1156,8 +1214,9 @@ export class LoomStage extends ElementBase {
 
       // The polyfill finds new drawable canvases from a MutationObserver.
       await Promise.resolve();
-      // An overlay stage (in a dialog, a popover) is transparent around its panel.
-      const alphaMode = this.overlay ? 'premultiplied' : 'opaque';
+      // An overlay stage (in a dialog, a popover) is transparent around its panel; a bare
+      // stage has no panel, and the page shows through it.
+      const alphaMode = this.overlay || this.hasAttribute('bare') ? 'premultiplied' : 'opaque';
       const host = await runtime.api.createHost(canvas, source, { maxDpr: 2, interposer: true, device: sharedDevice, alphaMode });
       if (generation !== this.#generation) {
         host.destroy();
@@ -1171,7 +1230,7 @@ export class LoomStage extends ElementBase {
 
       const resize = new ResizeObserver(() => {
         const width = `${this.clientWidth}px`;
-        if (source.style.width !== width) source.style.width = width;
+        if (source.style.width !== width) source.style.width = canvas.style.width = width;
         this.#fitCanvas();
         this.wake();
       });
@@ -1213,6 +1272,7 @@ export class LoomStage extends ElementBase {
     if (canvas && this.#source) {
       this.#source.removeAttribute('drawable');
       this.#source.style.width = '';
+      this.#source.style.minHeight = '';
       moveSource(this, this.#source, canvas.parentNode === this ? canvas : null);
       canvas.remove();
     }

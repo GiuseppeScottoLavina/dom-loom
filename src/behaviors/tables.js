@@ -1,3 +1,4 @@
+import { wordFor } from '../core/strings.js';
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 /** A cell's text as a number when it is one ("1,200 m", "-4.5 %", "82"), else NaN. */
@@ -40,7 +41,7 @@ export class Tables {
       button.className = 'loom-sort';
       th.append(button);
     }
-    const label = `Sort by ${th.textContent.trim()}`;
+    const label = wordFor(th, 'sortBy', th.textContent.trim());
     if (button.getAttribute('aria-label') !== label) button.setAttribute('aria-label', label);
   }
   sort(th) {

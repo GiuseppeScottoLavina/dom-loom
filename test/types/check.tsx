@@ -2,7 +2,7 @@
 import { useRef } from 'react';
 import { defineSkin, extendSkin, PILL, ADD, type LoomStage as Stage } from 'dom-loom';
 import 'dom-loom/tabs';
-import { defineBehavior, getSkin, type LoomStage as CoreStage } from 'dom-loom/core';
+import { defineBehavior, defineStrings, getSkin, type LoomStage as CoreStage } from 'dom-loom/core';
 import { PILL as Pill } from 'dom-loom/primitives/pill';
 // @ts-expect-error: the core exports no primitive kinds (import them from dom-loom or dom-loom/primitives/*)
 import { PILL as NotInCore } from 'dom-loom/core';
@@ -14,6 +14,10 @@ import { ref } from 'vue';
 const skin = defineSkin({ name: 'mine', tokens: { accent: ['--accent', '#fc0'] }, roles: { hot: 'accent' } });
 extendSkin('mine', { press: (scene, state, { colors }) => scene.push(PILL, state.rect, [4, 0, 8, 0.3], colors.accent, ADD) });
 void skin;
+
+defineStrings('de', { dismiss: 'Schließen', remove: (label) => `${label} entfernen` });
+// @ts-expect-error: not one of the words
+defineStrings('de', { cancel: 'Abbrechen' });
 
 const stage = document.querySelector('loom-stage');
 stage?.transition(() => {}, { scope: document.body, direction: -1, cut: true }).then(() => stage.mapPoint({ x: 1, y: 2 }));
@@ -51,6 +55,16 @@ export function App() {
       <label dropzone=""><input type="file" /></label>
       <button hold="900ms" onClick={() => transition(() => {}, { morph: [], cut: false })}>Go</button>
     </LoomStage>
+  );
+}
+
+export function Shell() {
+  return (
+    <>
+      <LoomStage bare fill><nav aria-label="Main" /></LoomStage>
+      <LoomStage bare><ol toasts="viewport" /></LoomStage>
+      <LoomStage><div removable="row" /><button className="loom-plain" /></LoomStage>
+    </>
   );
 }
 

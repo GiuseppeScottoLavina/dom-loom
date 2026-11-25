@@ -175,7 +175,7 @@ test('presented and gesture mappers keep the twins used by the presented shader 
   const b = await mount(device);
   a.stage.scene.push(kind, [0, 0, 100, 100]);
   const point = { x: 10, y: 10 };
-  assert.equal(a.instance.captureInputMapper()(point), NO_TARGET);
+  assert.deepEqual(a.instance.captureInputMapper()(point), { x: point.x, y: point.y }, 'before the first frame the page is where it was');
   a.draw();
   const first = a.instance.captureInputMapper().captureGestureSnapshot();
   assert.equal(first(point).x, 12);
@@ -193,7 +193,7 @@ test('presented and gesture mappers keep the twins used by the presented shader 
     ['domloom', 'rgba8unorm'], ['domloom', 'bgra8unorm'],
   ]);
   a.draw(2, false);
-  assert.equal(a.instance.captureInputMapper()(point), NO_TARGET);
+  assert.deepEqual(a.instance.captureInputMapper()(point), { x: point.x, y: point.y }, 'a frame without the picture of the page leaves it where it is');
   a.instance.destroy();
   b.instance.destroy();
 });

@@ -167,6 +167,28 @@ export interface PrimitiveDefinition {
 }
 export declare function definePrimitive(def: PrimitiveDefinition): number;
 
+/** The words DomLoom writes for assistive technology. Functions get the element's own text. */
+export interface LoomStrings {
+  /** The description of a button with `hold`. */
+  holdHint: string;
+  /** Announced when an activation arms a `hold` button. */
+  holdArmed: string | ((label: string) => string);
+  /** The name of a chip's remove button. */
+  remove: string | ((label: string) => string);
+  /** The name of a toast's close button. */
+  dismiss: string;
+  /** The name of a splitter. */
+  resizePanes: string;
+  /** The name of a sortable header's button. */
+  sortBy: string | ((label: string) => string);
+}
+/**
+ * Adds a language (a BCP 47 tag: 'de', 'pt-BR') or changes some of its words. English and
+ * Italian are built in; each element takes the language of its nearest `lang`, and words a
+ * language leaves out come from English. A label the page sets itself always wins.
+ */
+export declare function defineStrings(lang: string, strings: Partial<LoomStrings>): void;
+
 /** Blends of paint primitives: PILL takes all five; TONE takes BEHIND, OVER, INK and INVERT; FOCUS takes OVER and INK. */
 export declare const ADD: 0;
 export declare const BEHIND: 1;

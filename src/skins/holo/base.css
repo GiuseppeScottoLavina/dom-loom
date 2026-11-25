@@ -215,8 +215,8 @@
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
 
-/* Buttons */
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button, input[type=button], input[type=submit], input[type=reset]) {
+/* Buttons. A button with class loom-plain keeps the page's own look (it still dents when pressed). */
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button:not(.loom-plain), input:is([type=button], [type=submit], [type=reset]):not(.loom-plain)) {
   position: relative;
   padding: 14px 22px;
   border: 1px solid var(--loom-line);
@@ -229,13 +229,13 @@
   cursor: pointer;
   user-select: none;
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button[type=submit], button.loom-primary) {
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button:is([type=submit], .loom-primary):not(.loom-plain)) {
   border-color: var(--loom-signal);
   background:
     linear-gradient(135deg, var(--loom-signal) 0 7px, transparent 7px) no-repeat,
     color-mix(in srgb, var(--loom-signal) 9%, transparent);
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button:disabled) { opacity: 0.45; cursor: not-allowed; }
+:where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(button:disabled:not(.loom-plain)) { opacity: 0.45; cursor: not-allowed; }
 
 /* Gauges: a bracketed slot; the fill is light. */
 :where(loom-stage:not([skin]), loom-stage[skin="holo"]) :where(progress, meter) {
@@ -540,7 +540,7 @@
   left: 25px;
   background: var(--loom-panel);
 }
-:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(button[hold]) {
+:where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(button[hold]:not(.loom-plain)) {
   background:
     linear-gradient(90deg, var(--loom-signal) calc(var(--loom-charge, 0) * 100%), transparent 0) no-repeat,
     linear-gradient(135deg, var(--loom-signal) 0 7px, transparent 7px) no-repeat,
@@ -568,7 +568,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(label:has(> input[type=radio]), input[type=checkbox], button) {
+  :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(label:has(> input[type=radio]), input[type=checkbox], button:not(.loom-plain)) {
     transition: background-color 160ms, border-color 160ms;
   }
   :where(loom-stage:not([skin]), loom-stage[skin="holo"])[data-renderer=dom] :where(input[type=checkbox][role=switch])::before {

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App</title>
+  <!-- test/app.browser.mjs: what an app's page asks of the stages (BoilieLab). -->
+  <link rel="stylesheet" href="/src/loom.css">
+  <script type="module">
+    import '/src/index.js';
+  </script>
+  <style>
+    body { margin: 0; background: #0a0e24; color: #e8f4ff; font: 16px system-ui, sans-serif; }
+    header { display: flex; align-items: stretch; gap: 24px; height: 70px; padding: 0 16px; background: #2a1a4a; }
+    header .logo { align-self: center; }
+    header nav ul { display: flex; align-items: center; gap: 8px; height: 100%; margin: 0; padding: 0; list-style: none; }
+    main { padding: 24px 16px 1600px; }
+    #content { width: 520px; }
+    .row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; }
+    .suggestion { text-transform: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="logo">BoilieLab</span>
+    <loom-stage id="navstage" bare fill>
+      <nav aria-label="Main">
+        <ul>
+          <li><a href="#recipes" aria-current="page">Recipes</a></li>
+          <li><a href="#stock">Stock</a></li>
+        </ul>
+      </nav>
+    </loom-stage>
+  </header>
+  <main>
+    <loom-stage id="content">
+      <p><button type="button" id="styled">Mix</button> <button type="button" id="plain" class="loom-plain">Use 250 g of flour</button></p>
+      <div id="row" class="row" removable="row"><span>Fishmeal</span><span>1.2 kg</span></div>
+      <ul>
+        <li id="chip" removable>Garlic</li>
+        <li id="own" removable>Hemp <button type="button" class="loom-remove" aria-label="Take out hemp"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor"/></svg></button></li>
+      </ul>
+      <div lang="it" id="italian">
+        <ul><li id="chip-it" removable>Aglio</li></ul>
+        <button type="button" id="hold-it" hold="900ms">Elimina ricetta</button>
+        <button type="button" id="hold-own" hold="900ms" aria-description="Tieni premuto per svuotare">Svuota</button>
+      </div>
+    </loom-stage>
+  </main>
+  <loom-stage id="dock" bare>
+    <ol toasts="viewport" aria-label="Notifications"></ol>
+  </loom-stage>
+</body>
+</html>

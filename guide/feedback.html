@@ -232,7 +232,7 @@
 
       <h2 id="notifications">Toasts, alerts, badges, busy</h2>
       <ul>
-        <li><strong><code>toasts</code></strong> on a list or a box: each child is a toast. It assembles, counts down (<code>data-timeout</code>, 5 s by default) with a bar of light, holds while pointed at or focused, and crumbles when its time is up. <code>data-tone="good"</code>, <code>"warn"</code> or <code>"bad"</code> colours it. The region is made a polite live region.</li>
+        <li><strong><code>toasts</code></strong> on a list or a box: each child is a toast. It assembles, counts down (<code>data-timeout</code>, 5 s by default) with a bar of light, holds while pointed at or focused, and crumbles when its time is up. <code>data-tone="good"</code>, <code>"warn"</code> or <code>"bad"</code> colours it. The region is made a polite live region. <code>toasts="viewport"</code> is for a page's notifications: put the list in a <code>bare</code> stage of its own, and it sits at the bottom centre of the viewport, above the page, across the width of a phone.</li>
         <li><strong><code>role="alert"</code></strong>: when an alert appears or its text changes, it lands with a shock and its text tears for a moment.</li>
         <li><strong><code>badge</code></strong>: when its number changes, it pings; going up and going down sound and light differently.</li>
         <li><strong><code>aria-busy="true"</code></strong>: the placeholder content is drawn as blocks with a scan over them; when it is no longer busy, the real content assembles block by block.</li>
@@ -288,6 +288,11 @@
         work too. Removing crumbles it and the rest flies into the gap. The item fires <code>loom-remove</code> first
         (cancelable: a framework cancels it and removes the item from its own state). A removable item that is added
         assembles block by block. <code>exit="shatter"</code> breaks it into shards instead (entry <code>dom-loom/shatter</code>).
+      </p>
+      <p>
+        <code>removable</code> draws the item as a chip. <code>removable="row"</code> keeps the look of an item that is not
+        a chip (a table row, a grid row) and only styles its remove button. An item that has its own
+        <code>button.loom-remove</code> keeps that button's label and content.
       </p>
       <section class="example" id="removable-example">
         <script type="text/html">

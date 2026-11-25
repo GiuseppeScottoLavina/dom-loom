@@ -41,11 +41,12 @@ function coveredBy(kind, x, y, items, count) {
 
 /**
  * The source point that the presented pixel (x, y) shows, in canvas CSS px, or null
- * where it shows no live element (the old page of a transition, the unbooted part).
+ * where it shows no live element (the old page of a transition). The boot sweep is
+ * only seen: below its line the page is where it was before the stage started, and a
+ * press there reaches it.
  * `field` is the displacement field of that frame (a copy), or null where it is off.
  */
 export function mapThrough(x, y, uniforms, items, count, field = null, tables = mapperTables()) {
-  if (uniforms[U.bootActive] > 0.5 && y > uniforms[U.bootLine]) return null;
   // What a post primitive hides (an overlay that is still opening) takes no input.
   for (const def of tables.posts) {
     for (let i = 0; i < count; i++) {

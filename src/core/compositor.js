@@ -76,6 +76,23 @@ function ghostPipeline(device, resources) {
 }
 
 /**
+ * Compiles the compositor's pipelines on a device ahead of a stage (the plugin then finds
+ * them ready). A stage calls it before its content moves into the canvas: from then until
+ * the first frame the content is neither shown nor hit, and a compile takes seconds on a
+ * software GPU.
+ * @param {GPUDevice} device
+ * @param {GPUTextureFormat} format  the canvas format
+ */
+export function warmCompositor(device, format) {
+  const resources = resourcesFor(device);
+  return Promise.all([
+    scenePipeline(device, resources, format).ready,
+    scenePipeline(device, resources, 'rgba8unorm').ready,
+    ghostPipeline(device, resources),
+  ]);
+}
+
+/**
  * One effect plugin per stage: the whole stage is drawn in one pass. The stage owns
  * the scene (what moves and lights up); the plugin uploads it, draws it, and hands the
  * host a mapper frozen on the numbers of each presented frame.
@@ -273,6 +290,10 @@ export function createCompositor(runtime, stage) {
         get sourceVersion() {
           return sourceVersion;
         },
+        /** Whether a frame with the picture of the page has been drawn. */
+        get drawn() {
+          return presented !== null;
+        },
         waitForSource(version, timeoutMs = 400, signal, height) {
           if (sourceVersion > version && fits(height) && !destroyed && !signal?.aborted) return Promise.resolve(true);
           return waitForFrame(versionWaiters, version, timeoutMs, signal, height);
@@ -383,7 +404,13 @@ export function createCompositor(runtime, stage) {
           if (captures) for (const waiter of captures) waiter.finish(true);
         },
         captureInputMapper() {
-          if (!presented) return () => NO_TARGET;
+          if (!presented) {
+            // Nothing drawn yet: the page is where it was before the stage started, and a
+            // press there reaches it.
+            const unmoved = (point) => ({ x: point.x, y: point.y });
+            unmoved.captureGestureSnapshot = () => unmoved;
+            return unmoved;
+          }
           const { uniforms: u, items, count, field, tables } = presented;
           const mapper = (point) => mapThrough(point.x, point.y, u, items, count, field, tables) ?? NO_TARGET;
           mapper.captureGestureSnapshot = () => mapper;

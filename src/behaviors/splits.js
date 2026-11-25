@@ -1,4 +1,5 @@
 import { Spring } from '../core/spring.js';
+import { wordFor } from '../core/strings.js';
 
 let splitIds = 0;
 
@@ -73,7 +74,7 @@ export class Splits {
       hr.setAttribute('aria-valuemin', String(min));
       hr.setAttribute('aria-valuemax', String(max));
       if (first) hr.setAttribute('aria-controls', first.id);
-      if (!hr.hasAttribute('aria-label')) hr.setAttribute('aria-label', 'Resize panes');
+      if (!hr.hasAttribute('aria-label')) hr.setAttribute('aria-label', wordFor(hr, 'resizePanes'));
       const s = { hr, min, max, value, raw: value, dragging: false, shown: new Spring(0, { stiffness: 260, damping: 15, epsilon: 0.05 }) };
       this.states.set(el, s);
       this.apply(el, value);

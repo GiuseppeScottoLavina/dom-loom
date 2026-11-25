@@ -7,6 +7,10 @@ export interface LoomStageProps extends HTMLAttributes<LoomStageElement> {
   haptics?: boolean;
   static?: boolean;
   loading?: 'eager' | 'lazy';
+  /** No panel (background, padding, frame): the page shows through. For a stage around a layout element, or a page's toasts. */
+  bare?: boolean;
+  /** The parent sets the stage's height (a stretched flex or grid item), and the content takes all of it. */
+  fill?: boolean;
   /** A stage inside a dialog or a popover: transparent; the value is the edge it opens from. */
   overlay?: boolean | 'center' | 'left' | 'right' | 'top' | 'bottom';
   onFallback?: (error: unknown) => void;
@@ -24,10 +28,12 @@ interface DomLoomAttributes {
   hold?: string;
   sortable?: '' | 'sortable';
   nosort?: '' | 'nosort';
-  removable?: '' | 'removable';
+  /** 'row': removable, but not drawn as a chip. */
+  removable?: '' | 'removable' | 'row';
   rating?: '' | 'rating';
   interval?: '' | 'interval';
-  toasts?: '' | 'toasts';
+  /** 'viewport': a page's toasts, at the bottom of the viewport (in a bare stage of their own). */
+  toasts?: '' | 'toasts' | 'viewport';
   dropzone?: '' | 'dropzone';
   badge?: '' | 'badge';
   tilt?: '' | 'tilt';

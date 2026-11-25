@@ -18,6 +18,27 @@ loom-stage .loom-source {
   box-sizing: border-box;
 }
 
+/* bare: a stage without a panel (no background, padding or frame); its canvas is transparent
+ * and the page shows through. For a stage around a layout element, or a page's toasts. */
+loom-stage[bare], loom-stage[bare] .loom-source { background: none; }
+loom-stage[bare] .loom-source { padding: 0; }
+loom-stage[bare] .loom-source::before, loom-stage[bare] .loom-source::after { content: none; }
+
+/* fill: the parent sets the stage's height (a stretched flex or grid item, a fixed height),
+ * and its content takes all of it; one child (a nav, a toolbar) fills the box. */
+loom-stage[fill] { display: grid; }
+loom-stage[fill] .loom-source { display: grid; grid-template-rows: minmax(0, 1fr); }
+
+/* toasts="viewport": a page's notifications, at the bottom of the viewport, above the page.
+ * Put the list in a bare stage of its own. */
+loom-stage:has([toasts=viewport]) {
+  position: fixed;
+  z-index: 2147483000;
+  inset: auto 0 calc(16px + env(safe-area-inset-bottom, 0px));
+  width: min(420px, calc(100vw - 32px));
+  margin-inline: auto;
+}
+
 /* Tab panels are shown and hidden by DomLoom; a page's display rule must not undo it. */
 loom-stage [role=tabpanel][hidden] { display: none !important; }
 

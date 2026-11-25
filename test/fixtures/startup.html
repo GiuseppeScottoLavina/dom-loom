@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Startup</title>
+  <!-- test/startup.browser.mjs: every click lands while the stages start. -->
+  <link rel="stylesheet" href="/src/loom.css">
+  <script type="module">
+    import '/src/index.js';
+    // When each stage's renderer changed, for the tests.
+    window.__renderers = [];
+    new MutationObserver((records) => {
+      for (const r of records) window.__renderers.push(`${r.target.id}:${r.target.dataset.renderer}@${Math.round(performance.now())}`);
+    }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['data-renderer'] });
+  </script>
+  <style>body { margin: 0; background: #0a0e24; } loom-stage { width: 420px; }</style>
+</head>
+<body>
+  <loom-stage id="eager">
+    <button type="button" id="b1" onclick="this.dataset.n = +(this.dataset.n ?? 0) + 1">Press</button>
+    <label><input type="checkbox" id="c1"> Check</label>
+  </loom-stage>
+  <div style="height: 1400px"></div>
+  <loom-stage id="lazy" loading="lazy">
+    <button type="button" id="b2" onclick="this.dataset.n = +(this.dataset.n ?? 0) + 1">Press</button>
+  </loom-stage>
+</body>
+</html>

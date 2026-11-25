@@ -87,10 +87,10 @@ test('a transition maps the old page to no target and flying elements to their n
   assert.deepEqual(mapThrough(10, 10, u, scene.data, scene.count), { x: 10, y: 10 }, 'the revealed page is live');
 });
 
-test('the boot sweep hides what it has not reached', () => {
+test('the boot sweep takes no input: the page under it is where it was before the stage started', () => {
   const u = uniforms({ bootActive: 1, bootLine: 100 });
-  assert.equal(mapThrough(10, 150, u, new Float32Array(16), 0), null);
-  assert.deepEqual(mapThrough(10, 50, u, new Float32Array(16), 0), { x: 10, y: 50 });
+  assert.deepEqual(mapThrough(10, 150, u, new Float32Array(16), 0), { x: 10, y: 150 }, 'below the line');
+  assert.deepEqual(mapThrough(10, 50, u, new Float32Array(16), 0), { x: 10, y: 50 }, 'above it');
 });
 
 test('a shift shows content from below, and empty space past the edge', () => {

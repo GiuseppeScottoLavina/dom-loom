@@ -18,6 +18,7 @@ if (globalThis.customElements && !customElements.get('loom-stage')) {
 export { LoomStage };
 export { defineBehavior } from './behaviors.js';
 export { definePrimitive } from './primitives.js';
+export { defineStrings } from './strings.js';
 export { DEFAULT_SKIN, defineSkin, extendSkin, getSkin, skinNames } from './skin.js';
 export { ADD, BEHIND, INK, INVERT, OVER } from './scene.js';
 export { audio, noise, output, tone } from './audio.js';

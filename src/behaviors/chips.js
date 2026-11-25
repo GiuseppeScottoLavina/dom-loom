@@ -1,3 +1,5 @@
+import { wordFor } from '../core/strings.js';
+
 // Keep framework-supplied controls and accessible names under the author's ownership.
 const automaticLabels = new WeakMap();
 
@@ -50,7 +52,7 @@ export class Chips {
     }
     const previous = automaticLabels.get(button);
     if (previous === undefined || button.getAttribute('aria-label') !== previous) return;
-    const label = chip.closest('[toasts]') ? 'Dismiss' : `Remove ${chip.textContent.trim()}`;
+    const label = chip.closest('[toasts]') ? wordFor(chip, 'dismiss') : wordFor(chip, 'remove', chip.textContent.trim());
     if (previous !== label) {
       button.setAttribute('aria-label', label);
       automaticLabels.set(button, label);

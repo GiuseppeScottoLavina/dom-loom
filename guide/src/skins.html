@@ -9,6 +9,14 @@ description: Recolour DomLoom's holo skin with CSS custom properties, write a sk
         turn it into compositor primitives. A skin also has a stylesheet for the controls at rest. <code>holo</code> is the default.
       </p>
 
+      <h2 id="page-css">Your page's CSS</h2>
+      <p>
+        A skin's rules have no specificity (they are written with <code>:where()</code>), so any rule of your page wins
+        over them, without <code>!important</code>. A button with class <code>loom-plain</code> keeps your page's look
+        altogether, and still dents when pressed: for the buttons that are content (a suggestion in a line, a cancel in a
+        toast) rather than controls.
+      </p>
+
       <h2 id="theme">Recolour holo</h2>
       <p>
         Holo reads its colours and fonts from custom properties on the stage: <code>--loom-holo</code> (light),
