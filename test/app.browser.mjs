@@ -101,8 +101,14 @@ async function run(path, browser, url) {
       document.querySelector('[toasts=viewport]').append(li);
     });
     await page.waitForTimeout(800);
+    // The stage, and the list and the toast in it: all three span the same width.
     const place = () => page.evaluate(() => {
       const r = document.querySelector('#dock').getBoundingClientRect();
+      const inner = ['[toasts=viewport]', '#toast'].map((s) => {
+        const b = document.querySelector(s).getBoundingClientRect();
+        return [Math.round(b.left - r.left), Math.round(r.right - b.right)];
+      });
+      if (inner.some(([l, rr]) => l !== 0 || rr !== 0)) return { inner };
       return { left: Math.round(r.left), right: Math.round(innerWidth - r.right), bottom: Math.round(innerHeight - r.bottom), width: Math.round(r.width) };
     });
     const before = await place();
