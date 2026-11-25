@@ -61,7 +61,7 @@ export function App() {
 export function Shell() {
   return (
     <>
-      <LoomStage bare fill><nav aria-label="Main" /></LoomStage>
+      <LoomStage bare fill><nav aria-label="Main" reticle="focus" /></LoomStage>
       <LoomStage bare><ol toasts="viewport" /></LoomStage>
       <LoomStage><div removable="row" /><button className="loom-plain" /></LoomStage>
     </>

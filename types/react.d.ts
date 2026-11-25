@@ -45,6 +45,8 @@ interface DomLoomAttributes {
   exit?: 'shatter' | string;
   split?: '' | 'split';
   ring?: '' | 'ring';
+  /** 'focus': the reticle follows keyboard focus here, not the pointer. */
+  reticle?: 'focus';
   segments?: number | string;
 }
 

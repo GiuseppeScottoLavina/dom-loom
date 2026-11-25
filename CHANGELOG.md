@@ -26,7 +26,8 @@ The first public release. It depends on `@giuseppe-scotto-lavina/html-in-canvas-
   - `removable="row"` for removable items that are not chips.
   - `loom-plain` for buttons that keep the page's look.
   - `overlay="zoom"`: an overlay that opens and closes at scale (from 94 %, fading), scaled by the compositor so that clicks land where they are seen. Primitives can now have a `view`, which moves the whole frame (picture, lights and input), and `ZOOM` is one.
-  - `current="line"` for a page's own navigation: the links keep their look, and a line on the bottom edge of the current one slides to the next. It is drawn inside the item's box, so it never leaves the canvas. In such a navigation the reticle follows keyboard focus only, not the pointer.
+  - `current="line"` for a page's own navigation: the links keep their look, and a line on the bottom edge of the current one slides to the next. It is drawn inside the item's box, so it never leaves the canvas.
+  - `reticle="focus"`, on a stage or any element in it: the reticle follows keyboard focus there, not the pointer.
 - Names in the page's language: the remove, dismiss, sort and splitter buttons and the hold hints follow the nearest `lang`. English and Italian are built in, and `defineStrings(lang, words)` adds a language or changes words. Labels the page sets still win.
 
 ### Fixed

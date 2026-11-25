@@ -47,7 +47,9 @@
       <p>
         A press dents a <code>&lt;button&gt;</code>, a <code>&lt;summary&gt;</code>, a link or the label of a radio or
         checkbox around the point of contact; the release sends a ring through it. Lock-on brackets fly to the
-        control you point at or tab to: the last input wins, so Tab takes them from the mouse.
+        control you point at or tab to: the last input wins, so Tab takes them from the mouse. They stay inside the
+        stage. <code>reticle="focus"</code> on the stage, or on any element in it, keeps them to keyboard focus there: on
+        the GPU path they are the focus indicator, so the keyboard always has them.
       </p>
       <section class="example" id="press">
         <script type="text/html">

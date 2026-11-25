@@ -142,7 +142,7 @@ async function run(path, browser, url) {
     await plain.close();
   });
 
-  await check(`${path}: the reticle stays inside the stage; in a current="line" nav it follows the keyboard, not the pointer`, async () => {
+  await check(`${path}: the reticle stays inside the stage, on the keyboard and the pointer; reticle="focus" keeps it to the keyboard`, async () => {
     // Every rectangle the reticle hands to the skin, with its stage and alpha.
     await page.evaluate(async () => {
       const { extendSkin, getSkin } = await import('/src/core/skin.js');
@@ -156,36 +156,61 @@ async function run(path, browser, url) {
       });
     });
     const last = (stage) => page.evaluate((stage) => window.__reticles.filter((r) => r.stage === stage).at(-1) ?? null, stage);
-    const size = (stage) => page.evaluate((stage) => {
-      const s = document.querySelector(`#${stage} .loom-source`);
+    const [w, h] = await page.evaluate(() => {
+      const s = document.querySelector('#navstage .loom-source');
       return [s.offsetWidth, s.offsetHeight];
-    }, stage);
+    });
+    // Drawn, inside the stage on every side; `edges` are the sides it is pulled in on.
+    const inside = (r, label) => {
+      assert.ok(r && r.alpha > 0.9, `${label}: the reticle shows`);
+      const [x, y, rw, rh] = r.rect;
+      assert.ok(x >= 4 && y >= 4 && x + rw <= w - 4 && y + rh <= h - 4, `${label}: inside the stage (${r.rect.map(Math.round)} in ${w}×${h})`);
+      return [Math.round(x), Math.round(y), Math.round(x + rw), Math.round(y + rh)];
+    };
+    const centre = (sel) => page.evaluate((sel) => {
+      const r = document.querySelector(sel).getBoundingClientRect();
+      return [r.x + r.width / 2, r.y + r.height / 2];
+    }, sel);
+    const hover = async (sel) => {
+      const [x, y] = await centre(sel);
+      await page.mouse.move(x, y, { steps: 4 });
+      await page.waitForTimeout(700);
+    };
+    const rest = async () => {
+      await page.evaluate(() => document.activeElement?.blur());
+      await page.mouse.move(500, 650);
+      await page.waitForTimeout(700);
+      await page.evaluate(() => (window.__reticles = []));
+    };
 
     // The keyboard on the first link: it touches the canvas on the left, the top and the bottom.
-    await page.evaluate(() => document.activeElement?.blur());
-    await page.mouse.move(500, 650);
+    await rest();
     await page.keyboard.press('Tab');
     assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), '#recipes');
     await page.waitForTimeout(700);
-    const [w, h] = await size('navstage');
-    const focus = await last('navstage');
-    assert.ok(focus && focus.alpha > 0.9, 'keyboard focus shows the reticle');
-    const [x, y, rw, rh] = focus.rect;
-    assert.ok(x >= 4 && y >= 4 && x + rw <= w - 4 && y + rh <= h - 4, `inside the stage (${focus.rect.map(Math.round)} in ${w}×${h})`);
-    assert.deepEqual([Math.round(x), Math.round(y), Math.round(y + rh)], [4, 4, h - 4], 'pulled in on the three edges it would cross');
+    let [x0, y0, , y1] = inside(await last('navstage'), 'keyboard, first link');
+    assert.deepEqual([x0, y0, y1], [4, 4, h - 4], 'pulled in on the three edges it would cross');
 
-    // The pointer over the bar: no reticle.
-    await page.evaluate(() => document.activeElement?.blur());
-    await page.waitForTimeout(700);
-    const link = await page.evaluate(() => {
-      const r = document.querySelector('#navstage a[href="#stock"]').getBoundingClientRect();
-      return [r.x + r.width / 2, r.y + r.height / 2];
-    });
-    await page.evaluate(() => (window.__reticles = []));
-    await page.mouse.move(link[0], link[1], { steps: 4 });
-    await page.waitForTimeout(500);
+    // The pointer on the first link and on the last (which touches the right edge).
+    await rest();
+    await hover('#navstage a[href="#recipes"]');
+    [x0, y0, , y1] = inside(await last('navstage'), 'pointer, first link');
+    assert.deepEqual([x0, y0, y1], [4, 4, h - 4], 'first link: pulled in left, top and bottom');
+    await hover('#navstage a[href="#stock"]');
+    const [, top, right, bottom] = inside(await last('navstage'), 'pointer, last link');
+    assert.deepEqual([top, right, bottom], [4, w - 4, h - 4], 'last link: pulled in top, right and bottom');
+
+    // reticle="focus" on the nav: the pointer gets none, the keyboard still does.
+    await page.evaluate(() => document.querySelector('#navstage nav').setAttribute('reticle', 'focus'));
+    await rest();
+    await hover('#navstage a[href="#stock"]');
     const shown = await page.evaluate(() => window.__reticles.filter((r) => r.stage === 'navstage' && r.alpha > 0.05).length);
-    assert.equal(shown, 0, 'no reticle on hover');
+    assert.equal(shown, 0, 'reticle="focus": no reticle on hover');
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(700);
+    inside(await last('navstage'), 'reticle="focus", keyboard');
+    await page.evaluate(() => document.querySelector('#navstage nav').removeAttribute('reticle'));
+    await rest();
 
     // A button inside a panel: its reticle is as it was, five pixels around it.
     const button = await page.evaluate(() => {

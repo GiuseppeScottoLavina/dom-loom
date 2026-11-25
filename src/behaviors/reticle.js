@@ -5,13 +5,13 @@ import { pad, targetFor } from './util.js';
 const EDGE = 4;
 
 /**
- * What the pointer locks onto: nothing in a page's own navigation (current="line"), where
- * the line and the page's hover style say enough. Keyboard focus still gets the reticle there:
- * on the GPU path it is the focus indicator.
+ * What the pointer locks onto: nothing inside reticle="focus" (on the stage, or on any
+ * element in it), where the page marks the pointer its own way. Keyboard focus still gets
+ * the reticle there: on the GPU path it is the focus indicator.
  */
 const hoverTarget = (el, root) => {
   const target = targetFor(el, root);
-  return target?.closest('[current=line]') ? null : target;
+  return target?.closest('[reticle=focus]') ? null : target;
 };
 
 export class Reticle {
