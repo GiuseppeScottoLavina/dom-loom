@@ -2,7 +2,7 @@
 
 All notable changes to DomLoom. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## 0.3.0 - 2026-11-24
+## 0.3.0 - 2026-11-25
 
 The first public release. It depends on `@giuseppe-scotto-lavina/html-in-canvas-polyfill` ^1.0.4, whose snapshots embed only the font subsets a tile of simple text uses and resolve `rem` against the page's root.
 
