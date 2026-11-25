@@ -1,8 +1,9 @@
 // Records the README's animations from the demo: each scene plays in Chrome with WebGPU,
-// Playwright films it, and ffmpeg cuts the stage out into a GIF with its own palette.
+// Playwright films it, and ffmpeg cuts the stage out into an animated WebP (full colour,
+// about a third of a GIF's size; every current browser shows it).
 //   node scripts/record-media.mjs            every scene
 //   node scripts/record-media.mjs deploy     one scene
-// Needs Chrome (or CHROME_PATH) and ffmpeg. Writes docs/media/<scene>.gif.
+// Needs Chrome (or CHROME_PATH) and ffmpeg built with libwebp. Writes docs/media/<scene>.webp.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -145,11 +146,11 @@ try {
     await context.close();
     const video = join(dir, readdirSync(dir).find((f) => f.endsWith('.webm')));
     const crop = [box.width, box.height, box.x, box.y].map((v) => Math.round(v) & ~1).join(':');
-    const gif = join(OUT, `${name}.gif`);
+    const out = join(OUT, `${name}.webp`);
     execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-ss', String(start), '-t', String(length), '-i', video,
-      '-vf', `crop=${crop},fps=16,scale=${scene.width}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle`,
-      gif]);
-    console.log(`${name}: ${length.toFixed(1)} s, ${(statSync(gif).size / 1e6).toFixed(2)} MB`);
+      '-vf', `crop=${crop},fps=16,scale=${scene.width}:-1:flags=lanczos`,
+      '-c:v', 'libwebp_anim', '-lossless', '0', '-quality', '80', '-compression_level', '6', '-loop', '0', out]);
+    console.log(`${name}: ${length.toFixed(1)} s, ${(statSync(out).size / 1e6).toFixed(2)} MB`);
     rmSync(dir, { recursive: true, force: true });
   }
 } finally {

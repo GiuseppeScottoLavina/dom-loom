@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/media/deploy.gif" width="520" alt="A game-style loadout form: a callsign is typed, the role selection slides between options, the altitude slider sloshes like liquid, a switch lights up, and a held Deploy button bursts and cuts to the deployed receipt while the values fly into place.">
+<img src="https://raw.githubusercontent.com/GiuseppeScottoLavina/dom-loom/main/docs/media/deploy.webp" width="520" alt="A game-style loadout form: a callsign is typed, the role selection slides between options, the altitude slider sloshes like liquid, a switch lights up, and a held Deploy button bursts and cuts to the deployed receipt while the values fly into place.">
 
 # DomLoom
 
@@ -10,9 +10,9 @@ Presses dent the button. Panels shatter. Tabs cut like a blade. A scope reads a 
 Underneath, it is still a real, accessible `<form>`.
 
 [![CI](https://github.com/GiuseppeScottoLavina/dom-loom/actions/workflows/ci.yml/badge.svg)](https://github.com/GiuseppeScottoLavina/dom-loom/actions/workflows/ci.yml)
-[![Licence: MIT](docs/badges/licence-mit.svg)](LICENSE)
-[![WebGPU compositor](docs/badges/webgpu.svg)](#how-it-works)
-[![HTML-in-Canvas, native and polyfill](docs/badges/html-in-canvas.svg)](https://github.com/WICG/html-in-canvas)
+[![Licence: MIT](https://raw.githubusercontent.com/GiuseppeScottoLavina/dom-loom/main/docs/badges/licence-mit.svg)](https://github.com/GiuseppeScottoLavina/dom-loom/blob/main/LICENSE)
+[![WebGPU compositor](https://raw.githubusercontent.com/GiuseppeScottoLavina/dom-loom/main/docs/badges/webgpu.svg)](#how-it-works)
+[![HTML-in-Canvas, native and polyfill](https://raw.githubusercontent.com/GiuseppeScottoLavina/dom-loom/main/docs/badges/html-in-canvas.svg)](https://github.com/WICG/html-in-canvas)
 
 **[Live demo](https://giuseppescottolavina.github.io/dom-loom/)** · **[Guide](https://giuseppescottolavina.github.io/dom-loom/guide/)** · [Quick start](#quick-start) · [Elements](#what-each-element-does) · [Transitions](#transitions) · [Browsers](#browser-support) · [FAQ](#faq) · [How it works](#how-it-works)
 
@@ -33,16 +33,16 @@ It is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and on t
 
 <table>
 <tr>
-<td width="50%"><img src="docs/media/ops.gif" alt="A tactical panel: Take a hit drops the hull bar at once, a shock bends the panel and a white trail drains; the shield loses a cell; Open uplink sweeps then fills; tabs change with a slanted blade cut." width="100%"></td>
-<td width="50%"><img src="docs/media/abort.gif" alt="A confirmed Abort mission: the panel's controls crack, hold for a beat, break into large shards that fall carrying their bars and labels, then ABORTED assembles in their place." width="100%"></td>
+<td width="50%"><img src="https://raw.githubusercontent.com/GiuseppeScottoLavina/dom-loom/main/docs/media/ops.webp" alt="A tactical panel: Take a hit drops the hull bar at once, a shock bends the panel and a white trail drains; the shield loses a cell; Open uplink sweeps then fills; tabs change with a slanted blade cut." width="100%"></td>
+<td width="50%"><img src="https://raw.githubusercontent.com/GiuseppeScottoLavina/dom-loom/main/docs/media/abort.webp" alt="A confirmed Abort mission: the panel's controls crack, hold for a beat, break into large shards that fall carrying their bars and labels, then ABORTED assembles in their place." width="100%"></td>
 </tr>
 <tr>
 <td><b>Damage you can read.</b> <code>&lt;meter&gt;</code> and <code>&lt;progress&gt;</code> become game bars: a hit cuts the bar, shakes the panel and leaves a trail. ARIA tabs cut with a blade.</td>
 <td><b>Irreversible, and it shows.</b> <code>exit: 'shatter'</code> breaks what an update removes into shards made of its own pixels.</td>
 </tr>
 <tr>
-<td><img src="docs/media/roster.gif" alt="A sortable table: clicking a column header sorts it and the rows fly on arcs to their new places, leaving streaks." width="100%"></td>
-<td><img src="docs/media/scope.gif" alt="A dense tactical map too small to read: a magnifying scope follows the pointer and enlarges labels, drone times and coordinates." width="100%"></td>
+<td><img src="https://raw.githubusercontent.com/GiuseppeScottoLavina/dom-loom/main/docs/media/roster.webp" alt="A sortable table: clicking a column header sorts it and the rows fly on arcs to their new places, leaving streaks." width="100%"></td>
+<td><img src="https://raw.githubusercontent.com/GiuseppeScottoLavina/dom-loom/main/docs/media/scope.webp" alt="A dense tactical map too small to read: a magnifying scope follows the pointer and enlarges labels, drone times and coordinates." width="100%"></td>
 </tr>
 <tr>
 <td><b>Sort it, watch it move.</b> <code>&lt;table sortable&gt;</code>: the rows fly to their new places, and a click on a flying row reaches it.</td>
@@ -56,7 +56,7 @@ It is built on [HTML-in-Canvas](https://github.com/WICG/html-in-canvas) and on t
 npm install dom-loom
 ```
 
-For AI agents building a screen, the [DomLoom skill](skills/domloom/SKILL.md) includes a runnable form, component markup, framework recipes and browser checks.
+For AI agents building a screen, the [DomLoom skill](https://github.com/GiuseppeScottoLavina/dom-loom/blob/main/skills/domloom/SKILL.md) includes a runnable form, component markup, framework recipes and browser checks.
 
 Import the stylesheet and the library once, in your app's entry module (with a bundler such as Vite), and serve the page from `localhost` or HTTPS, which WebGPU needs:
 
@@ -103,8 +103,8 @@ import 'dom-loom/tabs';
 | Entry (JavaScript, minified, gzip) | |
 | --- | --- |
 | `dom-loom/core` | 26 KB |
-| `dom-loom/core` + `dom-loom/tabs` | 27 KB |
-| `dom-loom/forms` | 30 KB |
+| `dom-loom/core` + `dom-loom/tabs` | 28 KB |
+| `dom-loom/forms` | 31 KB |
 | `dom-loom` (all) | 62 KB |
 
 Measured with esbuild (`--bundle --minify`) and `gzip -9`, without the polyfill, which the first stage loads in its own chunk.
@@ -206,7 +206,7 @@ They animate boxes: move, scale, fade, clip. DomLoom's effects work on the pixel
 The controls are the browser's own elements, so focus, keyboard, screen readers, form validation and autofill are unchanged. A hold-to-confirm button also confirms with a double activation, for assistive technology that can only send a click. Reduced motion and forced colours are honoured. The browser suite compares the accessibility tree with and without the GPU.
 
 **What does it cost?**
-About 62 KB of JavaScript (minified, gzip) for every component, 26 KB for the core; import only the components you use and the shader is built from their primitives alone. One canvas per stage, one GPU device for the page, and no frame at rest. On Chrome 157+ the whole demo loads about 94 KB of JavaScript, gzipped.
+About 62 KB of JavaScript (minified, gzip) for every component, 26 KB for the core; import only the components you use and the shader is built from their primitives alone. One canvas per stage, one GPU device for the page, and no frame at rest. On Chrome 157+ the whole demo loads about 95 KB of JavaScript, gzipped.
 
 **Does it work with React, Vue, Svelte?**
 Yes: `<loom-stage>` is a custom element. React and Vue have small helpers (`dom-loom/react`, `dom-loom/vue`) that flush your state updates inside a transition. See [Frameworks](#frameworks).
@@ -215,7 +215,7 @@ Yes: `<loom-stage>` is a custom element. React and Vue have small helpers (`dom-
 The look is a skin: draw hooks that turn each control's state into compositor primitives, plus a stylesheet for the controls at rest. `holo` is the default; you can theme it with CSS custom properties or [write your own](#skins).
 
 **I build with an AI agent.**
-Point it at [the DomLoom skill](skills/domloom/SKILL.md): a runnable form, component markup, framework recipes and the checks to run in a browser.
+Point it at [the DomLoom skill](https://github.com/GiuseppeScottoLavina/dom-loom/blob/main/skills/domloom/SKILL.md): a runnable form, component markup, framework recipes and the checks to run in a browser.
 
 ## Frameworks
 
@@ -375,7 +375,7 @@ The blends of the paint primitives: `ADD` (light), `BEHIND` (only the dark parts
 - Opening or closing a `<details>` changes the height of the stage at once (the canvas must have the size of its content); the content inside slides. In a multi-column layout only the column of the `<details>` slides.
 - A press in the first moments of a flight (rows sorting) can reach nothing on Chrome's own HTML-in-Canvas: the press is mapped with the frame the browser captured for it, which may still show the row leaving. It never reaches another row.
 
-On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 270 KB of JavaScript for the whole demo, 94 KB gzip, measured on a production build).
+On Chrome's own HTML-in-Canvas the polyfill's core is not downloaded: the page loads DomLoom, the polyfill's loader and its effects host (about 270 KB of JavaScript for the whole demo, 95 KB gzip, measured on a production build).
 
 ## Develop
 
@@ -402,8 +402,8 @@ npm run build            # the demo and the guide in dist/
 
 ## Contributing
 
-Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md); report security problems as [SECURITY.md](SECURITY.md) says.
+Issues and pull requests are welcome: see [CONTRIBUTING.md](https://github.com/GiuseppeScottoLavina/dom-loom/blob/main/CONTRIBUTING.md). Changes are listed in [CHANGELOG.md](https://github.com/GiuseppeScottoLavina/dom-loom/blob/main/CHANGELOG.md); report security problems as [SECURITY.md](https://github.com/GiuseppeScottoLavina/dom-loom/blob/main/SECURITY.md) says.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/GiuseppeScottoLavina/dom-loom/blob/main/LICENSE).
