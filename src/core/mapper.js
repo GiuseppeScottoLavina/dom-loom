@@ -47,6 +47,13 @@ function coveredBy(kind, x, y, items, count) {
  * `field` is the displacement field of that frame (a copy), or null where it is off.
  */
 export function mapThrough(x, y, uniforms, items, count, field = null, tables = mapperTables()) {
+  // A view (an overlay's zoom) moves the whole frame: the point the pixel shows, first.
+  for (const def of tables.views ?? []) {
+    for (let i = 0; i < count; i++) {
+      const b = i * ITEM_FLOATS;
+      if (Math.round(items[b]) === def.kind) ({ x, y } = def.view.js(x, y, items, b));
+    }
+  }
   // What a post primitive hides (an overlay that is still opening) takes no input.
   for (const def of tables.posts) {
     for (let i = 0; i < count; i++) {

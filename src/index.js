@@ -65,3 +65,4 @@ export { SWEEP } from './primitives/sweep.js';
 export { TILT } from './primitives/tilt.js';
 export { TONE } from './primitives/tone.js';
 export { VORTEX } from './primitives/vortex.js';
+export { ZOOM } from './primitives/zoom.js';

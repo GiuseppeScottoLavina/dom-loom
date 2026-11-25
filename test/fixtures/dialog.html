@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Dialog</title>
+  <!-- test/dialog.browser.mjs: an overlay born in a closed dialog, and overlay="zoom". -->
+  <link rel="stylesheet" href="/src/loom.css">
+  <script type="module">
+    import '/src/index.js';
+    import { extendSkin, getSkin } from '/src/core/skin.js';
+    // Every opening frame the skin is asked to draw, with the canvas as it is then.
+    window.__frames = [];
+    const draw = getSkin('holo').draw.aperture;
+    extendSkin('holo', {
+      aperture(scene, state, ctx) {
+        const stage = state.el.querySelector('loom-stage');
+        const canvas = stage.querySelector('canvas');
+        const source = stage.querySelector('.loom-source');
+        window.__frames.push({
+          dialog: state.el.id, open: state.open, from: state.from, closing: state.closing,
+          canvas: [canvas.width, canvas.height], content: [source.offsetWidth, source.offsetHeight],
+        });
+        return draw(scene, state, ctx);
+      },
+    });
+  </script>
+  <style>
+    body { margin: 0; background: #0a0e24; color: #e8f4ff; }
+    .frame { width: 420px; }
+  </style>
+</head>
+<body>
+  <dialog id="line">
+    <loom-stage overlay>
+      <div class="frame">
+        <form method="dialog">
+          <label>Bait <input name="bait" value="Scopex"></label>
+          <button value="saved">Save</button>
+        </form>
+      </div>
+    </loom-stage>
+  </dialog>
+  <dialog id="zoom">
+    <loom-stage overlay="zoom">
+      <div class="frame">
+        <form method="dialog">
+          <label>Batch <input name="batch" value="12 kg"></label>
+          <button id="zoom-ok" value="ok" style="width: 100%">Confirm the batch</button>
+        </form>
+      </div>
+    </loom-stage>
+  </dialog>
+</body>
+</html>

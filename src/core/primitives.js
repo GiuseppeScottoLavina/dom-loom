@@ -19,6 +19,9 @@
 //             transition: true draws it over a transition too (over the cut and
 //             the ghosts, mixed by w), and its js is asked first there
 //   light     paints over the picture: { wgsl } with p, it, `var base`, `var light`
+//   view      moves the whole frame (an overlay's zoom): { wgsl, js(x, y, items, b) -> { x, y } }
+//             wgsl runs first, with p, it and `var p` in scope: it sets the point that pixel
+//             shows, for the picture, the lights and the posts alike; js is the same for input
 //   post      works on the finished pixel: { wgsl, js(x, y, items, b) -> false where
 //             the pixel shows nothing } with p, it, `var color`, `var alpha`
 //   cut       a style for stage.transition(update, { style: name }), in place of the
@@ -71,7 +74,7 @@ export const primitives = {
   },
 };
 
-let cached = { version: -1, offsets: [], pictures: [], posts: [], cuts: [] };
+let cached = { version: -1, offsets: [], pictures: [], posts: [], cuts: [], views: [] };
 
 /** The mapper's view of the registry, rebuilt when a primitive is added. */
 export function mapperTables() {
@@ -80,9 +83,10 @@ export function mapperTables() {
     for (const def of table.values()) if (def.offset?.js) offsets[def.kind] = def.offset.js;
     const pictures = [...table.values()].filter((d) => d.picture?.js).sort((a, b) => a.picture.order - b.picture.order);
     const posts = [...table.values()].filter((d) => d.post?.js);
+    const views = [...table.values()].filter((d) => d.view?.js);
     const cuts = [];
     for (const def of table.values()) if (def.cut?.js) cuts[def.kind] = def.cut.js;
-    cached = { version, offsets, pictures, posts, cuts };
+    cached = { version, offsets, pictures, posts, cuts, views };
   }
   return cached;
 }

@@ -42,8 +42,8 @@ export declare class LoomStage extends HTMLElement {
   readonly gpu: boolean;
   /** A stage in a dialog or a popover (the `overlay` attribute): transparent around its panel. */
   get overlay(): boolean;
-  /** Sets the `overlay` attribute: true or '' for a line of light, an edge to open from, false or null to remove it. */
-  set overlay(value: boolean | '' | 'center' | 'left' | 'right' | 'top' | 'bottom' | null);
+  /** Sets the `overlay` attribute: true or '' for a line of light, an edge to open from, 'zoom' to open at scale, false or null to remove it. */
+  set overlay(value: boolean | '' | 'center' | 'left' | 'right' | 'top' | 'bottom' | 'zoom' | null);
   readonly reduced: boolean;
   /** The element that holds the stage's content. */
   readonly source: HTMLElement;
@@ -149,6 +149,8 @@ export interface PrimitiveDefinition {
   light?: { wgsl: string };
   /** Works on the finished pixel; js returns false where the pixel shows nothing. */
   post?: { wgsl: string; js?(x: number, y: number, items: Float32Array, base: number): boolean };
+  /** Moves the whole frame (an overlay's zoom): wgsl sets `p` first, for the picture, the lights and the posts; js is the same for input. */
+  view?: { wgsl: string; js(x: number, y: number, items: Float32Array, base: number): { x: number; y: number } };
   /** A style for stage.transition(..., { style: name }): js returns null where the OLD page shows, undefined where the live one does. */
   cut?: {
     wgsl: string;

@@ -722,6 +722,8 @@ export class LoomStage extends ElementBase {
   #fitCanvas() {
     const canvas = this.#canvas;
     if (!canvas) return;
+    const width = `${this.#contentWidth()}px`;
+    if (this.#source.style.width !== width) this.#source.style.width = canvas.style.width = width;
     // fill: the parent sets the stage's height, and the content takes all of it.
     if (this.hasAttribute('fill')) {
       const min = `${this.clientHeight}px`;
@@ -735,6 +737,47 @@ export class LoomStage extends ElementBase {
     // shrinks, short when it grows, never squashed.
     canvas.style.objectFit = height < parseFloat(canvas.style.height) ? 'cover' : 'contain';
     canvas.style.height = h;
+  }
+
+  /**
+   * The width of the stage's content. A stage takes its own width, except an overlay with no
+   * width of its own: its dialog or popover is as wide as its content, and the content,
+   * inside the canvas, no longer gives the stage a width. So it is measured, at its natural
+   * width, no wider than the viewport (where a dialog would wrap it).
+   */
+  #contentWidth() {
+    const canvas = this.#canvas;
+    if (!this.overlay || !canvas) return this.clientWidth;
+    // A width of its own (a drawer's, set by the page) is what is left without the canvas.
+    const canvasWidth = canvas.style.width;
+    canvas.style.width = '0px';
+    const own = this.clientWidth;
+    canvas.style.width = canvasWidth;
+    if (own > 0) return own;
+    const source = this.#source;
+    const was = source.style.width;
+    source.style.width = 'max-content';
+    const width = source.offsetWidth;
+    source.style.width = was;
+    return Math.min(width, document.documentElement.clientWidth);
+  }
+
+  /** @internal Sizes the canvas to its content now (an overlay whose dialog has just opened). */
+  _refit() {
+    this.#fitCanvas();
+    this.wake();
+  }
+
+  /**
+   * @internal Resolves after a frame with a new picture of the content at its present size
+   * has been drawn (or after `ms`): an overlay that has just been sized starts to open then,
+   * never on a picture of its old size.
+   */
+  async _settled(ms = 500) {
+    const compositor = this.#compositor;
+    if (!compositor) return;
+    await compositor.waitForSource(compositor.sourceVersion, ms, undefined, this.#source.offsetHeight);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
   }
 
   // Text and reflected values can change every frame. Only structural changes
@@ -1198,11 +1241,10 @@ export class LoomStage extends ElementBase {
       // From here to the first frame the content is in the canvas, neither shown nor hit:
       // a click on the canvas goes to the element under it.
       canvas.addEventListener('click', this.#forwardClick, true);
-      const height = source.offsetHeight;
-      canvas.style.height = `${height}px`;
       // The canvas gets its width in pixels too: a percentage of a stage sized by its content
       // (a flex item, an inline block) would resolve from the canvas's own aspect ratio.
-      source.style.width = canvas.style.width = `${this.clientWidth}px`;
+      source.style.width = canvas.style.width = `${this.#contentWidth()}px`;
+      canvas.style.height = `${source.offsetHeight}px`;
       source.setAttribute('drawable', '');
       this.insertBefore(canvas, source);
       // On a connected canvas this mounts the polyfill's empty live layer
@@ -1229,8 +1271,6 @@ export class LoomStage extends ElementBase {
       if (generation !== this.#generation) return 'dom';
 
       const resize = new ResizeObserver(() => {
-        const width = `${this.clientWidth}px`;
-        if (source.style.width !== width) source.style.width = canvas.style.width = width;
         this.#fitCanvas();
         this.wake();
       });

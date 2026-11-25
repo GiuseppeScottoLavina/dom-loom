@@ -1,6 +1,6 @@
 import { Spring } from '../core/spring.js';
 
-const FROM = { center: 0, left: 1, right: 2, top: 3, bottom: 4 };
+const FROM = { center: 0, left: 1, right: 2, top: 3, bottom: 4, zoom: 5 };
 
 /**
  * A stage with the `overlay` attribute inside a <dialog> or a [popover]: it opens from
@@ -79,10 +79,24 @@ export class Overlays {
     this.anchor();
     this.shown = true;
     this.after = null;
-    this.open.snap(0).set(1);
-    if (this.stage.reduced) this.open.snap(1);
-    this.stage.play('open');
+    this.open.snap(0);
+    // A dialog that was closed had no size: the canvas takes its size now, and the opening
+    // starts on a picture of the content at that size (until then the overlay shows nothing).
+    this.stage._refit?.();
+    if (this.stage.reduced) {
+      this.open.snap(1);
+      this.stage.wake();
+      return;
+    }
     this.stage.wake();
+    const start = () => {
+      if (!this.shown || this.after) return;
+      this.open.set(1);
+      this.stage.play('open');
+      this.stage.wake();
+    };
+    if (this.stage.gpu && this.stage._settled) this.stage._settled().then(start);
+    else start();
   }
   closed() {
     this.shown = false;

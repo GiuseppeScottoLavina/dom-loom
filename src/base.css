@@ -127,6 +127,13 @@ loom-stage .loom-live {
   color: inherit;
 }
 loom-stage[overlay] { background: transparent; }
+/* overlay="zoom" without the GPU: it fades in. */
+@media (prefers-reduced-motion: no-preference) {
+  loom-stage[overlay=zoom]:not([data-renderer=webgpu]) { transition: opacity 180ms ease-out; }
+  @starting-style {
+    :is(dialog[open], :popover-open) > loom-stage[overlay=zoom]:not([data-renderer=webgpu]) { opacity: 0; }
+  }
+}
 
 /* ---------------------------------------------------------------- GPU path */
 /* The skin's draw hooks paint what its definition lists in `draws` (data-draws on the stage):

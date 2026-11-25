@@ -12,7 +12,7 @@ export interface LoomStageProps extends HTMLAttributes<LoomStageElement> {
   /** The parent sets the stage's height (a stretched flex or grid item), and the content takes all of it. */
   fill?: boolean;
   /** A stage inside a dialog or a popover: transparent; the value is the edge it opens from. */
-  overlay?: boolean | 'center' | 'left' | 'right' | 'top' | 'bottom';
+  overlay?: boolean | 'center' | 'left' | 'right' | 'top' | 'bottom' | 'zoom';
   onFallback?: (error: unknown) => void;
   onReady?: (renderer: 'webgpu' | 'dom') => void;
   children?: ReactNode;

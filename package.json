@@ -76,6 +76,7 @@
     "test": "node --test test/*.test.mjs",
     "test:browser": "node test/stage.browser.mjs",
     "test:app": "node test/app.browser.mjs",
+    "test:dialog": "node test/dialog.browser.mjs",
     "test:startup": "node test/startup.browser.mjs",
     "test:effects": "node test/effects.browser.mjs",
     "test:guide": "node test/guide.browser.mjs",

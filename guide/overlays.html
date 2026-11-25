@@ -82,6 +82,40 @@
         </style>
         <p class="try">Open it and press Escape: it shuts, then closes. Open it again and hold Quit.</p>
       </section>
+      <p>
+        <code>overlay="zoom"</code> opens the whole panel at scale instead: it grows from 94 % as it fades in, and closes
+        the same way back. The compositor scales it, so a click lands on the control you see even while it grows. Without
+        WebGPU it fades in; with reduced motion it opens at once. An overlay that waited in a closed dialog starts to open
+        only once its first picture at its own size is drawn.
+      </p>
+      <section class="example" id="zoom-example">
+        <script type="text/html">
+          <loom-stage loading="lazy">
+            <button type="button" id="open-loadout">Save loadout</button>
+            <output id="loadout-out"></output>
+          </loom-stage>
+          <dialog id="loadout-dialog" aria-labelledby="loadout-title">
+            <loom-stage overlay="zoom" loading="lazy">
+              <form method="dialog">
+                <h3 id="loadout-title">Save loadout</h3>
+                <label>Name <input name="name" value="Night raid"></label>
+                <div>
+                  <button value="cancel">Cancel</button>
+                  <button value="save" class="loom-primary">Save</button>
+                </div>
+              </form>
+            </loom-stage>
+          </dialog>
+        </script>
+        <script type="text/plain" class="example-js">
+          const dialog = document.querySelector('#loadout-dialog');
+          document.querySelector('#open-loadout').addEventListener('click', () => dialog.showModal());
+          dialog.addEventListener('close', () => {
+            document.querySelector('#loadout-out').value = dialog.returnValue === 'save' ? 'Loadout saved.' : '';
+          });
+        </script>
+        <p class="try">Open it: the panel grows into place. Press Escape, or Save: it shrinks away, then the dialog closes.</p>
+      </section>
 
       <h2 id="drawer">Drawers</h2>
       <p>

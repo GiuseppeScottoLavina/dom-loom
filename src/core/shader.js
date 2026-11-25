@@ -360,6 +360,7 @@ const chain = (defs, body) =>
 export function buildShader(defs) {
   const offsets = defs.filter((d) => d.offset);
   const whole = offsets.filter((d) => d.offset.whole);
+  const views = defs.filter((d) => d.view);
   const pictures = defs.filter((d) => d.picture).sort((a, b) => a.picture.order - b.picture.order);
   // Pictures that are also drawn over a transition, with their opacity (w).
   const overCut = pictures.filter((d) => d.picture.transition);
@@ -408,7 +409,16 @@ ${chain(whole, (d) => d.offset.wgsl)}
 
   const fs = /* wgsl */ `
 @fragment fn fs(@builtin(position) pixel: vec4f) -> @location(0) vec4f {
-  let p = pixel.xy / u.view.xy * u.view.zw;
+  ${views.length ? 'var' : 'let'} p = pixel.xy / u.view.xy * u.view.zw;${views.length ? /* wgsl */ `
+  // A view (an overlay's zoom) moves the whole frame: the picture, its lights and its posts.
+  if (present(${maskOf(views)})) {
+    let n = u32(u.misc.x);
+    for (var i = 0u; i < n; i++) {
+      let it = items[i];
+      let kind = u32(it.h.x + 0.5);
+${chain(views, (d) => d.view.wgsl)}
+    }
+  }` : ''}
   var light = vec3f(0.0);
   var base = vec3f(0.0);
   if (u.wipe.x > 0.5) {
