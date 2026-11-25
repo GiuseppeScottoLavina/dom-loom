@@ -25,7 +25,7 @@ The first public release. It depends on `@giuseppe-scotto-lavina/html-in-canvas-
   - `toasts="viewport"`: a page's notifications at the bottom centre of the viewport, in a bare stage of their own.
   - `removable="row"` for removable items that are not chips.
   - `loom-plain` for buttons that keep the page's look.
-  - `current="line"` for a page's own navigation: the links keep their look, and a line on the bottom edge of the current one slides to the next. It is drawn inside the item's box, so it never leaves the canvas.
+  - `current="line"` for a page's own navigation: the links keep their look, and a line on the bottom edge of the current one slides to the next. It is drawn inside the item's box, so it never leaves the canvas. In such a navigation the reticle follows keyboard focus only, not the pointer.
 - Names in the page's language: the remove, dismiss, sort and splitter buttons and the hold hints follow the nearest `lang`. English and Italian are built in, and `defineStrings(lang, words)` adds a language or changes words. Labels the page sets still win.
 
 ### Fixed
@@ -37,6 +37,7 @@ The first public release. It depends on `@giuseppe-scotto-lavina/html-in-canvas-
 - `useLoomDiscard` (React) and Vue's `discard` pass `{ exit }` on to the stage.
 - A click is never lost while a stage starts. Until its compositor is compiled, the content stays the page's (shown and clickable). It moves into the canvas only when the first frame can follow at once, never under a press in progress, and until that frame a click on the canvas goes to the element under it. The boot sweep no longer swallows clicks below its line. On a software GPU this window had lasted seconds, with the stage blank and every click lost.
 - A stage sized by its content (a flex item, an inline block) keeps its content's width. Its canvas's percentage width used to resolve from the canvas's own aspect ratio, which squeezed the content.
+- The reticle stays inside its stage. Around a control at the stage's edge (a link of a bar as tall as the stage) its brackets were cut by the canvas; they are now pulled in. Controls away from the edges are unchanged.
 - A remove button with content of its own (the page's icon) no longer gets the drawn cross on top of it.
 - A number field with `step="any"` steps. The browser's `stepUp()` throws on a field without an allowed step, so its arrow keys, wheel and step buttons did nothing. Such a field now steps by amounts in its own units: `data-step` on a button is the amount, `data-step-by` on the field is the arrow-key and wheel amount (1 by default), and the value lands on that amount's grid, within `min` and `max`, without floating-point noise. Fields with a numeric `step` step as before.
 - A stage that changes height no longer flickers. Closing a `<details>` that made the stage shorter showed, for a few frames, the old picture squashed into the new height (and, on the polyfill, the text twice): the canvas now takes its new size before the frame is drawn, a picture of the old size keeps its scale until one of the new size arrives, and the disclosure waits for that picture.

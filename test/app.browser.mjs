@@ -142,6 +142,68 @@ async function run(path, browser, url) {
     await plain.close();
   });
 
+  await check(`${path}: the reticle stays inside the stage; in a current="line" nav it follows the keyboard, not the pointer`, async () => {
+    // Every rectangle the reticle hands to the skin, with its stage and alpha.
+    await page.evaluate(async () => {
+      const { extendSkin, getSkin } = await import('/src/core/skin.js');
+      const draw = getSkin('holo').draw.reticle;
+      window.__reticles = [];
+      extendSkin('holo', {
+        reticle(scene, state, ctx) {
+          window.__reticles.push({ stage: state.el?.closest('loom-stage')?.id, rect: [...state.rect], alpha: state.alpha });
+          return draw(scene, state, ctx);
+        },
+      });
+    });
+    const last = (stage) => page.evaluate((stage) => window.__reticles.filter((r) => r.stage === stage).at(-1) ?? null, stage);
+    const size = (stage) => page.evaluate((stage) => {
+      const s = document.querySelector(`#${stage} .loom-source`);
+      return [s.offsetWidth, s.offsetHeight];
+    }, stage);
+
+    // The keyboard on the first link: it touches the canvas on the left, the top and the bottom.
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.mouse.move(500, 650);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => document.activeElement.getAttribute('href')), '#recipes');
+    await page.waitForTimeout(700);
+    const [w, h] = await size('navstage');
+    const focus = await last('navstage');
+    assert.ok(focus && focus.alpha > 0.9, 'keyboard focus shows the reticle');
+    const [x, y, rw, rh] = focus.rect;
+    assert.ok(x >= 4 && y >= 4 && x + rw <= w - 4 && y + rh <= h - 4, `inside the stage (${focus.rect.map(Math.round)} in ${w}×${h})`);
+    assert.deepEqual([Math.round(x), Math.round(y), Math.round(y + rh)], [4, 4, h - 4], 'pulled in on the three edges it would cross');
+
+    // The pointer over the bar: no reticle.
+    await page.evaluate(() => document.activeElement?.blur());
+    await page.waitForTimeout(700);
+    const link = await page.evaluate(() => {
+      const r = document.querySelector('#navstage a[href="#stock"]').getBoundingClientRect();
+      return [r.x + r.width / 2, r.y + r.height / 2];
+    });
+    await page.evaluate(() => (window.__reticles = []));
+    await page.mouse.move(link[0], link[1], { steps: 4 });
+    await page.waitForTimeout(500);
+    const shown = await page.evaluate(() => window.__reticles.filter((r) => r.stage === 'navstage' && r.alpha > 0.05).length);
+    assert.equal(shown, 0, 'no reticle on hover');
+
+    // A button inside a panel: its reticle is as it was, five pixels around it.
+    const button = await page.evaluate(() => {
+      const b = document.querySelector('#styled').getBoundingClientRect();
+      return [b.x + b.width / 2, b.y + b.height / 2];
+    });
+    await page.mouse.move(button[0], button[1], { steps: 4 });
+    await page.waitForTimeout(900);
+    const inner = await last('content');
+    const expected = await page.evaluate(() => {
+      const b = document.querySelector('#styled').getBoundingClientRect();
+      const s = document.querySelector('#content .loom-source').getBoundingClientRect();
+      return [b.x - s.x - 5, b.y - s.y - 5, b.width + 10, b.height + 10];
+    });
+    assert.ok(inner.rect.every((v, i) => Math.abs(v - expected[i]) < 0.5), `unchanged: ${inner.rect.map(Math.round)} vs ${expected.map(Math.round)}`);
+    await page.mouse.move(500, 650);
+  });
+
   await check(`${path}: toasts="viewport" shows the page's toasts at the bottom centre of the viewport`, async () => {
     await page.evaluate(() => {
       const li = document.createElement('li');

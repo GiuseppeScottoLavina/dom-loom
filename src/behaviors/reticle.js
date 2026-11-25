@@ -1,6 +1,19 @@
 import { RectSpring, Spring } from '../core/spring.js';
 import { pad, targetFor } from './util.js';
 
+/** How far inside the stage's edges the reticle keeps its lines (their width and most of their glow). */
+const EDGE = 4;
+
+/**
+ * What the pointer locks onto: nothing in a page's own navigation (current="line"), where
+ * the line and the page's hover style say enough. Keyboard focus still gets the reticle there:
+ * on the GPU path it is the focus indicator.
+ */
+const hoverTarget = (el, root) => {
+  const target = targetFor(el, root);
+  return target?.closest('[current=line]') ? null : target;
+};
+
 export class Reticle {
   constructor(stage) {
     this.stage = stage;
@@ -16,14 +29,14 @@ export class Reticle {
     const hovers = () => stage.skin?.reticle?.hover !== false;
     stage.listen('pointerover', (e) => {
       if (e.pointerType === 'touch' || this.keyboard || !hovers()) return;
-      this.hover = targetFor(e.target, root);
+      this.hover = hoverTarget(e.target, root);
       this.retarget(true);
     });
     stage.listen('pointermove', (e) => {
       if (!this.keyboard || e.pointerType === 'touch') return;
       this.keyboard = false;
       if (!hovers()) return;
-      this.hover = targetFor(e.target, root);
+      this.hover = hoverTarget(e.target, root);
       this.retarget(true);
     });
     stage.listen('pointerleave', () => {
@@ -83,6 +96,15 @@ export class Reticle {
       this.alpha.set(0);
       this.current = null;
     }
-    this.stage.draw('reticle', scene, { el: this.current, rect: this.rect.rect, alpha: this.alpha.x, flash: this.flash });
+    // Inside the stage: a control at its edge (a link of a bar as tall as the stage) gets its
+    // reticle pulled in rather than cut by the canvas.
+    const [x, y, w, h] = this.rect.rect;
+    const source = this.stage.source;
+    const x0 = Math.max(x, EDGE);
+    const y0 = Math.max(y, EDGE);
+    const x1 = Math.min(x + w, source.offsetWidth - EDGE);
+    const y1 = Math.min(y + h, source.offsetHeight - EDGE);
+    const rect = [x0, y0, Math.max(0, x1 - x0), Math.max(0, y1 - y0)];
+    this.stage.draw('reticle', scene, { el: this.current, rect, alpha: this.alpha.x, flash: this.flash });
   }
 }

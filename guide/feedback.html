@@ -233,7 +233,8 @@
         Your app's own navigation (a top bar) is not a pagination: put <code>current="line"</code> on the
         <code>nav</code> (or its list). The links keep your look, and the current one gets a line on its bottom edge that
         slides to the next page. In a bar, wrap the nav in <code>&lt;loom-stage bare fill&gt;</code>: no panel, the bar's
-        colour behind it, and the bar's height.
+        colour behind it, and the bar's height. The reticle there marks keyboard focus only (it is the focus indicator on
+        the GPU path), not the pointer: give the links a hover style of your own.
       </p>
       <section class="example" id="topbar-example">
         <script type="text/html">
